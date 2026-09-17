@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\NatureRelation;
+use App\Enums\SourceCreation;
+use App\Enums\StatutPpe;
+use App\Enums\TypeClient;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Client extends Model
+{
+    use HasFactory, HasUuids, SoftDeletes;
+
+    protected $table = 'clients';
+
+    protected $fillable = [
+        'reseau_id', 'type', 'nature_relation', 'statut_ppe',
+        'score_completude_kyc', 'source_creation',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'type' => TypeClient::class,
+            'nature_relation' => NatureRelation::class,
+            'statut_ppe' => StatutPpe::class,
+            'source_creation' => SourceCreation::class,
+            'score_completude_kyc' => 'integer',
+        ];
+    }
+
+    public function reseau(): BelongsTo
+    {
+        return $this->belongsTo(Reseau::class);
+    }
+
+    public function personnePhysique(): HasOne
+    {
+        return $this->hasOne(PersonnePhysique::class);
+    }
+
+    public function personneMorale(): HasOne
+    {
+        return $this->hasOne(PersonneMorale::class);
+    }
+
+    public function comptes(): HasMany
+    {
+        return $this->hasMany(Compte::class);
+    }
+
+    public function alertes(): HasMany
+    {
+        return $this->hasMany(Alerte::class);
+    }
+
+    public function declarationsCentif(): HasMany
+    {
+        return $this->hasMany(DeclarationCentif::class);
+    }
+
+    public function resultatsFiltrage(): MorphMany
+    {
+        return $this->morphMany(ResultatFiltrage::class, 'filtrable');
+    }
+
+    /**
+     * Statut neutre affichable au guichet (Loi art. 63 : jamais "soupçon", "PPE",
+     * "sanction" ni "gel" — problème 6). Ne reflète ni le détail ni la raison réelle.
+     */
+    public function statutConformiteAffichable(): bool
+    {
+        $aUneVerificationEnCours = $this->resultatsFiltrage()->where('statut', 'a_verifier')->exists()
+            || $this->statut_ppe->value === 'ppe_a_verifier'
+            || ($this->type->value === 'personne_morale' && $this->personneMorale?->signataires()->where('statut_filtrage', 'a_verifier')->exists());
+
+        return ! $aUneVerificationEnCours;
+    }
+
+    /**
+     * Nom affichable de la cible, quel que soit le type (physique/morale) — pour l'écran
+     * de décision filtrage. Ne déchiffre que si l'appelant a le droit de voir l'identité.
+     */
+    public function nomAffichage(): string
+    {
+        return $this->type === TypeClient::PersonneMorale
+            ? (string) $this->personneMorale?->raison_sociale
+            : trim(($this->personnePhysique?->prenoms ?? '').' '.($this->personnePhysique?->nom ?? ''));
+    }
+}

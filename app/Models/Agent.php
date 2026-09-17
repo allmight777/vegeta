@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Models;
+
+use App\Casts\ChiffreIndexe;
+use App\Enums\RoleAgent;
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\Access\Authorizable;
+
+class Agent extends Model implements AuthenticatableContract, AuthorizableContract
+{
+    use Authenticatable, Authorizable, HasFactory;
+
+    protected $table = 'agents';
+
+    protected $fillable = ['agence_id', 'nom', 'matricule', 'mot_de_passe', 'role', 'actif'];
+
+    protected $hidden = ['mot_de_passe', 'remember_token'];
+
+    protected function casts(): array
+    {
+        return [
+            'matricule' => ChiffreIndexe::class.':matricule_idx,matricule',
+            'role' => RoleAgent::class,
+            'actif' => 'boolean',
+        ];
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->mot_de_passe;
+    }
+
+    public function agence(): BelongsTo
+    {
+        return $this->belongsTo(Agence::class);
+    }
+
+    public function operations(): HasMany
+    {
+        return $this->hasMany(Operation::class);
+    }
+
+    public function estGuichet(): bool
+    {
+        return $this->role === RoleAgent::Guichet;
+    }
+}
