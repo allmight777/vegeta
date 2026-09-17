@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Agent\Clients;
 
+use App\Services\Kyc\ReferentielFicheAdhesion;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CompleterClientRequest extends FormRequest
@@ -13,21 +14,28 @@ class CompleterClientRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'nom' => ['nullable', 'string', 'max:255'],
-            'prenoms' => ['nullable', 'string', 'max:255'],
-            'date_naissance' => ['nullable', 'date'],
-            'lieu_naissance' => ['nullable', 'string', 'max:255'],
-            'piece_identite_numero' => ['nullable', 'string', 'max:255'],
-            'piece_identite_expiration' => ['nullable', 'date'],
-            'adresse' => ['nullable', 'string', 'max:500'],
-            'profession' => ['nullable', 'string', 'max:255'],
-            'revenus_mensuels_estimes' => ['nullable', 'numeric', 'min:0'],
+        $client = $this->route('client');
+        $type = $client?->type?->value ?? 'personne_physique';
+        $referentiel = app(ReferentielFicheAdhesion::class);
 
-            'raison_sociale' => ['nullable', 'string', 'max:255'],
-            'forme_juridique' => ['nullable', 'string', 'max:255'],
-            'rccm' => ['nullable', 'string', 'max:255'],
-            'ifu' => ['nullable', 'string', 'max:255'],
-        ];
+        $regles = $referentiel->reglesValidation($type);
+
+        if ($this->user('agent')?->estResponsableLbcft()) {
+            $groupeRlbcft = $referentiel->groupeFicheRlbcft($type);
+
+            if ($type === 'personne_morale') {
+                foreach ($client?->personneMorale?->signataires ?? [] as $signataire) {
+                    foreach ($groupeRlbcft['champs'] ?? [] as $code => $definition) {
+                        $regles["fiche_rlbcft.{$signataire->id}.{$code}"] = $referentiel->reglesPourChamp($definition);
+                    }
+                }
+            } else {
+                foreach ($groupeRlbcft['champs'] ?? [] as $code => $definition) {
+                    $regles["fiche_rlbcft.{$code}"] = $referentiel->reglesPourChamp($definition);
+                }
+            }
+        }
+
+        return $regles;
     }
 }

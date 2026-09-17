@@ -51,4 +51,9 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
     {
         return $this->role === RoleAgent::Guichet;
     }
+
+    public function estResponsableLbcft(): bool
+    {
+        return $this->role === RoleAgent::ResponsableLbcft;
+    }
 }

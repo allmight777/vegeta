@@ -47,6 +47,16 @@ return [
             'report' => false,
         ],
 
+        // Documents uploadés pour extraction (06_PROMPT §5) : chemin non devinable
+        // (nom de fichier généré, jamais le nom original), jamais servi publiquement.
+        'documents_clients' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/documents_clients'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

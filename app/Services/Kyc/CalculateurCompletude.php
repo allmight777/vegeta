@@ -8,11 +8,13 @@ use App\Models\PersonneMorale;
 use App\Models\PersonnePhysique;
 
 /**
- * Compare les champs renseignés au référentiel config/champs_kyc_obligatoires.php et
+ * Compare les champs renseignés au référentiel config/champs_fiche_adhesion.php et
  * écrit le résultat sur le client et sa personne physique/morale (problème 1, §5.3).
  */
 class CalculateurCompletude
 {
+    public function __construct(private readonly ReferentielFicheAdhesion $referentiel) {}
+
     /**
      * @return array{score: int, champs_manquants: array<string>}
      */
@@ -26,23 +28,22 @@ class CalculateurCompletude
     private function evaluerPersonnePhysique(Client $client): array
     {
         $personne = $client->personnePhysique;
-        $champs = config('champs_kyc_obligatoires.personne_physique');
+        $champs = $this->referentiel->champsPlats('personne_physique');
 
         $manquants = collect($champs)
             ->keys()
-            ->reject(fn (string $code) => filled($personne?->{$code}))
+            ->reject(fn (string $code) => $this->champRenseigne($personne, $code))
             ->values()
             ->all();
 
-        $resultat = $this->enregistrer($client, $personne, $champs, $manquants);
-
-        return $resultat;
+        return $this->enregistrer($client, $personne, $champs, $manquants);
     }
 
     private function evaluerPersonneMorale(Client $client): array
     {
         $personne = $client->personneMorale;
-        $champs = config('champs_kyc_obligatoires.personne_morale');
+        $champs = $this->referentiel->champsPlats('personne_morale')
+            + $this->referentiel->champsCalcules('personne_morale');
 
         $manquants = collect($champs)
             ->keys()
@@ -53,6 +54,22 @@ class CalculateurCompletude
         return $this->enregistrer($client, $personne, $champs, $manquants);
     }
 
+    /**
+     * Cas particuliers non représentables par un simple filled() sur une colonne.
+     */
+    private function champRenseigne(?PersonnePhysique $personne, string $code): bool
+    {
+        if ($personne === null) {
+            return false;
+        }
+
+        if ($code === 'npi') {
+            return filled($personne->npi_idx);
+        }
+
+        return filled($personne->{$code});
+    }
+
     private function champPersonneMoraleRenseigne(?PersonneMorale $personne, string $code): bool
     {
         if ($personne === null) {
@@ -61,6 +78,10 @@ class CalculateurCompletude
 
         if ($code === 'beneficiaire_effectif') {
             return $personne->beneficiaireEffectifConforme();
+        }
+
+        if ($code === 'au_moins_un_signataire') {
+            return $personne->signataires()->exists();
         }
 
         return filled($personne->{$code});
@@ -93,7 +114,9 @@ class CalculateurCompletude
     public function champsBloquantsManquants(Client $client): array
     {
         $personne = $client->type === TypeClient::PersonneMorale ? $client->personneMorale : $client->personnePhysique;
-        $champs = config('champs_kyc_obligatoires.'.$client->type->value);
+        $champs = $client->type === TypeClient::PersonneMorale
+            ? $this->referentiel->champsPlats('personne_morale') + $this->referentiel->champsCalcules('personne_morale')
+            : $this->referentiel->champsPlats('personne_physique');
         $manquants = $personne?->champs_manquants ?? [];
 
         return array_values(array_filter($manquants, fn (string $code) => (bool) ($champs[$code]['bloquant'] ?? false)));

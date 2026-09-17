@@ -15,6 +15,7 @@ use App\Models\JournalAudit;
 use App\Models\PersonnePhysique;
 use App\Models\Reseau;
 use App\Services\Filtrage\MoteurFiltrage;
+use App\Support\MotsInterditsConformite;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -22,8 +23,6 @@ use Tests\TestCase;
 class NonDivulgationGuichetTest extends TestCase
 {
     use RefreshDatabase;
-
-    private const MOTS_INTERDITS = ['soupçon', 'soupcon', 'PPE', 'sanction', 'gel'];
 
     private function agence(): Agence
     {
@@ -63,9 +62,8 @@ class NonDivulgationGuichetTest extends TestCase
 
         $reponse->assertOk();
         $html = $reponse->getContent();
-        foreach (self::MOTS_INTERDITS as $mot) {
-            $this->assertStringNotContainsStringIgnoringCase($mot, $html, "Le mot interdit « {$mot} » apparaît sur la page guichet.");
-        }
+        $motTrouve = MotsInterditsConformite::contient($html);
+        $this->assertNull($motTrouve, "Le mot interdit « {$motTrouve} » apparaît sur la page guichet.");
         $reponse->assertSee('Vérification complémentaire requise');
     }
 

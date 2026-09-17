@@ -30,6 +30,11 @@
                         <p class="mt-1 text-gray-700">{{ $alerte->explication_texte }}</p>
                         @if ($alerte->type->value === 'filtrage_sanction' || $alerte->type->value === 'filtrage_ppe')
                             <a href="{{ route('agent.filtrage.index') }}" class="mt-1 inline-block text-xs text-emerald-700 hover:underline">Traiter dans Filtrage →</a>
+                        @elseif ($alerte->type->value === 'npi_invalide_apres_verification')
+                            <form method="POST" action="{{ route('agent.conformite.alertes-npi.traiter', $alerte) }}" class="mt-1">
+                                @csrf
+                                <button type="submit" class="text-xs text-emerald-700 hover:underline">Marquer comme traité</button>
+                            </form>
                         @endif
                     </div>
                 @empty
@@ -70,6 +75,20 @@
                     </div>
                 @empty
                     <p class="text-sm text-gray-400">Aucune déclaration à préparer.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section>
+            <h2 class="mb-2 text-sm font-semibold text-gray-700">NPI en attente de vérification</h2>
+            <div class="space-y-1.5">
+                @forelse ($npiEnAttente as $client)
+                    <a href="{{ route('agent.clients.completer', $client) }}" class="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+                        <span>{{ $client->nomAffichage() }}</span>
+                        <span class="text-amber-700 text-xs font-semibold">En attente de connexion</span>
+                    </a>
+                @empty
+                    <p class="text-sm text-gray-400">Aucun NPI en attente de vérification.</p>
                 @endforelse
             </div>
         </section>

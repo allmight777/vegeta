@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\NatureRelation;
 use App\Enums\SourceCreation;
 use App\Enums\StatutPpe;
+use App\Enums\StatutVerificationNpi;
 use App\Enums\TypeClient;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
@@ -24,6 +26,7 @@ class Client extends Model
     protected $fillable = [
         'reseau_id', 'type', 'nature_relation', 'statut_ppe',
         'score_completude_kyc', 'source_creation',
+        'statut_verification_npi', 'npi_verifie_le', 'npi_tentatives',
     ];
 
     protected function casts(): array
@@ -34,6 +37,9 @@ class Client extends Model
             'statut_ppe' => StatutPpe::class,
             'source_creation' => SourceCreation::class,
             'score_completude_kyc' => 'integer',
+            'statut_verification_npi' => StatutVerificationNpi::class,
+            'npi_verifie_le' => 'datetime',
+            'npi_tentatives' => 'integer',
         ];
     }
 
@@ -70,6 +76,15 @@ class Client extends Model
     public function resultatsFiltrage(): MorphMany
     {
         return $this->morphMany(ResultatFiltrage::class, 'filtrable');
+    }
+
+    /**
+     * Fiche complémentaire RLBC/FT du client lui-même (distincte de celle de chacun de
+     * ses signataires) — jamais chargée ni rendue sans Agent::estResponsableLbcft().
+     */
+    public function ficheRlbcft(): MorphOne
+    {
+        return $this->morphOne(FicheRlbcft::class, 'controlable');
     }
 
     /**

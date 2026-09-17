@@ -10,6 +10,7 @@ enum TypeAlerte: string
     case FractionnementMultiAgences = 'fractionnement_multi_agences';
     case SeuilMensuelCentif = 'seuil_mensuel_centif';
     case CompteDormantReactive = 'compte_dormant_reactive';
+    case NpiInvalideApresVerification = 'npi_invalide_apres_verification';
 
     public function libelle(): string
     {
@@ -20,6 +21,7 @@ enum TypeAlerte: string
             self::FractionnementMultiAgences => 'Fractionnement multi-agences',
             self::SeuilMensuelCentif => 'Seuil mensuel CENTIF dépassé',
             self::CompteDormantReactive => 'Compte dormant réactivé',
+            self::NpiInvalideApresVerification => 'NPI invalide après vérification différée',
         };
     }
 }

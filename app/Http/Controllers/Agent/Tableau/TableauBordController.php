@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Agent\Tableau;
 
 use App\Enums\StatutAlerte;
 use App\Enums\StatutDeclarationCentif;
+use App\Enums\StatutVerificationNpi;
 use App\Http\Controllers\Controller;
 use App\Models\Alerte;
 use App\Models\Client;
@@ -40,6 +41,11 @@ class TableauBordController extends Controller
                 'seuilsEtFractionnements' => $alertesOuvertes->whereIn('type', ['fractionnement_guichet', 'fractionnement_multi_agences']),
                 'declarationsAVenir' => DeclarationCentif::whereHas('client', fn ($q) => $q->where('reseau_id', $reseauId))
                     ->where('statut', StatutDeclarationCentif::APreparer)
+                    ->get(),
+                'npiEnAttente' => Client::with(['personnePhysique', 'personneMorale'])
+                    ->where('reseau_id', $reseauId)
+                    ->where('statut_verification_npi', StatutVerificationNpi::EnAttenteConnexion->value)
+                    ->limit(10)
                     ->get(),
             ]);
         }

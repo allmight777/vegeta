@@ -160,3 +160,145 @@ prompt précise que le niveau 2 est simulé, pas construit. La commande `demo:pu
 affiche donc en console ce qui serait publié (type de risque, extrait d'empreinte, réseau
 émetteur) sans rien persister ni exposer d'identité, plutôt que d'inventer une table hors
 périmètre.
+
+## 13. `06_PROMPT_FORMULAIRE_CLIENT_ENRICHI` — référentiel, extraction, NPI, système existant
+
+- **Référentiel unique** : `config/champs_fiche_adhesion.php` remplace
+  `config/champs_kyc_obligatoires.php` (supprimé), pour ne jamais dupliquer la liste des champs
+  entre l'ancien référentiel minimal (9+4 champs) et le nouveau, plus riche, organisé par groupes
+  (`App\Services\Kyc\ReferentielFicheAdhesion`). `CalculateurCompletude` et la validation des
+  `FormRequest` lisent tous les deux cette même classe.
+- **Un seul `FormRequest` par action, pas deux classes par type** : le prompt demandait
+  `StockerClientPhysiqueRequest`/`StockerClientMoraleRequest` séparées. Ce dépôt garde le pattern
+  déjà en place (`CreerClientRequest`/`CompleterClientRequest` uniques, règles générées
+  dynamiquement depuis le référentiel selon `type`) — cohérent avec l'existant, évite deux classes
+  presque identiques à maintenir en double.
+- **`Mandataire` (personne physique) vs `RoleSignataire::Mandataire` (personne morale)** : ce
+  sont deux notions différentes qui coexistent. Un « mandataire désigné » d'une personne physique
+  (table `mandataires`, procuration limitée nom/prénoms/lien de parenté) n'a pas les mêmes
+  obligations qu'un signataire d'une personne morale ayant le rôle `mandataire` (identité complète,
+  filtrage, fiche RLBC/FT) — pas de fusion des deux tables.
+- **Fiche RLBC/FT strictement réservée au rôle `responsable_lbcft`** : le prompt dit « visible
+  uniquement au rôle responsable_lbcft », sans trancher pour le rôle `direction`. Choix le plus
+  prudent conservé : seul `responsable_lbcft` voit et enregistre cette fiche (ni `guichet`, ni
+  `direction`), aussi bien côté vue (`_formulaire.blade.php`) que côté serveur (règles de
+  validation générées seulement pour ce rôle, `ClientController`/`CreateurClient` vérifient à
+  nouveau `Agent::estResponsableLbcft()` avant toute écriture — défense en profondeur).
+- **Extraction de documents** : voir `docs/COMPOSANTS_TIERS.md`. Seule l'extraction `.docx` est
+  réellement fonctionnelle (`ZipArchive`, sans nouvelle dépendance). Le mappeur
+  (`MappeurChampsExtraits`) est un heuristique regex « libellé : valeur », pas un modèle entraîné —
+  confiance fixe (0.9) pour tout champ trouvé par ce motif explicite, cohérent avec l'esprit
+  « aucune valeur inventée » de `CLAUDE.md` §3.
+- **Connecteur système existant** : adaptation assumée du §7.2 — ce MVP fusionne déjà les lignes
+  CSV rapprochées directement dans `clients`/`personnes_physiques`
+  (`Services\Import\ImportateurCsv::rapprocherOuCreer`), donc `ConnecteurImportLocal` cherche parmi
+  les `PersonnePhysique` déjà persistées (par NPI en index aveugle, sinon par nom + date de
+  naissance via l'empreinte), plutôt que de reparser `import_lignes.donnees_brutes`, qui garde des
+  en-têtes CSV bruts et variables d'un fichier à l'autre — donc peu fiables comme clé de recherche.
+- **NPI jamais stocké en clair** : `personnes_physiques.npi_idx`/`signataires.npi_idx` restent des
+  index aveugles seuls (même convention que `docs/DECISIONS.md` §4). `npi_verifie_le` et
+  `npi_verification_source` sont de simples métadonnées de traçabilité (date, source du
+  vérificateur), jamais le NPI lui-même.
+- **`VerificateurNpiApiReel` et `ConnecteurApiCoreBanking`** : écrits (appel HTTP générique
+  configurable par `.env`) mais non branchables pour ce hackathon, faute d'accès à une API NPI
+  officielle ou à un core banking réel d'un SFD partenaire. `config('kyc.verificateur_npi')` et
+  `config('kyc.connecteur_systeme_existant')` restent sur leurs valeurs par défaut `simulateur`/
+  `local`.
+
+## 14. `07_PROMPT_MODE_DEGRADE_NPI_OCR` — mode dégradé NPI, OCR local, faux-positifs CSS
+
+- **Faux-positif CSS `NonDivulgationGuichetTest`** : deux occurrences, pas une seule. Le prompt ne
+  mentionnait que `.agent-alert-wrapper` (renommée `.agent-alert-conteneur`) ; un second faux
+  positif a été trouvé en cours de route (`text-transform: uppercase` contient aussi "ppe").
+  Neutralisé par un échappement CSS standard (`up\70 ercase`, rendu identique dans tous les
+  navigateurs — `\70` = code hexadécimal du caractère "p"), pour respecter la consigne de ne rien
+  changer d'autre dans `layouts/agent.blade.php` (travail de style en cours, non commité) tout en
+  faisant réellement passer le test pour la bonne raison.
+- **`verifications_npi_en_attente.npi_chiffre`** : exception ciblée et temporaire à la règle
+  « index aveugle seul » (`docs/DECISIONS.md` §4). Un rattrapage différé réel doit resoumettre le
+  NPI à `VerificateurNpi::verifier()`, ce qu'un hash à sens unique (`npi_idx`) ne permet pas. Le
+  NPI est donc chiffré (même cast `Chiffre` que le reste des données d'identité), jamais affiché à
+  l'écran, utilisé uniquement par la commande `npi:verifier-en-attente`, et vidé (`null`) dès que
+  la ligne quitte l'état `en_attente` — la donnée ne survit pas plus longtemps que nécessaire.
+- **Mode dégradé étendu aux signataires** : le schéma du prompt ne mentionnait que `client_id` sur
+  `verifications_npi_en_attente`. Une colonne `signataire_id` nullable a été ajoutée (décision
+  validée avec l'utilisateur) : sans elle, ajouter un signataire à une personne morale hors
+  connexion resterait bloqué à tort, ce qui aurait contredit le principe directeur du prompt
+  (« une opération qui dépend d'un service externe ne doit jamais bloquer »).
+- **Sémantique de `tentatives`** : compte les passages de la commande planifiée
+  (`npi:verifier-en-attente`, toutes les 5 minutes) où la connectivité était **absente** — jamais
+  les vérifications réussies. Quand la connexion est présente, la ligne est traitée immédiatement
+  (`Traitee`) sans jamais incrémenter `tentatives`. Ce compteur ne mesure donc que la durée
+  d'indisponibilité réseau, conformément à l'intention du prompt (« 20 tentatives sur plusieurs
+  heures » faute de connexion, pas faute de validation).
+- **`SelecteurExtracteurDocument` ne branche pas réellement sur la connectivité** : le prompt
+  décrit un aiguillage « hors ligne → OCR local, en ligne → configurable IA/OCR local ». Comme
+  aucune implémentation IA n'existe (ni dans `06_PROMPT` ni dans celui-ci), les deux branches
+  résolvent aujourd'hui vers `ExtracteurDocumentOcrLocal` — un branchement conditionnel qui ne
+  changerait jamais le résultat a été jugé plus trompeur qu'utile (code mort déguisé en logique).
+  Le sélecteur ne teste donc que le seul critère qui change réellement le résultat (`.docx` vs le
+  reste). Le jour où une implémentation IA existera, `config('extraction.preference_en_ligne')` et
+  `Contracts\DetecteurConnectivite` seront réintroduits dans `choisir()` à ce moment-là.
+- **OCR local = défaut recommandé même en ligne** : conformément à la recommandation du prompt, un
+  seul pipeline (OCR local) fonctionne identiquement en ligne et hors ligne — pas de dépendance de
+  démonstration à une IA non branchée.
+- **Limites honnêtes du pipeline d'extraction, non résolues par ce prompt** : `.doc` (binaire Word
+  ancien) n'est couvert ni par le texte natif (seul `.docx` l'est) ni par l'OCR (qui a besoin d'une
+  image ou d'un PDF rasterisable) — échoue explicitement dans les deux implémentations. Le calque
+  texte natif d'un PDF non scanné n'est pas non plus extrait directement : tout PDF, scanné ou non,
+  passe par l'OCR local (aucune bibliothèque de lecture de texte PDF n'a été ajoutée, `smalot/
+  pdfparser` restant écartée pour raison de licence LGPL depuis `06_PROMPT`).
+- **Dépendances système** (`tesseract-ocr` + paquet `fra`, Ghostscript + extension PHP `imagick`) :
+  absentes de la machine de développement ayant construit cette itération (Ghostscript présent,
+  Tesseract et `ext-imagick` absents, pas d'accès `sudo` sans mot de passe pour les installer).
+  `ExtracteurDocumentOcrLocalTest` détecte leur absence (`FriendlyErrors::checkTesseractPresence`)
+  et se marque `skipped` avec un message explicite plutôt que d'échouer — le pipeline réel n'a donc
+  pas pu être vérifié bout en bout dans cet environnement, seulement son aiguillage et ses garde-fous
+  (plafond de confiance, gestion d'erreur). À vérifier réellement sur le poste équipé du jour J.
+
+## 15. `08_PROMPT_ASSISTANT_IA_CONFORMITE` — assistant IA, filtre de sortie, escalade
+
+- **`EscaladesController` sous `Agent\Assistance\`, pas `Admin\Assistance\`** (décision validée
+  avec l'utilisateur) : le prompt place cet écran dans le namespace `Admin`, mais
+  `responsable_lbcft`/`direction` sont des rôles de l'enum `RoleAgent` (garde `agent`), sans
+  équivalent sur le modèle `Admin` (garde `admin`, administrateurs plateforme/réseau). Le tableau
+  de bord conformité existant vit déjà sous `Agent\Conformite\`, gardé par le même middleware
+  `role.agent:responsable_lbcft,direction` (`routes/agent/conformite.php`) — repris à l'identique
+  pour `routes/agent/assistance.php`. Le widget de discussion, lui, reste bien présent dans les
+  deux espaces (`Agent\Assistance\AssistantController` et `Admin\Assistance\AssistantController`).
+- **Liste des mots interdits extraite en classe partagée** (`App\Support\MotsInterditsConformite`) :
+  elle n'existait auparavant que comme constante privée de `NonDivulgationGuichetTest`, malgré
+  l'hypothèse du prompt qu'une « policy » partagée existait déjà. Le test a été mis à jour pour
+  consommer cette classe. **Recherche par mot entier (`\b`), pas par sous-chaîne** : une recherche
+  naïve sur `DOS` aurait fait correspondre chaque occurrence du mot très courant « dossier »
+  partout dans l'application, et `PPE` avait déjà fait correspondre « wrapper »/« uppercase »
+  (`07_PROMPT` §0) — deux faux positifs réels rencontrés dans ce dépôt qui rendaient la
+  correspondance par sous-chaîne inutilisable pour un filtre de production.
+- **`GestionnaireAssistant::traiter()` accepte `Agent|Admin`** : le prompt fige la signature sur
+  `Agent`, mais l'assistant doit aussi répondre dans l'espace admin (modèle `Admin`, guère
+  compatible avec `Agent` — pas de rôle commun, pas de table commune). Un `Admin` n'ayant pas de
+  rôle `guichet` possible, `FiltreConformiteReponseIa` ne s'applique qu'aux instances `Agent` avec
+  `estGuichet()` — un admin plateforme/réseau n'est jamais soumis à cette restriction (il n'a de
+  toute façon jamais accès aux dossiers clients depuis son espace).
+- **Base de connaissances alimentée sans réécrire de fichier** : `Services\Assistance\
+  BaseConnaissances::charger()` fusionne les fichiers statiques `resources/assistance/*.md` avec
+  les lignes `escalades_assistant_ia` déjà `traitee` (`question` + `reponse_responsable`, source
+  `reponse_responsable`) — plutôt que d'ajouter au vol un bloc à un fichier Markdown versionné,
+  ce qui aurait posé un problème de déploiement (le fichier du dépôt et celui modifié en production
+  divergent dès le prochain déploiement). Le résultat fonctionnel demandé par le prompt (« la paire
+  est ajoutée à la base de connaissances locale ») est identique.
+- **Fournisseur IA externe générique, non mandaté** : ni le « `AiChatController` de référence » ni
+  un usage préexistant de `Str::ascii` cités par le prompt n'existent dans ce dépôt (le plus proche
+  est `GenerateurEmpreinte::normaliser()`, qui utilise `Str::of(...)->ascii()`, repris à l'identique
+  dans `BaseConnaissances`). `ProviderIaApiExterne` cible donc la forme d'API de complétion de chat
+  la plus répandue (`{model, messages}`), configurable entièrement par `.env`, sans qu'aucun
+  fournisseur précis ne soit choisi ni testé (aucune clé n'est configurée dans ce dépôt).
+- **Mode démonstration** : `ASSISTANCE_IA_FORCER_SIMULATEUR=true` force le simulateur même si une
+  clé API est configurée et que la connexion fonctionne — recommandé pendant la présentation au
+  jury, cohérent avec la prudence déjà documentée pour l'OCR (`07_PROMPT` §4.3) : ne jamais dépendre
+  du wifi de la salle.
+- **Escalade : question re-filtrée avant enregistrement** : si `MotsInterditsConformite::contient()`
+  détecte un mot interdit dans la question elle-même au moment de l'escalade, le texte enregistré
+  est remplacé par `'[question filtrée — contenu non enregistré]'` plutôt que la question réelle —
+  signalé (l'escalade est tout de même créée, un responsable peut s'apercevoir qu'une tentative de
+  contournement a eu lieu), jamais puni ou bloqué pour l'agent.

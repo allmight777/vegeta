@@ -23,6 +23,7 @@ même nom restent proches ; aucune empreinte ne permet de retrouver le nom origi
 | Nœud d'agence synchronisé | — | Non construit ; le mode hors ligne de l'agence est déjà démontré par le point ci-dessus |
 | Liste de sanctions ONU | — | Aucun fichier officiel fourni à ce dépôt : les entrées de démonstration sont marquées `source = demo`, jamais présentées comme réelles |
 | Déclaration CENTIF (PDF) | Génère un vrai PDF | Gabarit de démonstration — le formulaire officiel CENTIF (fixé par arrêté) n'a pas été fourni à l'équipe |
+| Assistant IA conformité | Peut appeler une vraie API de complétion de chat si `.env` renseigné | Recommandé pour la démo : simulateur local par mots-clés (`resources/assistance/*.md`), aucune dépendance, aucun appel réseau |
 
 Voir `docs/DECISIONS.md` pour le détail de chaque simplification assumée par rapport au cahier des
 charges complet (`CLAUDE.md`, `docs/prompts/`).
@@ -33,6 +34,21 @@ charges complet (`CLAUDE.md`, `docs/prompts/`).
   ou `redis` requise).
 - Composer 2, Node.js ≥ 18 (npm).
 - Fonctionne sous Linux, macOS et Windows (ex. Laragon, Herd).
+- **OCR local des documents scannés/photographiés** (mode dégradé, `07_PROMPT_MODE_DEGRADE_NPI_OCR`)
+  — deux dépendances **système**, à installer en plus de `composer install` :
+  - Binaire **Tesseract OCR** + paquet de langue **français (`fra`)**.
+    Windows : installeur officiel https://github.com/UB-Mannheim/tesseract/wiki (cocher le
+    composant de langue française à l'installation), puis ajouter le dossier d'installation
+    (ex. `C:\Program Files\Tesseract-OCR`) à la variable d'environnement `PATH`.
+    Linux (Debian/Ubuntu) : `sudo apt-get install tesseract-ocr tesseract-ocr-fra`.
+  - **Ghostscript** + extension PHP **`imagick`** (nécessaires uniquement pour rasteriser un
+    PDF scanné avant OCR — pas pour l'OCR direct d'une photo `.jpg`/`.png`).
+    Windows : installeur Ghostscript https://ghostscript.com/releases/gsdnld.html, puis activer
+    `extension=imagick` dans `php.ini` (DLL PECL correspondant à la version de PHP utilisée sous
+    Laragon/Herd, à redémarrer après activation).
+  - Sans ces deux dépendances, le reste de l'application fonctionne normalement : seule
+    l'extraction OCR échoue avec un message explicite (jamais une erreur silencieuse) — voir
+    `docs/COMPOSANTS_TIERS.md`.
 
 ## Installation
 
@@ -103,6 +119,8 @@ tests/                 Feature + Unit, php artisan test
 php artisan test              # suite complète
 vendor/bin/pint                # formatage (obligatoire avant commit)
 php artisan route:list         # vérifier les routes des deux espaces
+php artisan npi:verifier-en-attente   # rattrapage manuel des NPI en attente de connexion
+                                       # (planifiée toutes les 5 min via `php artisan schedule:work`)
 ```
 
 ## Outils d'IA
@@ -110,6 +128,13 @@ php artisan route:list         # vérifier les routes des deux espaces
 Ce dépôt a été construit avec [Claude Code](https://claude.com/claude-code) (Anthropic), utilisé
 pour générer et relire du code sous supervision de l'équipe. Voir `docs/DECISIONS.md` pour le
 détail des choix effectués pendant le build.
+
+L'application elle-même embarque un **assistant IA conformité** (icône en bas d'écran, espaces
+agent et admin) pour expliquer le référentiel KYC et guider l'utilisation du produit — jamais pour
+prendre une décision de conformité. Sans clé configurée (`ASSISTANCE_IA_API_CLE` dans `.env`), il
+répond via un simulateur local par mots-clés (`resources/assistance/*.md`), sans aucune dépendance
+à installer ni appel réseau — c'est le mode recommandé pour la démonstration. Voir
+`docs/COMPOSANTS_TIERS.md` pour le détail du fournisseur externe optionnel.
 
 ## Licence
 
