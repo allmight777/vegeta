@@ -306,6 +306,78 @@ BOUTONS DES CHAMPS REPETABLES
             }
         }
     };
+
+    window.__clientIdActuel = @json($client?->id);
+
+    window.__nomSaisiActuel = function () {
+        const nom = document.getElementById('nom')?.value?.trim() ?? '';
+        const prenoms = document.getElementById('prenoms')?.value?.trim() ?? '';
+        const raisonSociale = document.getElementById('raison_sociale')?.value?.trim() ?? '';
+
+        return [prenoms, nom].filter(Boolean).join(' ').trim() || raisonSociale || null;
+    };
+
+    window.verifierTelephone = async function (input) {
+        const statut = input.closest('.champ-npi')?.querySelector('[data-telephone-statut]');
+        const telephone = input.value.trim();
+
+        if (!telephone) {
+            if (statut) {
+                statut.innerHTML = '';
+            }
+            return;
+        }
+
+        if (statut) {
+            statut.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        }
+
+        try {
+            const reponse = await fetch(
+                @json(route('agent.clients.telephone.verifier')),
+                {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN':
+                            document.querySelector(
+                                'meta[name="csrf-token"]'
+                            )?.content ?? '',
+                        'Accept': 'application/json',
+                    },
+
+                    body: JSON.stringify({
+                        telephone,
+                        nom_saisi: window.__nomSaisiActuel(),
+                        client_id_actuel: window.__clientIdActuel,
+                    }),
+                }
+            );
+
+            const donnees = await reponse.json();
+
+            if (statut) {
+                if (donnees.avertissement_nom) {
+                    statut.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i>';
+                } else if (donnees.deja_enregistre) {
+                    statut.innerHTML = '<i class="fa-solid fa-circle-info" style="color:var(--dark)"></i>';
+                } else {
+                    statut.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i>';
+                }
+
+                statut.title = donnees.avertissement_nom
+                    ?? (donnees.deja_enregistre ? 'Ce numéro est déjà enregistré pour ce client dans le réseau.' : '');
+            }
+
+        } catch (e) {
+
+            if (statut) {
+                statut.innerHTML =
+                    '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+        }
+    };
 </script>
 
 

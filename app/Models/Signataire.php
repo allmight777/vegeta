@@ -44,6 +44,7 @@ class Signataire extends Model
             'piece_identite_numero' => Chiffre::class,
             'piece_identite_expiration' => 'date',
             'adresse' => Chiffre::class,
+            'telephone' => ChiffreIndexe::class.':telephone_idx,telephone',
             'npi_verifie_le' => 'datetime',
         ];
     }

@@ -302,3 +302,45 @@ périmètre.
   est remplacé par `'[question filtrée — contenu non enregistré]'` plutôt que la question réelle —
   signalé (l'escalade est tout de même créée, un responsable peut s'apercevoir qu'une tentative de
   contournement a eu lieu), jamais puni ou bloqué pour l'agent.
+
+## 16. Vérification du numéro de téléphone à la saisie — demande orale, sans texte de prompt dédié
+
+Demande formulée hors des prompts écrits (« quand l'agent saisit le numéro de téléphone du client,
+retrouver si la personne existe déjà et vérifier le nom réel »), donc appliqué CLAUDE.md §8 : pas de
+suppositions, option la plus prudente retenue, documentée ici plutôt que devinée.
+
+- **Écarté d'emblée : toute vérification contre une base téléphonique/opérateur réelle.** Cela
+  exigerait soit une donnée personnelle réelle externe, soit d'inventer un format ou un fournisseur
+  non fourni — interdit par CLAUDE.md §2.1 et §3. Aucun `Contrats\VerificateurTelephone` de type
+  `Simulateur`/`ApiReelle` n'a donc été créé : contrairement au NPI (`VerificateurNpi`), il n'existe
+  ici aucune autorité externe à interroger, réelle ou simulable honnêtement.
+- **Option retenue : rapprochement intra-réseau, sur les fiches déjà tenues par le SFD.** Exactement
+  la fonctionnalité déjà exigée par CLAUDE.md §1 (« consolidation d'un même client multi-agences ») et
+  §3 (SI : « recensement des opérations d'un même client », profilage) : si le numéro saisi
+  correspond déjà à une fiche du même réseau (`personnes_physiques.telephone_idx`/
+  `personnes_morales.telephone_idx`), l'agent est averti au blur, et le nom déclaré est comparé par
+  empreinte (`ComparateurEmpreinte::dice`, seuil 0.7, même seuil que `NpiVerificationController`) au
+  nom déjà enregistré — un nom sensiblement différent sur un numéro déjà connu est un signal
+  d'usurpation ou de doublon, pas un signal de sanction. `App\Services\Kyc\VerificateurTelephoneExistant`,
+  `App\Http\Controllers\Agent\Clients\TelephoneVerificationController`, câblé au blur du champ
+  téléphone (`window.verifierTelephone`, même patron que `window.verifierNpi`).
+- **Portée volontairement limitée au réseau courant** (`ContexteReseau::reseauId()`), jamais
+  inter-réseaux : le niveau 2 (inter-réseaux) n'est pas construit dans ce MVP (§1 ci-dessus) et
+  l'isolation entre réseaux est un test obligatoire (CLAUDE.md §5 « Qualité »).
+- **Le nom trouvé n'est jamais renvoyé au navigateur**, seulement un texte d'avertissement (même
+  minimisation que `NpiVerificationController::verifier()`, qui ne renvoie pas non plus
+  `nomOfficiel`) : le guichet apprend qu'un doublon probable existe, jamais l'identité complète de
+  l'autre fiche depuis ce seul contrôle.
+- **Correction d'un oubli découvert en creusant la demande** : `telephone` sur `personnes_physiques`,
+  `personnes_morales` et `signataires` était stocké **en clair** (`string` simple), sans passer par
+  `App\Casts\ChiffreIndexe` contrairement à `nom`/`email`/`raison_sociale` déjà chiffrés — un écart
+  direct à CLAUDE.md §5 (« tout champ d'identité est chiffré »). Corrigé dans la même migration que
+  l'ajout de `telephone_idx` (colonne d'index aveugle nécessaire au rapprochement ci-dessus), avec
+  rechiffrement des valeurs déjà présentes (migration idempotente, préfixe `v1:` déjà utilisé par
+  `App\Services\Securite\Chiffrement` comme garde).
+- **Champ câblé au blur pour `personne_physique` et `personne_morale` uniquement** (référentiel
+  `config/champs_fiche_adhesion.php`, `type_saisie => 'telephone'`). Le téléphone des **signataires**
+  (groupe répétable) reste `type_saisie => 'text'` : il est désormais chiffré comme les autres, mais
+  sans contrôle de doublon au blur — le brancher demanderait de dupliquer la logique JS des groupes
+  répétables (déjà faite pour le NPI dans `_formulaire.blade.php`) pour un signataire, pas le client
+  lui-même, jugé hors du périmètre de la demande initiale (« quand il [le client] veut s'inscrire »).

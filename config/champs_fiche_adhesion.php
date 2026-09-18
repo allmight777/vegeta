@@ -48,7 +48,7 @@ return [
             'coordonnees' => [
                 'libelle' => 'Coordonnées',
                 'champs' => [
-                    'telephone' => ['libelle' => 'Téléphone', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
+                    'telephone' => ['libelle' => 'Téléphone', 'type_saisie' => 'telephone', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'email' => ['libelle' => 'Email', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'adresse' => ['libelle' => 'Adresse', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 17 c)'],
                     'domicile' => ['libelle' => 'Domicile', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
@@ -145,7 +145,7 @@ return [
                     'adresse' => ['libelle' => 'Adresse du siège social', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 17 c)'],
                     'rccm' => ['libelle' => 'N° autorisation, agrément ou RCCM', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 17 d)'],
                     'ifu' => ['libelle' => 'IFU (au besoin)', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
-                    'telephone' => ['libelle' => 'Téléphone', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
+                    'telephone' => ['libelle' => 'Téléphone', 'type_saisie' => 'telephone', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'email' => ['libelle' => 'Mail', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                 ],
             ],

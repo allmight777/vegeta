@@ -37,6 +37,7 @@ class PersonneMorale extends Model
             'rccm' => ChiffreIndexe::class.':rccm_idx,rccm',
             'ifu' => ChiffreIndexe::class.':ifu_idx,ifu',
             'adresse' => Chiffre::class,
+            'telephone' => ChiffreIndexe::class.':telephone_idx,telephone',
             'email' => ChiffreIndexe::class.':email_idx,email',
             'date_creation' => 'date',
             'revenus_mensuels_estimes' => 'decimal:2',
