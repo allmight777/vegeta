@@ -513,6 +513,96 @@
     }
 
 
+    .agents-filters input[type="text"] {
+
+        height: 40px;
+
+        padding: 0 14px;
+
+        border: 1px solid var(--border);
+
+        border-radius: 11px;
+
+        background: #F8FAFC;
+
+        color: var(--dark);
+
+        font-family: inherit;
+
+        font-size: 0.72rem;
+
+        font-weight: 700;
+
+        outline: none;
+
+        transition:
+            border-color 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
+
+        min-width: 200px;
+
+        flex: 1;
+    }
+
+
+    .agents-filters input[type="text"]:hover {
+
+        border-color: #CBD5E1;
+
+        background: #FFFFFF;
+    }
+
+
+    .agents-filters input[type="text"]:focus {
+
+        border-color: var(--yellow);
+
+        background: #FFFFFF;
+
+        box-shadow:
+            0 0 0 3px rgba(240, 229, 53, 0.18);
+    }
+
+
+    .agents-filters-submit {
+
+        width: 40px;
+
+        height: 40px;
+
+        flex-shrink: 0;
+
+        border: none;
+
+        border-radius: 11px;
+
+        background: var(--dark);
+
+        color: #FFFFFF;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        cursor: pointer;
+
+        font-size: 0.78rem;
+
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+
+    .agents-filters-submit:hover {
+
+        background: #3A4650;
+
+        transform: translateY(-1px);
+    }
+
+
     /* =========================================================
        BARRE ENVOI PDF (filtre actif)
     ========================================================= */
@@ -1842,6 +1932,15 @@
             <i class="fa-solid fa-filter filter-icon"></i>
 
 
+            <input
+                type="text"
+                name="q"
+                value="{{ $recherche }}"
+                placeholder="Nom, matricule ou e-mail..."
+                aria-label="Rechercher un agent"
+            >
+
+
             <select
                 name="agence_id"
                 onchange="this.form.submit()"
@@ -1890,6 +1989,11 @@
                 </option>
 
             </select>
+
+
+            <button type="submit" class="agents-filters-submit" aria-label="Lancer la recherche">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
 
         </form>
 
@@ -2171,13 +2275,21 @@
 
 
                 <strong>
-                    Aucun compte pour le moment
+                    @if ($recherche !== '')
+                        Aucun agent ne correspond à « {{ $recherche }} »
+                    @else
+                        Aucun compte pour le moment
+                    @endif
                 </strong>
 
 
                 <span>
-                    Commencez par créer un nouveau compte caissier
-                    ou responsable d'agence.
+                    @if ($recherche !== '')
+                        Essayez avec un autre nom, matricule ou e-mail.
+                    @else
+                        Commencez par créer un nouveau compte caissier
+                        ou responsable d'agence.
+                    @endif
                 </span>
 
             </div>

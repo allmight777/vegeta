@@ -14,6 +14,7 @@ use App\Models\PersonnePhysique;
 use App\Models\Signataire;
 use App\Models\VerificationNpiEnAttente;
 use App\Services\Audit\Consignateur;
+use App\Services\Filtrage\AlertesPpeTempsReel;
 use App\Services\Filtrage\MoteurFiltrage;
 use App\Services\Identite\ResolveurIdentite;
 
@@ -31,6 +32,7 @@ class CreateurClient
         private readonly ResolveurStatutNpi $resolveurStatutNpi,
         private readonly ResolveurIdentite $resolveurIdentite,
         private readonly DetecteurIncoherenceDepotSimule $detecteurIncoherenceDepotSimule,
+        private readonly AlertesPpeTempsReel $alertesPpeTempsReel,
     ) {}
 
     /**
@@ -58,8 +60,22 @@ class CreateurClient
         $this->resolveurIdentite->rattacher($client->fresh('personnePhysique'), $agent);
 
         $this->completude->evaluer($client->fresh(['personnePhysique', 'personneMorale']));
+
+        // Filtrage sanctions/PPE : crée les ResultatFiltrage et les Alertes correspondantes.
         $this->moteurFiltrage->filtrer($client->fresh());
+
+        // Détection d'incohérence dépôt mobile money (annuaire simulé).
         $this->detecteurIncoherenceDepotSimule->verifier($client->fresh(['personnePhysique', 'personneMorale']), $agent);
+
+        // Alerte PPE temps réel : envoie un mail immédiat au responsable de l'agence
+        // si un client OU un signataire de personne morale ressemble fortement (≥ 85 %)
+        // à une personne figurant sur une liste PPE ou sanctions. Jamais bloquant —
+        // l'échec d'envoi est loggé mais la création du client reste valide.
+        // À placer APRÈS MoteurFiltrage::filtrer() (sinon les ResultatFiltrage n'existent pas).
+        $this->alertesPpeTempsReel->notifierSiSuspect($client->fresh([
+            'personnePhysique',
+            'personneMorale.signataires',
+        ]));
 
         Consignateur::enregistrer('agent', $agent?->id, 'creation_client', 'client', $client->id);
 
@@ -127,6 +143,8 @@ class CreateurClient
 
             $this->appliquerNpi($signataire, $client, $agent, $ligne['npi'] ?? null);
 
+            // Filtrage individuel du signataire contre les listes sanctions/PPE
+            // (06_PROMPT §3, problème 4) — chaque signataire est contrôlé séparément.
             $this->moteurFiltrage->filtrer($signataire->fresh());
         }
     }

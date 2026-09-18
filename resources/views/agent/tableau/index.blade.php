@@ -11,10 +11,6 @@
         ? round($clientsACompleter->avg('score_completude_kyc'))
         : 100;
 
-    $operationsSemaine = $operationsSemaine ?? [12, 19, 14, 25, 22, 30, 28];
-
-    $joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
     $nomAgent = Auth::guard('agent')->user()->nom
         ?? Auth::guard('agent')->user()->name
         ?? 'Agent';
@@ -214,56 +210,6 @@
     .search-box input::placeholder {
 
         color: var(--muted-light);
-    }
-
-
-    .notification-button {
-
-        width: 40px;
-
-        height: 40px;
-
-        border-radius: 12px;
-
-        border: 1px solid var(--border);
-
-        background: #FFFFFF;
-
-        color: var(--dark);
-
-        display: flex;
-
-        align-items: center;
-
-        justify-content: center;
-
-        cursor: pointer;
-
-        box-shadow: var(--shadow-sm);
-
-        position: relative;
-    }
-
-
-    .notification-button::after {
-
-        content: "";
-
-        width: 6px;
-
-        height: 6px;
-
-        border-radius: 50%;
-
-        background: var(--green);
-
-        position: absolute;
-
-        top: 8px;
-
-        right: 8px;
-
-        border: 1px solid #FFFFFF;
     }
 
 
@@ -1462,26 +1408,18 @@
 
         <div class="topbar-actions">
 
-            <div class="search-box">
+            <form method="GET" action="{{ route('agent.clients.index') }}" class="search-box">
 
                 <i class="fa-solid fa-magnifying-glass"></i>
 
                 <input
                     type="text"
-                    placeholder="Rechercher..."
-                    aria-label="Rechercher"
+                    name="q"
+                    placeholder="Rechercher un dossier..."
+                    aria-label="Rechercher un dossier par nom exact"
                 >
 
-            </div>
-
-
-            <button
-                type="button"
-                class="notification-button"
-                aria-label="Notifications"
-            >
-                <i class="fa-regular fa-bell"></i>
-            </button>
+            </form>
 
         </div>
 
@@ -2184,25 +2122,41 @@ document.addEventListener('DOMContentLoaded', function () {
         />
 
 
-        ${points.map(function(point) {
+        ${points.map(function(point, index) {
+
+            const jour = labels[index] ?? '';
+            const libelle = `${jour} : ${point.value} opération${point.value > 1 ? 's' : ''}`;
 
             return `
 
-                <circle
-                    cx="${point.x}"
-                    cy="${point.y}"
-                    r="6"
-                    fill="#FFFFFF"
-                    stroke="#F0E535"
-                    stroke-width="3"
-                />
+                <g>
 
-                <circle
-                    cx="${point.x}"
-                    cy="${point.y}"
-                    r="2.5"
-                    fill="#30C31A"
-                />
+                    <title>${libelle}</title>
+
+                    <circle
+                        cx="${point.x}"
+                        cy="${point.y}"
+                        r="10"
+                        fill="transparent"
+                    />
+
+                    <circle
+                        cx="${point.x}"
+                        cy="${point.y}"
+                        r="6"
+                        fill="#FFFFFF"
+                        stroke="#F0E535"
+                        stroke-width="3"
+                    />
+
+                    <circle
+                        cx="${point.x}"
+                        cy="${point.y}"
+                        r="2.5"
+                        fill="#30C31A"
+                    />
+
+                </g>
 
             `;
 

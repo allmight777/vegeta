@@ -35,10 +35,19 @@ class AgentController extends Controller
     {
         $agences = $this->agencesVisibles();
 
+        $recherche = trim((string) $request->string('q'));
+
         $agents = Agent::with('agence.reseau')
             ->whereIn('agence_id', $agences->pluck('id'))
             ->when($request->filled('agence_id'), fn ($q) => $q->where('agence_id', $request->integer('agence_id')))
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->string('role')))
+            ->when($recherche !== '', function ($query) use ($recherche) {
+                $query->where(function ($query) use ($recherche) {
+                    $query->where('nom', 'like', "%{$recherche}%")
+                        ->orWhere('matricule', 'like', "%{$recherche}%")
+                        ->orWhere('email', 'like', "%{$recherche}%");
+                });
+            })
             ->orderBy('nom')
             ->paginate(20)
             ->withQueryString();
@@ -46,6 +55,7 @@ class AgentController extends Controller
         return view('admin.agents.index', [
             'agents' => $agents,
             'agences' => $agences,
+            'recherche' => $recherche,
         ]);
     }
 

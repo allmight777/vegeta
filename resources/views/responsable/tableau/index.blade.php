@@ -229,56 +229,6 @@
     }
 
 
-    .resp-notification {
-
-        width: 40px;
-
-        height: 40px;
-
-        border-radius: 12px;
-
-        border: 1px solid var(--border);
-
-        background: #FFFFFF;
-
-        color: var(--dark);
-
-        display: flex;
-
-        align-items: center;
-
-        justify-content: center;
-
-        cursor: pointer;
-
-        box-shadow: var(--shadow-sm);
-
-        position: relative;
-    }
-
-
-    .resp-notification::after {
-
-        content: "";
-
-        width: 6px;
-
-        height: 6px;
-
-        border-radius: 50%;
-
-        background: var(--danger);
-
-        position: absolute;
-
-        top: 8px;
-
-        right: 8px;
-
-        border: 1px solid #FFFFFF;
-    }
-
-
     /* =========================================================
        HERO — BLEU NUIT COMME LE LAYOUT
     ========================================================= */
@@ -1566,26 +1516,18 @@
 
         <div class="resp-topbar-actions">
 
-            <div class="resp-search">
+            <form method="GET" action="{{ route('responsable.clients.index') }}" class="resp-search">
 
                 <i class="fa-solid fa-magnifying-glass"></i>
 
                 <input
                     type="text"
+                    name="q"
                     placeholder="Rechercher un dossier..."
-                    aria-label="Rechercher"
+                    aria-label="Rechercher un dossier par nom exact"
                 >
 
-            </div>
-
-
-            <button
-                type="button"
-                class="resp-notification"
-                aria-label="Notifications"
-            >
-                <i class="fa-regular fa-bell"></i>
-            </button>
+            </form>
 
         </div>
 

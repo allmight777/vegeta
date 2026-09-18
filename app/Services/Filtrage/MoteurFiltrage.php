@@ -118,7 +118,13 @@ class MoteurFiltrage
     private function creerAlerte(Client|Signataire $cible, EntreeListe $entree, ResultatFiltrage $resultat, float $score, ?GraviteAlerte $graviteForcee = null): void
     {
         $client = $cible instanceof Client ? $cible : $cible->personneMorale->client;
-        $estPpe = in_array($entree->source->value, ['ppe_benin', 'ppe_cedeao'], true);
+
+        // Une entrée est considérée « PPE » si :
+        //   - sa source est explicitement une liste PPE (ppe_benin, ppe_cedeao) ;
+        //   - OU sa catégorie contient « ppe » (cas des listes ONU mixtes
+        //     Sanctions/PPE, où chaque entrée porte sa propre catégorie).
+        $estPpe = in_array($entree->source->value, ['ppe_benin', 'ppe_cedeao'], true)
+            || str_contains(mb_strtolower((string) $entree->categorie), 'ppe');
 
         Alerte::create([
             'type' => $estPpe ? TypeAlerte::FiltragePpe : TypeAlerte::FiltrageSanction,

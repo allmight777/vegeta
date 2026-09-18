@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Responsable\Clients;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Services\Securite\IndexAveugle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -16,17 +17,28 @@ use Illuminate\View\View;
  */
 class ClientController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, IndexAveugle $indexAveugle): View
     {
         $agenceId = Auth::guard('agent')->user()->agence_id;
+        $recherche = trim((string) $request->string('q'));
 
         $clients = Client::deLAgence($agenceId)
             ->with(['personnePhysique', 'personneMorale'])
             ->when($request->boolean('a_completer'), fn ($q) => $q->where('score_completude_kyc', '<', 100))
-            ->orderBy('score_completude_kyc')
-            ->paginate(20);
+            ->when($recherche !== '', function ($query) use ($recherche, $indexAveugle) {
+                $idxNom = $indexAveugle->calculer($recherche, 'nom');
+                $idxRaisonSociale = $indexAveugle->calculer($recherche, 'raison_sociale');
 
-        return view('responsable.clients.index', ['clients' => $clients]);
+                $query->where(function ($query) use ($idxNom, $idxRaisonSociale) {
+                    $query->whereHas('personnePhysique', fn ($q) => $q->where('nom_idx', $idxNom))
+                        ->orWhereHas('personneMorale', fn ($q) => $q->where('raison_sociale_idx', $idxRaisonSociale));
+                });
+            })
+            ->orderBy('score_completude_kyc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('responsable.clients.index', ['clients' => $clients, 'recherche' => $recherche]);
     }
 
     public function afficher(Client $client): View

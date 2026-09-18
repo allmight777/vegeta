@@ -20,10 +20,28 @@ class TableauBordController extends Controller
     {
         $agent = auth('agent')->user();
 
+        $finSemaine = today();
+        $debutSemaine = $finSemaine->copy()->subDays(6);
+
+        $operationsParJour = Operation::where('agence_id', $agent->agence_id)
+            ->whereBetween('effectuee_le', [$debutSemaine->copy()->startOfDay(), $finSemaine->copy()->endOfDay()])
+            ->get()
+            ->groupBy(fn (Operation $operation) => $operation->effectuee_le->toDateString());
+
+        $joursSemaine = [];
+        $operationsSemaine = [];
+
+        for ($jour = $debutSemaine->copy(); $jour->lte($finSemaine); $jour->addDay()) {
+            $joursSemaine[] = $jour->translatedFormat('D');
+            $operationsSemaine[] = $operationsParJour->get($jour->toDateString(), collect())->count();
+        }
+
         return view('agent.tableau.index', [
             'operationsDuJour' => Operation::where('agence_id', $agent->agence_id)
                 ->whereDate('effectuee_le', today())
                 ->count(),
+            'operationsSemaine' => $operationsSemaine,
+            'joursSemaine' => $joursSemaine,
             'clientsACompleter' => Client::with(['personnePhysique', 'personneMorale'])
                 ->where('reseau_id', $contexte->reseauId())
                 ->where('score_completude_kyc', '<', 100)

@@ -820,7 +820,7 @@
     </header>
 
 
-  
+
     <div class="agent-shell">
 
         <aside class="agent-sidebar">
@@ -859,6 +859,8 @@
                     <i class="fa-solid fa-magnifying-glass-chart"></i>
                     <span>Filtrage PPE / sanctions</span>
                 </a>
+
+                
 
                 <a
                     href="{{ route('responsable.assistance.escalades.index') }}"

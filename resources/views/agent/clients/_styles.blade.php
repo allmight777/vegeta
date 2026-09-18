@@ -86,6 +86,62 @@
     }
 
 
+    .clients-toolbar-search {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 9px;
+
+        padding: 8px 14px;
+
+        border-radius: 10px;
+
+        background: var(--background);
+
+        border: 1px solid var(--border);
+
+        min-width: 260px;
+    }
+
+
+    .clients-toolbar-search i {
+
+        font-size: 0.72rem;
+
+        color: var(--muted);
+    }
+
+
+    .clients-toolbar-search input {
+
+        flex: 1;
+
+        border: none;
+
+        background: transparent;
+
+        outline: none;
+
+        font-family: inherit;
+
+        font-size: 0.72rem;
+
+        font-weight: 600;
+
+        color: var(--dark);
+    }
+
+
+    .clients-toolbar-search input::placeholder {
+
+        color: var(--muted-light);
+
+        font-weight: 500;
+    }
+
+
     .filter-link {
 
         display: inline-flex;

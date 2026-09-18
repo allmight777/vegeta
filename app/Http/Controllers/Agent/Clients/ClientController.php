@@ -15,10 +15,12 @@ use App\Models\PersonnePhysique;
 use App\Models\VerificationNpiEnAttente;
 use App\Services\Audit\Consignateur;
 use App\Services\Contexte\ContexteReseau;
+use App\Services\Filtrage\AlertesPpeTempsReel;
 use App\Services\Filtrage\MoteurFiltrage;
 use App\Services\Kyc\CalculateurCompletude;
 use App\Services\Kyc\CreateurClient;
 use App\Services\Kyc\ResolveurStatutNpi;
+use App\Services\Securite\IndexAveugle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,15 +28,27 @@ use Illuminate\View\View;
 
 class ClientController extends Controller
 {
-    public function index(Request $request, ContexteReseau $contexte): View
+    public function index(Request $request, ContexteReseau $contexte, IndexAveugle $indexAveugle): View
     {
+        $recherche = trim((string) $request->string('q'));
+
         $clients = Client::with(['personnePhysique', 'personneMorale'])
             ->where('reseau_id', $contexte->reseauId())
             ->when($request->boolean('a_completer'), fn ($q) => $q->where('score_completude_kyc', '<', 100))
-            ->orderBy('score_completude_kyc')
-            ->paginate(20);
+            ->when($recherche !== '', function ($query) use ($recherche, $indexAveugle) {
+                $idxNom = $indexAveugle->calculer($recherche, 'nom');
+                $idxRaisonSociale = $indexAveugle->calculer($recherche, 'raison_sociale');
 
-        return view('agent.clients.index', ['clients' => $clients]);
+                $query->where(function ($query) use ($idxNom, $idxRaisonSociale) {
+                    $query->whereHas('personnePhysique', fn ($q) => $q->where('nom_idx', $idxNom))
+                        ->orWhereHas('personneMorale', fn ($q) => $q->where('raison_sociale_idx', $idxRaisonSociale));
+                });
+            })
+            ->orderBy('score_completude_kyc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('agent.clients.index', ['clients' => $clients, 'recherche' => $recherche]);
     }
 
     public function creer(): View
@@ -88,8 +102,13 @@ class ClientController extends Controller
         return view('agent.clients.completer', $donnees);
     }
 
-    public function mettreAJour(CompleterClientRequest $request, Client $client, CalculateurCompletude $completude, MoteurFiltrage $moteurFiltrage): RedirectResponse
-    {
+    public function mettreAJour(
+        CompleterClientRequest $request,
+        Client $client,
+        CalculateurCompletude $completude,
+        MoteurFiltrage $moteurFiltrage,
+        AlertesPpeTempsReel $alertesPpeTempsReel,
+    ): RedirectResponse {
         $donnees = $request->validated();
 
         if ($client->type === TypeClient::PersonnePhysique) {
@@ -122,7 +141,22 @@ class ClientController extends Controller
             }
         }
 
+        // Filtrage sanctions/PPE : rejoue le moteur sur le client à jour.
+        // Crée les ResultatFiltrage et Alertes correspondantes si des données ont changé
+        // (nouveau signataire ajouté, nom corrigé, etc.).
         $moteurFiltrage->filtrer($client->fresh());
+
+        // Alerte PPE temps réel : envoie un mail immédiat au responsable de l'agence
+        // si un NOUVEAU cas suspect (score ≥ 85 % sur PPE/Sanctions) est apparu après
+        // cette mise à jour. Le mécanisme est idempotent : un cas déjà détecté et déjà
+        // notifié ne re-déclenche pas de mail (l'alerte existante est simplement ignorée).
+        // Placement après moteurFiltrage->filtrer() — sinon les nouveaux ResultatFiltrage
+        // n'existent pas encore.
+        $alertesPpeTempsReel->notifierSiSuspect($client->fresh([
+            'personnePhysique',
+            'personneMorale.signataires',
+        ]));
+
         $resultat = $completude->evaluer($client->fresh(['personnePhysique', 'personneMorale']));
 
         Consignateur::enregistrer('agent', auth('agent')->id(), 'mise_a_jour_kyc', 'client', $client->id);

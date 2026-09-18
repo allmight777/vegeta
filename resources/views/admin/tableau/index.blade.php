@@ -222,56 +222,6 @@
     }
 
 
-    .notification-button {
-
-        width: 40px;
-
-        height: 40px;
-
-        border-radius: 12px;
-
-        border: 1px solid var(--border);
-
-        background: #FFFFFF;
-
-        color: var(--dark);
-
-        display: flex;
-
-        align-items: center;
-
-        justify-content: center;
-
-        cursor: pointer;
-
-        box-shadow: var(--shadow-sm);
-
-        position: relative;
-    }
-
-
-    .notification-button::after {
-
-        content: "";
-
-        width: 6px;
-
-        height: 6px;
-
-        border-radius: 50%;
-
-        background: var(--green);
-
-        position: absolute;
-
-        top: 8px;
-
-        right: 8px;
-
-        border: 1px solid #FFFFFF;
-    }
-
-
     /* =========================================================
        HERO
     ========================================================= */
@@ -1233,26 +1183,18 @@
 
         <div class="topbar-actions">
 
-            <div class="search-box">
+            <form method="GET" action="{{ route('admin.agents.index') }}" class="search-box">
 
                 <i class="fa-solid fa-magnifying-glass"></i>
 
                 <input
                     type="text"
-                    placeholder="Rechercher..."
-                    aria-label="Rechercher"
+                    name="q"
+                    placeholder="Rechercher un agent..."
+                    aria-label="Rechercher un agent par nom, matricule ou e-mail"
                 >
 
-            </div>
-
-
-            <button
-                type="button"
-                class="notification-button"
-                aria-label="Notifications"
-            >
-                <i class="fa-regular fa-bell"></i>
-            </button>
+            </form>
 
         </div>
 

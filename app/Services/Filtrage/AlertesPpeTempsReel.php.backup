@@ -1,0 +1,165 @@
+<?php
+
+namespace App\Services\Filtrage;
+
+use App\Mail\AlertePpeSuspecteMail;
+use App\Models\Agent;
+use App\Models\Client;
+use App\Models\ResultatFiltrage;
+use App\Models\Signataire;
+use Illuminate\Support\Facades\Mail;
+
+/**
+ * Envoie un mail immédiat au responsable de l'agence de création
+ * quand un client ou signataire ressemble fortement (≥ 85 %) à une
+ * personne figurant sur une liste PPE ou sanctions.
+ *
+ * Ne bloque JAMAIS la création du client : l'échec d'envoi mail est
+ * silencieux (loggé), le client reste créé.
+ */
+class AlertesPpeTempsReel
+{
+    /** Seuil de similarité à partir duquel un mail est envoyé immédiatement. */
+    public const SEUIL_MAIL_IMMEDIAT = 0.85;
+
+    /**
+     * Point d'entrée appelé après MoteurFiltrage::filtrer().
+     * Détecte les correspondances suspectes du client ET de ses signataires,
+     * puis envoie le mail au responsable de l'agence de création.
+     */
+    public function notifierSiSuspect(Client $client): void
+    {
+        $resultats = $this->resultatsSuspects($client);
+
+        if ($resultats->isEmpty()) {
+            return;
+        }
+
+        $responsables = $this->responsablesDeLAgence($client->agence_creation_id);
+
+        if ($responsables->isEmpty()) {
+            logger()->info('Alerte PPE : aucun responsable avec email pour cette agence', [
+                'client_id' => $client->id,
+                'agence_id' => $client->agence_creation_id,
+            ]);
+
+            return;
+        }
+
+        $correspondances = $resultats->map(fn ($r) => [
+            'nom_liste' => $this->masquer($r->entreeListe->nom),
+            'source' => $r->entreeListe->source->libelle(),
+            'categorie' => $r->entreeListe->categorie,
+            'score' => (int) round($r->score_similarite * 100),
+        ])->all();
+
+        foreach ($responsables as $responsable) {
+            try {
+                Mail::to($responsable->email)->queue(new AlertePpeSuspecteMail(
+                    responsableNom: $responsable->nom,
+                    clientNom: $client->nomAffichage(),
+                    contexte: $this->determinerContexte($client),
+                    correspondances: $correspondances,
+                    lienFiltrage: route('responsable.filtrage.index'),
+                ));
+
+                logger()->info('Alerte PPE : mail mis en queue', [
+                    'client_id' => $client->id,
+                    'responsable_email' => $responsable->email,
+                    'nb_correspondances' => count($correspondances),
+                ]);
+            } catch (\Throwable $e) {
+                logger()->warning('Échec mail alerte PPE immédiate', [
+                    'client_id' => $client->id,
+                    'responsable_id' => $responsable->id,
+                    'erreur' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Récupère les résultats de filtrage suspects sur le client ET ses signataires.
+     * Ne dépend PAS du champ statut_ppe du client : se base uniquement sur les
+     * ResultatFiltrage dont le score ≥ seuil et dont la catégorie de liste
+     * correspond à PPE ou Sanctions.
+     */
+    private function resultatsSuspects(Client $client): \Illuminate\Support\Collection
+    {
+        // IDs des entrées de liste PPE ou Sanctions
+        $entreeIds = \App\Models\EntreeListe::query()
+            ->where(function ($q) {
+                $q->where('categorie', 'like', '%PPE%')
+                    ->orWhere('categorie', 'like', '%Sanction%');
+            })
+            ->pluck('id')
+            ->all();
+
+        if (empty($entreeIds)) {
+            return collect();
+        }
+
+        // Résultats sur le client lui-même
+        $surClient = ResultatFiltrage::query()
+            ->with('entreeListe')
+            ->where('statut', 'a_verifier')
+            ->where('score_similarite', '>=', self::SEUIL_MAIL_IMMEDIAT)
+            ->where('filtrable_type', Client::class)
+            ->where('filtrable_id', $client->id)
+            ->whereIn('entree_liste_id', $entreeIds)
+            ->get();
+
+        // Résultats sur les signataires de la personne morale
+        $signataireIds = $client->personneMorale?->signataires->pluck('id')->all() ?? [];
+
+        $surSignataires = empty($signataireIds)
+            ? collect()
+            : ResultatFiltrage::query()
+                ->with('entreeListe')
+                ->where('statut', 'a_verifier')
+                ->where('score_similarite', '>=', self::SEUIL_MAIL_IMMEDIAT)
+                ->where('filtrable_type', Signataire::class)
+                ->whereIn('filtrable_id', $signataireIds)
+                ->whereIn('entree_liste_id', $entreeIds)
+                ->get();
+
+        return $surClient->merge($surSignataires);
+    }
+
+    /**
+     * Récupère tous les responsables actifs avec email pour une agence.
+     */
+    private function responsablesDeLAgence(?string $agenceId): \Illuminate\Support\Collection
+    {
+        if ($agenceId === null) {
+            return collect();
+        }
+
+        return Agent::where('agence_id', $agenceId)
+            ->where('role', 'responsable_agence')
+            ->where('actif', true)
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get();
+    }
+
+    private function determinerContexte(Client $client): string
+    {
+        if ($client->type->value === 'personne_morale') {
+            return 'Nouvelle personne morale — signataire(s) à vérifier';
+        }
+
+        return 'Nouveau client personne physique';
+    }
+
+    /**
+     * Initiales seules — on ne divulgue pas le nom complet d'une personne
+     * listée non confirmée (protection des données).
+     */
+    private function masquer(string $nom): string
+    {
+        return collect(preg_split('/\s+/', trim($nom)))
+            ->map(fn (string $mot) => mb_substr($mot, 0, 1).'.')
+            ->implode(' ');
+    }
+}

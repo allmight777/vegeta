@@ -4,7 +4,6 @@
 
 @section('sous-titre', 'Créez une nouvelle fiche client et complétez les informations KYC.')
 
-
 @section('contenu')
 
 <style>
@@ -35,17 +34,12 @@
         --danger: #DC2626;
         --danger-soft: rgba(220, 38, 38, 0.08);
 
-        --shadow-sm:
-            0 4px 15px rgba(44, 52, 61, 0.04);
-
-        --shadow:
-            0 12px 35px rgba(44, 52, 61, 0.07);
+        --shadow-sm: 0 4px 15px rgba(44, 52, 61, 0.04);
+        --shadow: 0 12px 35px rgba(44, 52, 61, 0.07);
 
         font-family: 'Plus Jakarta Sans', sans-serif;
 
         width: 100%;
-
-        max-width: 100%;
 
         display: flex;
 
@@ -55,9 +49,7 @@
     }
 
 
-    /* =========================================================
-       EN-TÊTE DE PAGE
-    ========================================================= */
+    /* HERO */
 
     .fiche-hero {
 
@@ -71,13 +63,7 @@
 
         border-radius: 20px;
 
-        background:
-            linear-gradient(
-                135deg,
-                #2C343D 0%,
-                #3A4650 65%,
-                #303A43 100%
-            );
+        background: linear-gradient(135deg, #2C343D 0%, #3A4650 65%, #303A43 100%);
 
         position: relative;
 
@@ -175,9 +161,7 @@
     }
 
 
-    /* =========================================================
-       ALERTE ERREURS
-    ========================================================= */
+    /* ALERTE ERREURS */
 
     .fiche-alert {
 
@@ -259,9 +243,7 @@
     }
 
 
-    /* =========================================================
-       FORMULAIRE PRINCIPAL
-    ========================================================= */
+    /* FORMULAIRE PRINCIPAL */
 
     .fiche-form {
 
@@ -275,9 +257,7 @@
     }
 
 
-    /* =========================================================
-       SECTION PLIABLE
-    ========================================================= */
+    /* SECTION PLIABLE */
 
     .fiche-section {
 
@@ -291,9 +271,7 @@
 
         box-shadow: var(--shadow-sm);
 
-        transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
 
@@ -301,8 +279,7 @@
 
         border-color: rgba(240, 229, 53, 0.45);
 
-        box-shadow:
-            0 10px 28px rgba(44, 52, 61, 0.06);
+        box-shadow: 0 10px 28px rgba(44, 52, 61, 0.06);
     }
 
 
@@ -388,8 +365,7 @@
 
         display: grid;
 
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
 
         gap: 16px;
     }
@@ -401,9 +377,7 @@
     }
 
 
-    /* =========================================================
-       CHAMPS
-    ========================================================= */
+    /* CHAMPS */
 
     .champ-fiche {
 
@@ -417,6 +391,12 @@
 
     .champ-fiche-label {
 
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 7px;
+
         font-size: 0.62rem;
 
         font-weight: 800;
@@ -429,11 +409,19 @@
     }
 
 
+    .champ-fiche-label i {
+
+        color: var(--muted);
+
+        font-size: 0.72rem;
+    }
+
+
     .champ-fiche-label .obligatoire {
 
         color: var(--danger);
 
-        margin-left: 3px;
+        margin-left: 2px;
     }
 
 
@@ -463,10 +451,7 @@
 
         outline: none;
 
-        transition:
-            border-color 0.2s ease,
-            background 0.2s ease,
-            box-shadow 0.2s ease;
+        transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     }
 
 
@@ -496,8 +481,7 @@
 
         background: #FFFFFF;
 
-        box-shadow:
-            0 0 0 3px rgba(240, 229, 53, 0.18);
+        box-shadow: 0 0 0 3px rgba(240, 229, 53, 0.18);
     }
 
 
@@ -510,9 +494,7 @@
     }
 
 
-    /* =========================================================
-       FORMULAIRE INCLUS (_formulaire)
-    ========================================================= */
+    /* FORMULAIRE INCLUS (_formulaire) */
 
     .fiche-formulaire-page fieldset,
     .fiche-formulaire-page .fiche-groupe {
@@ -621,8 +603,7 @@
 
         display: grid;
 
-        grid-template-columns:
-            repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
 
         gap: 16px;
     }
@@ -636,8 +617,351 @@
 
 
     /* =========================================================
-       ACTIONS / BOUTON
+       RÉCAPITULATIF AVANT CONFIRMATION
     ========================================================= */
+
+    .recap-card {
+
+        background: #FFFFFF;
+
+        border: 1px solid rgba(240, 229, 53, 0.45);
+
+        border-radius: 18px;
+
+        overflow: hidden;
+
+        box-shadow: var(--shadow-sm);
+
+        width: 100%;
+    }
+
+
+    .recap-head {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        padding: 18px 22px;
+
+        background: linear-gradient(180deg, #FFFDF7 0%, #FFFFFF 100%);
+
+        border-bottom: 1px solid var(--border);
+    }
+
+
+    .recap-head-icon {
+
+        width: 38px;
+
+        height: 38px;
+
+        flex-shrink: 0;
+
+        border-radius: 11px;
+
+        background: var(--yellow-soft);
+
+        border: 1px solid rgba(240, 229, 53, 0.30);
+
+        color: #A08F00;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 0.88rem;
+    }
+
+
+    .recap-head-text {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 2px;
+    }
+
+
+    .recap-head-text strong {
+
+        color: var(--dark);
+
+        font-size: 0.86rem;
+
+        font-weight: 800;
+
+        letter-spacing: -0.2px;
+    }
+
+
+    .recap-head-text span {
+
+        color: var(--muted);
+
+        font-size: 0.62rem;
+
+        font-weight: 500;
+    }
+
+
+    .recap-body {
+
+        padding: 20px 22px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 18px;
+    }
+
+
+    /* SECTION DANS LE RÉCAP */
+
+    .recap-section {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 10px;
+    }
+
+
+    .recap-section-titre {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        font-size: 0.6rem;
+
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.6px;
+
+        color: var(--dark);
+
+        padding-bottom: 8px;
+
+        border-bottom: 1px solid var(--border);
+    }
+
+
+    .recap-section-titre i {
+
+        color: var(--yellow);
+
+        font-size: 0.7rem;
+
+    }
+
+
+    .recap-grid {
+
+        display: grid;
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        gap: 10px 20px;
+    }
+
+
+    .recap-item {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 3px;
+
+        min-width: 0;
+    }
+
+
+    .recap-item.pleine-largeur {
+
+        grid-column: 1 / -1;
+    }
+
+
+    .recap-item-label {
+
+        font-size: 0.56rem;
+
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.6px;
+
+        color: var(--muted-light);
+    }
+
+
+    .recap-item-value {
+
+        color: var(--dark);
+
+        font-size: 0.78rem;
+
+        font-weight: 700;
+
+        letter-spacing: -0.2px;
+
+        word-wrap: break-word;
+
+        overflow-wrap: anywhere;
+    }
+
+
+    .recap-item-value.vide {
+
+        color: var(--muted-light);
+
+        font-style: italic;
+
+        font-weight: 500;
+    }
+
+
+    /* BANDEAU SIMULATION DÉPÔT */
+
+    .recap-depot {
+
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 12px;
+
+        padding: 14px 16px;
+
+        border-radius: 12px;
+
+        font-size: 0.74rem;
+
+        font-weight: 600;
+
+        line-height: 1.55;
+    }
+
+
+    .recap-depot.ok {
+
+        background: var(--green-soft);
+
+        border: 1px solid rgba(48, 195, 26, 0.20);
+
+        color: #238E15;
+    }
+
+
+    .recap-depot.alerte {
+
+        background: #FEF2F2;
+
+        border: 1px solid #FECACA;
+
+        color: var(--danger);
+    }
+
+
+    .recap-depot.neutre {
+
+        background: var(--background);
+
+        border: 1px solid var(--border);
+
+        color: var(--muted);
+    }
+
+
+    .recap-depot-icon {
+
+        width: 32px;
+
+        height: 32px;
+
+        flex-shrink: 0;
+
+        border-radius: 10px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 0.85rem;
+    }
+
+
+    .recap-depot.ok .recap-depot-icon {
+
+        background: rgba(48, 195, 26, 0.14);
+
+        color: var(--green);
+    }
+
+
+    .recap-depot.alerte .recap-depot-icon {
+
+        background: rgba(220, 38, 38, 0.10);
+
+        color: var(--danger);
+    }
+
+
+    .recap-depot.neutre .recap-depot-icon {
+
+        background: var(--background);
+
+        color: var(--muted-light);
+    }
+
+
+    .recap-depot-body {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 3px;
+
+        min-width: 0;
+
+        flex: 1;
+    }
+
+
+    .recap-depot-titre {
+
+        font-weight: 800;
+
+        letter-spacing: -0.2px;
+    }
+
+
+    .recap-depot-texte {
+
+        font-weight: 500;
+
+        opacity: 0.9;
+    }
+
+
+    /* ACTIONS */
 
     .fiche-actions {
 
@@ -683,13 +1007,9 @@
 
         text-decoration: none;
 
-        box-shadow:
-            0 8px 20px rgba(240, 229, 53, 0.30);
+        box-shadow: 0 8px 20px rgba(240, 229, 53, 0.30);
 
-        transition:
-            background 0.2s ease,
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
+        transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 
         width: 100%;
     }
@@ -709,8 +1029,7 @@
 
         transform: translateY(-2px);
 
-        box-shadow:
-            0 12px 26px rgba(240, 229, 53, 0.36);
+        box-shadow: 0 12px 26px rgba(240, 229, 53, 0.36);
     }
 
 
@@ -726,16 +1045,35 @@
     }
 
 
-    /* =========================================================
-       RESPONSIVE
-    ========================================================= */
+    .btn-primary.retour {
+
+        background: #FFFFFF;
+
+        color: var(--dark);
+
+        border: 1px solid var(--border);
+
+        box-shadow: none;
+    }
+
+
+    .btn-primary.retour:hover {
+
+        background: var(--background);
+
+        transform: translateY(-1px);
+
+        box-shadow: 0 6px 15px rgba(44, 52, 61, 0.06);
+    }
+
+
+    /* RESPONSIVE */
 
     @media (max-width: 1100px) {
 
         .fiche-formulaire-page .fiche-groupe-corps {
 
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
@@ -762,6 +1100,12 @@
             grid-template-columns: 1fr;
 
             padding: 14px 16px 18px;
+        }
+
+
+        .recap-grid {
+
+            grid-template-columns: 1fr;
         }
 
 
@@ -814,9 +1158,7 @@
 >
 
 
-    {{-- =====================================================
-         HERO
-    ====================================================== --}}
+    {{-- HERO --}}
 
     <div class="fiche-hero">
 
@@ -844,9 +1186,7 @@
 
 
 
-    {{-- =====================================================
-         ERREURS
-    ====================================================== --}}
+    {{-- ERREURS --}}
 
     @if ($errors->any())
 
@@ -883,9 +1223,7 @@
 
 
 
-    {{-- =====================================================
-         FORMULAIRE
-    ====================================================== --}}
+    {{-- FORMULAIRE --}}
 
     <form
         method="POST"
@@ -897,13 +1235,10 @@
         @csrf
 
 
-        {{-- =================================================
-             ÉTAPE 1 : SAISIE
-        ================================================== --}}
+        {{-- ÉTAPE 1 : SAISIE --}}
 
         <div x-show="etape === 'saisie'">
 
-            {{-- TYPE DE CLIENT --}}
 
             <details class="fiche-section" open>
 
@@ -917,12 +1252,14 @@
 
                     <div class="champ-fiche">
 
-                        <label
-                            class="champ-fiche-label"
-                            for="type"
-                        >
+                        <label class="champ-fiche-label" for="type">
+
+                            <i class="fa-solid fa-user-tag"></i>
+
                             Type de client
+
                             <span class="obligatoire">*</span>
+
                         </label>
 
 
@@ -948,12 +1285,14 @@
 
                     <div class="champ-fiche">
 
-                        <label
-                            class="champ-fiche-label"
-                            for="nature_relation"
-                        >
+                        <label class="champ-fiche-label" for="nature_relation">
+
+                            <i class="fa-solid fa-handshake"></i>
+
                             Nature de la relation
+
                             <span class="obligatoire">*</span>
+
                         </label>
 
 
@@ -981,41 +1320,25 @@
             </details>
 
 
-            {{-- FORMULAIRE PERSONNE PHYSIQUE --}}
+            <div x-show="type === 'personne_physique'" x-cloak>
 
-            <div
-                x-show="type === 'personne_physique'"
-                x-cloak
-            >
-
-                @include(
-                    'agent.clients._formulaire',
-                    [
-                        'type' => 'personne_physique',
-                        'valeurs' => old()
-                    ]
-                )
+                @include('agent.clients._formulaire', [
+                    'type' => 'personne_physique',
+                    'valeurs' => old()
+                ])
 
             </div>
 
 
-            {{-- FORMULAIRE PERSONNE MORALE --}}
+            <div x-show="type === 'personne_morale'" x-cloak>
 
-            <div
-                x-show="type === 'personne_morale'"
-                x-cloak
-            >
-
-                @include(
-                    'agent.clients._formulaire',
-                    [
-                        'type' => 'personne_morale',
-                        'valeurs' => old(),
-                        'repetables' => [
-                            'signataires' => old('signataires', [])
-                        ]
+                @include('agent.clients._formulaire', [
+                    'type' => 'personne_morale',
+                    'valeurs' => old(),
+                    'repetables' => [
+                        'signataires' => old('signataires', [])
                     ]
-                )
+                ])
 
             </div>
 
@@ -1023,30 +1346,52 @@
 
 
 
-        {{-- =================================================
-             ÉTAPE 2 : RÉCAPITULATIF AVANT CONFIRMATION
-        ================================================== --}}
+        {{-- ÉTAPE 2 : RÉCAPITULATIF --}}
 
-        <div
-            x-show="etape === 'recap'"
-            x-cloak
-            class="fiche-section"
-            style="border-color: rgba(240, 229, 53, 0.45);"
-        >
+        <div x-show="etape === 'recap'" x-cloak>
 
-            <div style="padding: 16px 22px; font-weight: 800; color: var(--dark); font-size: 0.82rem;">
-                Récapitulatif avant enregistrement
+
+            <div class="recap-card">
+
+
+                <div class="recap-head">
+
+                    <div class="recap-head-icon">
+
+                        <i class="fa-solid fa-clipboard-check"></i>
+
+                    </div>
+
+
+                    <div class="recap-head-text">
+
+                        <strong>
+                            Récapitulatif avant enregistrement
+                        </strong>
+
+                        <span>
+                            Vérifiez les informations saisies avant de confirmer l'inscription.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="recap-body" id="recap-contenu">
+
+                    {{-- Rempli par Alpine / JS --}}
+
+                </div>
+
+
             </div>
-
-            <div id="recap-simulation-depot" class="fiche-section-corps" style="display: block;"></div>
 
         </div>
 
 
 
-        {{-- =================================================
-             ACTIONS
-        ================================================== --}}
+        {{-- ACTIONS --}}
 
         <div class="fiche-actions">
 
@@ -1065,20 +1410,23 @@
 
             </button>
 
+
             <button
                 type="button"
-                class="btn-primary"
+                class="btn-primary retour"
                 x-show="etape === 'recap'"
                 x-cloak
-                style="background: #FFFFFF; color: var(--dark); border: 1px solid var(--border); box-shadow: none;"
                 @click="etape = 'saisie'"
             >
+
+                <i class="fa-solid fa-arrow-left"></i>
 
                 <span>
                     Retour
                 </span>
 
             </button>
+
 
             <button
                 type="submit"
@@ -1100,40 +1448,123 @@
 
     </form>
 
-
 </div>
 
 
-<style>
-    .recap-ligne {
-        margin: 0 0 10px;
-        font-size: 0.78rem;
-        color: var(--text);
-    }
-
-    .recap-ok {
-        color: #15803D;
-        font-weight: 700;
-    }
-
-    .recap-alerte {
-        color: var(--danger);
-        font-weight: 700;
-    }
-</style>
 
 <script>
-    // Construit le récapitulatif à partir des champs déjà saisis (aucun aller-retour
-    // serveur) + du résultat de la simulation de dépôt mis en cache au blur du téléphone
-    // (window.__resultatSimulationDepot, voir _formulaire.blade.php). Le formulaire
-    // personne physique et le formulaire personne morale utilisent les mêmes "name"
-    // (ex. "telephone") : un seul est visible à la fois, on ne lit donc que le champ
-    // visible pour éviter de lire par erreur celui de l'autre type, resté dans le DOM.
+
+    /* =========================================================
+       RÉCAPITULATIF AVANT CONFIRMATION
+    ========================================================= */
+
+    // Champs à afficher dans le récap, groupés par section.
+    // Chaque entrée : [name HTML, libellé, icône FA, full-width ?]
+    const RECAP_SECTIONS = [
+        {
+            titre: 'Type de client',
+            icone: 'fa-user-tag',
+            champs: [
+                { name: 'type', label: 'Type de client', icone: 'fa-user-tag', type: 'select' },
+                { name: 'nature_relation', label: 'Nature de la relation', icone: 'fa-handshake', type: 'select' },
+            ],
+        },
+        {
+            titre: 'Identification',
+            icone: 'fa-id-card',
+            champs: [
+                { name: 'nom', label: 'Nom', icone: 'fa-user' },
+                { name: 'prenoms', label: 'Prénoms', icone: 'fa-signature' },
+                { name: 'date_naissance', label: 'Date de naissance', icone: 'fa-calendar', type: 'date' },
+                { name: 'sexe', label: 'Sexe', icone: 'fa-venus-mars', type: 'select' },
+                { name: 'lieu_naissance', label: 'Lieu de naissance', icone: 'fa-location-dot' },
+                { name: 'type_piece_identite', label: 'Type de pièce', icone: 'fa-id-badge', type: 'select' },
+                { name: 'numero_piece_identite', label: 'N° de pièce', icone: 'fa-hashtag' },
+                { name: 'npi', label: 'NPI', icone: 'fa-fingerprint' },
+                { name: 'date_expiration_piece', label: 'Expiration pièce', icone: 'fa-calendar-xmark', type: 'date' },
+                { name: 'methode_validation', label: 'Méthode de validation', icone: 'fa-circle-check', type: 'select' },
+            ],
+        },
+        {
+            titre: 'Coordonnées',
+            icone: 'fa-address-book',
+            champs: [
+                { name: 'telephone', label: 'Téléphone', icone: 'fa-phone' },
+                { name: 'email', label: 'Email', icone: 'fa-envelope' },
+                { name: 'adresse', label: 'Adresse', icone: 'fa-house', full: true },
+                { name: 'domicile', label: 'Domicile', icone: 'fa-house-user' },
+                { name: 'lot', label: 'Lot', icone: 'fa-map-pin' },
+                { name: 'maison', label: 'Maison', icone: 'fa-house-chimney' },
+                { name: 'quartier', label: 'Quartier', icone: 'fa-map' },
+                { name: 'indication_maison', label: 'Indication maison', icone: 'fa-comment-dots' },
+                { name: 'indication_lieu_travail', label: 'Lieu de travail', icone: 'fa-briefcase' },
+            ],
+        },
+        {
+            titre: 'Filiation et situation',
+            icone: 'fa-people-roof',
+            champs: [
+                { name: 'pere', label: 'Père', icone: 'fa-user-tie' },
+                { name: 'mere', label: 'Mère', icone: 'fa-user-nurse' },
+                { name: 'conjoint', label: 'Conjoint(e)', icone: 'fa-heart' },
+                { name: 'statut_matrimonial', label: 'Statut matrimonial', icone: 'fa-ring', type: 'select' },
+                { name: 'nationalite', label: 'Nationalité', icone: 'fa-flag' },
+                { name: 'employeur', label: 'Employeur', icone: 'fa-building' },
+            ],
+        },
+        {
+            titre: 'Activité économique',
+            icone: 'fa-chart-line',
+            champs: [
+                { name: 'profession', label: 'Profession', icone: 'fa-user-gear' },
+                { name: 'ifu', label: 'IFU', icone: 'fa-hashtag' },
+                { name: 'rccm', label: 'N° RCCM', icone: 'fa-file-contract' },
+                { name: 'activite_1', label: 'Activité 1', icone: 'fa-briefcase' },
+                { name: 'activite_2', label: 'Activité 2', icone: 'fa-briefcase' },
+                { name: 'revenus_mensuels_estimes', label: 'Revenus mensuels estimés', icone: 'fa-coins' },
+            ],
+        },
+        {
+            titre: 'Versements initiaux',
+            icone: 'fa-money-bill-wave',
+            champs: [
+                { name: 'droit_adhesion', label: 'Droit d\'adhésion', icone: 'fa-receipt' },
+                { name: 'part_sociale', label: 'Part sociale', icone: 'fa-pie-chart' },
+                { name: 'depot_especes', label: 'Dépôt espèces', icone: 'fa-money-bill' },
+                { name: 'total_versements_initiaux', label: 'Total versements initiaux', icone: 'fa-calculator' },
+            ],
+        },
+        {
+            titre: 'Signatures',
+            icone: 'fa-signature',
+            champs: [
+                { name: 'signature_responsable_nom', label: 'Nom du responsable', icone: 'fa-user-shield' },
+                { name: 'signature_responsable_fonction', label: 'Fonction du responsable', icone: 'fa-id-badge' },
+                { name: 'signature_responsable_date', label: 'Date signature', icone: 'fa-calendar', type: 'date' },
+            ],
+        },
+        {
+            titre: 'Personne morale (si applicable)',
+            icone: 'fa-building',
+            champs: [
+                { name: 'raison_sociale', label: 'Raison sociale', icone: 'fa-building-columns', full: true },
+                { name: 'forme_juridique', label: 'Forme juridique', icone: 'fa-sitemap', type: 'select' },
+                { name: 'date_creation', label: 'Date de création', icone: 'fa-calendar', type: 'date' },
+                { name: 'beneficiaire_effectif_texte', label: 'Bénéficiaire effectif', icone: 'fa-user-secret', full: true },
+            ],
+        },
+    ];
+
+
+    /* Récupère l'élément input visible pour un name donné (ignore l'autre type). */
     function champVisible(nom) {
+
         const elements = document.querySelectorAll(`[name="${nom}"]`);
 
         for (const element of elements) {
+
             if (element.offsetParent !== null) {
+
                 return element;
             }
         }
@@ -1141,52 +1572,184 @@
         return null;
     }
 
-    function normaliserNom(valeur) {
-        return (valeur ?? '')
-            .toUpperCase()
-            .normalize('NFD')
-            .replace(/[̀-ͯ]/g, '')
-            .replace(/[^A-Z ]/g, '')
-            .trim();
+
+    /* Lit la valeur affichable d'un champ (texte pour input/textarea, libellé pour select). */
+    function lireValeur(champ) {
+
+        if (! champ) {
+
+            return null;
+        }
+
+
+        if (champ.tagName === 'SELECT') {
+
+            const option = champ.options[champ.selectedIndex];
+
+            return option && option.value !== '' ? option.text.trim() : null;
+        }
+
+
+        if (champ.type === 'file') {
+
+            return champ.files?.[0]?.name ?? null;
+        }
+
+
+        const valeur = (champ.value ?? '').trim();
+
+        return valeur === '' ? null : valeur;
     }
 
+
+    /* Échappe le HTML pour éviter toute injection depuis un champ. */
     function echapper(valeur) {
+
         const div = document.createElement('div');
+
         div.textContent = valeur ?? '';
+
         return div.innerHTML;
     }
 
+
+    /* Construit le HTML d'une section du récap. */
+    function construireSection(section) {
+
+        const items = section.champs.map(champ => {
+
+            const element = champVisible(champ.name);
+
+            const valeur = lireValeur(element);
+
+            const classe = valeur === null ? 'recap-item-value vide' : 'recap-item-value';
+
+            const texte = valeur === null ? 'Non renseigné' : echapper(valeur);
+
+            return `
+                <div class="recap-item ${champ.full ? 'pleine-largeur' : ''}">
+                    <span class="recap-item-label">
+                        ${echapper(champ.label)}
+                    </span>
+                    <span class="${classe}">
+                        ${texte}
+                    </span>
+                </div>
+            `;
+        }).join('');
+
+
+        return `
+            <div class="recap-section">
+                <div class="recap-section-titre">
+                    <i class="fa-solid ${section.icone}"></i>
+                    ${echapper(section.titre)}
+                </div>
+                <div class="recap-grid">
+                    ${items}
+                </div>
+            </div>
+        `;
+    }
+
+
+    /* Construit le bandeau de simulation dépôt mobile money. */
+    function construireBandeauDepot() {
+
+        const telephone = champVisible('telephone')?.value?.trim() ?? '';
+
+        const resultat = window.__resultatSimulationDepot;
+
+
+        if (! telephone) {
+
+            return `
+                <div class="recap-depot neutre">
+                    <div class="recap-depot-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <div class="recap-depot-body">
+                        <span class="recap-depot-titre">Aucun numéro de téléphone saisi</span>
+                        <span class="recap-depot-texte">La simulation de dépôt mobile money sera ignorée.</span>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        if (! resultat || ! resultat.trouve) {
+
+            return `
+                <div class="recap-depot neutre">
+                    <div class="recap-depot-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <div class="recap-depot-body">
+                        <span class="recap-depot-titre">Numéro non reconnu dans l'annuaire simulé</span>
+                        <span class="recap-depot-texte">Aucune vérification de titulaire possible pour ${echapper(telephone)}.</span>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        const nomSaisi = [champVisible('prenoms')?.value, champVisible('nom')?.value]
+            .filter(Boolean).join(' ').trim();
+
+        const normaliser = (v) => (v ?? '').toUpperCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z ]/g, '').trim();
+
+        const correspond = normaliser(nomSaisi) === normaliser(resultat.nom_titulaire);
+
+
+        if (correspond) {
+
+            return `
+                <div class="recap-depot ok">
+                    <div class="recap-depot-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="recap-depot-body">
+                        <span class="recap-depot-titre">Correspondance vérifiée</span>
+                        <span class="recap-depot-texte">
+                            Titulaire simulé : <strong>${echapper(resultat.nom_titulaire)}</strong>
+                            — opérateur ${echapper(resultat.operateur_libelle ?? 'inconnu')}.
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        return `
+            <div class="recap-depot alerte">
+                <div class="recap-depot-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="recap-depot-body">
+                    <span class="recap-depot-titre">Nom différent du titulaire simulé</span>
+                    <span class="recap-depot-texte">
+                        Le nom saisi ne correspond pas au titulaire du numéro ${echapper(telephone)}.
+                        Titulaire simulé : <strong>${echapper(resultat.nom_titulaire)}</strong>.
+                        Le responsable d'agence sera alerté.
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
+
+    /* Affiche le récapitulatif complet. */
     window.afficherRecapitulatif = function () {
-        const conteneur = document.getElementById('recap-simulation-depot');
-        if (!conteneur) {
+
+        const conteneur = document.getElementById('recap-contenu');
+
+        if (! conteneur) {
+
             return;
         }
 
-        const nom = champVisible('nom')?.value?.trim() ?? '';
-        const prenoms = champVisible('prenoms')?.value?.trim() ?? '';
-        const raisonSociale = champVisible('raison_sociale')?.value?.trim() ?? '';
-        const nomSaisi = [prenoms, nom].filter(Boolean).join(' ').trim() || raisonSociale;
-        const telephone = champVisible('telephone')?.value?.trim() ?? '';
-        const resultat = window.__resultatSimulationDepot;
 
-        let contenu = `<p class="recap-ligne pleine-largeur"><strong>Client :</strong> ${echapper(nomSaisi) || '—'}</p>`;
+        const sections = RECAP_SECTIONS.map(construireSection).join('');
 
-        if (!telephone) {
-            contenu += '<p class="recap-ligne pleine-largeur">Aucun numéro de téléphone saisi — pas de simulation de dépôt possible.</p>';
-        } else if (!resultat || !resultat.trouve) {
-            contenu += `<p class="recap-ligne pleine-largeur"><strong>Téléphone :</strong> ${echapper(telephone)} — numéro non reconnu dans l'annuaire mobile money simulé.</p>`;
-        } else {
-            const correspond = normaliserNom(nomSaisi) === normaliserNom(resultat.nom_titulaire);
+        const bandeau = construireBandeauDepot();
 
-            contenu += `<p class="recap-ligne pleine-largeur"><strong>Téléphone :</strong> ${echapper(telephone)} (${echapper(resultat.operateur_libelle ?? 'opérateur inconnu')})</p>`;
-            contenu += `<p class="recap-ligne pleine-largeur"><strong>Titulaire simulé du dépôt :</strong> ${echapper(resultat.nom_titulaire)}</p>`;
-            contenu += correspond
-                ? '<p class="recap-ligne pleine-largeur recap-ok">Le nom saisi correspond au titulaire simulé.</p>'
-                : '<p class="recap-ligne pleine-largeur recap-alerte">Le nom saisi ne correspond pas au titulaire simulé du dépôt — vérifiez l\'identité avant de confirmer. Le responsable d\'agence sera alerté.</p>';
-        }
 
-        conteneur.innerHTML = contenu;
+        conteneur.innerHTML = bandeau + sections;
     };
+
 </script>
 
 @endsection

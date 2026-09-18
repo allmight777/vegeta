@@ -36,6 +36,24 @@
 
         </div>
 
+        <form method="GET" action="{{ route('responsable.clients.index') }}" class="clients-toolbar-search">
+
+            @if (request('a_completer'))
+                <input type="hidden" name="a_completer" value="1">
+            @endif
+
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input
+                type="text"
+                name="q"
+                value="{{ $recherche }}"
+                placeholder="Nom exact du client ou raison sociale..."
+                aria-label="Rechercher un dossier"
+            >
+
+        </form>
+
     </div>
 
     @if ($clients->count())
@@ -119,11 +137,19 @@
             </div>
 
             <strong>
-                Aucun client pour le moment dans cette agence
+                @if ($recherche !== '')
+                    Aucun client ne correspond à « {{ $recherche }} »
+                @else
+                    Aucun client pour le moment dans cette agence
+                @endif
             </strong>
 
             <span>
-                Les nouveaux dossiers apparaîtront ici dès qu'un caissier les aura créés.
+                @if ($recherche !== '')
+                    La recherche porte sur le nom exact (ou la raison sociale exacte) du dossier — vérifiez l'orthographe.
+                @else
+                    Les nouveaux dossiers apparaîtront ici dès qu'un caissier les aura créés.
+                @endif
             </span>
 
         </div>

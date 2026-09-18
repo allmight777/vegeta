@@ -53,6 +53,24 @@
 
             </span>
 
+            <form method="GET" action="{{ route('agent.clients.index') }}" class="clients-toolbar-search">
+
+                @if (request('a_completer'))
+                    <input type="hidden" name="a_completer" value="1">
+                @endif
+
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ $recherche }}"
+                    placeholder="Nom exact du client ou raison sociale..."
+                    aria-label="Rechercher un dossier"
+                >
+
+            </form>
+
         </div>
 
 
@@ -215,12 +233,20 @@
             </div>
 
             <strong>
-                Aucun client pour le moment
+                @if ($recherche !== '')
+                    Aucun client ne correspond à « {{ $recherche }} »
+                @else
+                    Aucun client pour le moment
+                @endif
             </strong>
 
             <span>
-                Commencez par créer un nouveau dossier client
-                ou modifiez vos filtres de recherche.
+                @if ($recherche !== '')
+                    La recherche porte sur le nom exact (ou la raison sociale exacte) du dossier — vérifiez l'orthographe.
+                @else
+                    Commencez par créer un nouveau dossier client
+                    ou modifiez vos filtres de recherche.
+                @endif
             </span>
 
             <a

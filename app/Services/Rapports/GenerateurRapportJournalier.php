@@ -8,6 +8,7 @@ use App\Models\Agent;
 use App\Models\Alerte;
 use App\Models\Client;
 use App\Models\Compte;
+use App\Models\CumulJournalier;
 use App\Models\Operation;
 use App\Models\RapportJournalier;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -74,6 +75,14 @@ class GenerateurRapportJournalier
             ->whereBetween('created_at', [$debut->startOfDay(), $fin->endOfDay()])
             ->get();
 
+        $cumulsDepasses = CumulJournalier::query()
+            ->join('identites', 'identites.id', '=', 'cumuls_journaliers.identite_id')
+            ->whereHas('identite.clients.comptes', fn ($query) => $query->where('agence_id', $agence->id))
+            ->whereBetween('cumuls_journaliers.jour', [$debut->toDateString(), $fin->toDateString()])
+            ->where('identites.plafond_quotidien_especes', '>', 0)
+            ->whereColumn('cumuls_journaliers.total_depots', '>=', 'identites.plafond_quotidien_especes')
+            ->count();
+
         return [
             'operations' => $operations,
             'operationsInhabituelles' => $operationsInhabituelles,
@@ -88,6 +97,7 @@ class GenerateurRapportJournalier
                 'depots' => $depots->sum('montant'),
                 'retraits' => $operations->filter(fn (Operation $operation) => $operation->type->value === 'retrait')->sum('montant'),
                 'clients' => $clients->count(),
+                'cumulsDepasses' => $cumulsDepasses,
             ],
         ];
     }

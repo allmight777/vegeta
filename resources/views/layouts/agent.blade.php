@@ -1754,7 +1754,7 @@
          MESSAGE SESSION
     ====================================================== --}}
 
-   
+
 
 
 
@@ -1814,15 +1814,7 @@
                 </a>
 
 
-                <a
-                    href="{{ Route::has('agent.operations.index')
-                        ? route('agent.operations.index')
-                        : url('/agent/operations') }}"
-                    class="sidebar-link {{ request()->routeIs('agent.operations.*') ? 'active' : '' }}"
-                >
-                    <i class="fa-solid fa-fingerprint"></i>
-                    <span>Empreintes</span>
-                </a>
+
 
 
                 <div class="sidebar-section-title">
@@ -1848,16 +1840,7 @@
                 </a>
 
 
-                <a
-                    href="{{ Route::has('agent.clients.a-completer')
-                        ? route('agent.clients.a-completer')
-                        : url('/agent/clients/a-completer') }}"
-                    class="sidebar-link"
-                >
-                    <i class="fa-solid fa-user-clock"></i>
-                    <span>À compléter</span>
-                </a>
-
+            
             </nav>
 
 
