@@ -11,7 +11,10 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.9",
         "league/csv": "^9.28",
+        "setasign/fpdi": "*",
+        "setasign/fpdi-tcpdf": "*",
         "spatie/pdf-to-image": "^3.5",
+        "tecnickcom/tcpdf": "*",
         "thiagoalessio/tesseract_ocr": "^2.13"
     },
     "require-dev": {
