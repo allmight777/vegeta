@@ -6,6 +6,7 @@ use App\Http\Controllers\Agent\Clients\MandataireController;
 use App\Http\Controllers\Agent\Clients\NpiVerificationController;
 use App\Http\Controllers\Agent\Clients\SignataireController;
 use App\Http\Controllers\Agent\Clients\SystemeExistantController;
+use App\Http\Controllers\Agent\Clients\TelephoneVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('clients')->name('clients.')->group(function () {
@@ -16,6 +17,7 @@ Route::prefix('clients')->name('clients.')->group(function () {
     Route::put('/{client}/completer', [ClientController::class, 'mettreAJour'])->name('mettre-a-jour');
 
     Route::post('/npi/verifier', [NpiVerificationController::class, 'verifier'])->name('npi.verifier');
+    Route::post('/telephone/verifier', [TelephoneVerificationController::class, 'verifier'])->name('telephone.verifier');
 
     Route::get('/{client}/systeme-existant', [SystemeExistantController::class, 'rechercher'])->name('systeme-existant.rechercher');
     Route::post('/{client}/systeme-existant', [SystemeExistantController::class, 'appliquer'])->name('systeme-existant.appliquer');

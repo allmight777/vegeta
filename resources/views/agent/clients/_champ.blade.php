@@ -40,6 +40,12 @@
                 class="champ-fiche-input" x-data x-on:blur="await window.verifierNpi($event.target)">
             <span class="champ-npi-statut" data-npi-statut></span>
         </div>
+    @elseif ($typeSaisie === 'telephone')
+        <div class="champ-npi">
+            <input type="text" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}"
+                class="champ-fiche-input" x-data x-on:blur="await window.verifierTelephone($event.target)">
+            <span class="champ-npi-statut" data-telephone-statut></span>
+        </div>
     @elseif ($typeSaisie === 'date')
         <input type="date" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}"
             class="champ-fiche-input" @disabled(!$saisissable)>

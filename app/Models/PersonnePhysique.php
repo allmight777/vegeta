@@ -59,6 +59,7 @@ class PersonnePhysique extends Model
             'piece_identite_numero' => Chiffre::class,
             'piece_identite_expiration' => 'date',
             'adresse' => Chiffre::class,
+            'telephone' => ChiffreIndexe::class.':telephone_idx,telephone',
             'email' => ChiffreIndexe::class.':email_idx,email',
             'domicile' => Chiffre::class,
             'pere' => Chiffre::class,

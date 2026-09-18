@@ -34,6 +34,7 @@ class ChiffrementEtAuditTest extends TestCase
             'client_id' => $client->id,
             'nom' => 'KPADONOU',
             'prenoms' => 'Fidèle',
+            'telephone' => '90000000',
             'champs_manquants' => [],
         ]);
 
@@ -44,9 +45,14 @@ class ChiffrementEtAuditTest extends TestCase
         $this->assertStringStartsWith('v1:', $brut->nom);
         $this->assertNotEmpty($brut->nom_idx);
 
+        $this->assertStringNotContainsString('90000000', $brut->telephone);
+        $this->assertStringStartsWith('v1:', $brut->telephone);
+        $this->assertNotEmpty($brut->telephone_idx);
+
         $recharge = PersonnePhysique::find($personne->id);
         $this->assertSame('KPADONOU', $recharge->nom);
         $this->assertSame('Fidèle', $recharge->prenoms);
+        $this->assertSame('90000000', $recharge->telephone);
     }
 
     public function test_le_journal_audit_est_chaine_et_detecte_une_alteration(): void
