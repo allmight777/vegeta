@@ -25,6 +25,15 @@ class TableauBordController extends Controller
         $reseauId = $contexte->reseauId();
 
         if (in_array($agent->role->value, ['responsable_lbcft', 'direction'], true)) {
+            // Tout ce qui relève d'un seuil ou d'un cumul va dans le bloc dédié,
+            // le reste (filtrage, NPI) reste dans les alertes du jour.
+            $typesFractionnement = [
+                'fractionnement_guichet',
+                'fractionnement_multi_agences',
+                'plafond_quotidien_approche',
+                'plafond_quotidien_depasse',
+            ];
+
             $alertesOuvertes = Alerte::whereHas('client', fn ($q) => $q->where('reseau_id', $reseauId))
                 ->where('statut', '!=', StatutAlerte::Traitee)
                 ->orderByRaw("CASE gravite WHEN 'critique' THEN 0 WHEN 'attention' THEN 1 ELSE 2 END")
@@ -37,8 +46,10 @@ class TableauBordController extends Controller
                     ->oldest()
                     ->limit(10)
                     ->get(),
-                'alertesDuJour' => $alertesOuvertes->whereNotIn('type', ['fractionnement_guichet', 'fractionnement_multi_agences'])->take(15),
-                'seuilsEtFractionnements' => $alertesOuvertes->whereIn('type', ['fractionnement_guichet', 'fractionnement_multi_agences']),
+                // Comparaison sur ->value : la colonne est castée en enum, une comparaison
+                // directe avec une chaîne échoue silencieusement et vide le bloc.
+                'alertesDuJour' => $alertesOuvertes->reject(fn ($alerte) => in_array($alerte->type->value, $typesFractionnement, true))->take(15),
+                'seuilsEtFractionnements' => $alertesOuvertes->filter(fn ($alerte) => in_array($alerte->type->value, $typesFractionnement, true))->values(),
                 'declarationsAVenir' => DeclarationCentif::whereHas('client', fn ($q) => $q->where('reseau_id', $reseauId))
                     ->where('statut', StatutDeclarationCentif::APreparer)
                     ->get(),

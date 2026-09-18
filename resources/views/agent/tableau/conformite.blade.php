@@ -52,7 +52,10 @@
                             {{ $alerte->type->libelle() }}
                         </span>
                         <p class="mt-1 text-gray-700">{{ $alerte->explication_texte }}</p>
-                    </div>
+                        @if (($alerte->faits['identite_id'] ?? null) !== null)
+                            <a href="{{ route('agent.identites.afficher', $alerte->faits['identite_id']) }}" class="mt-1 inline-block text-xs font-semibold text-emerald-700 hover:underline">Voir la vue consolidée de la personne →</a>
+                        @endif
+                    </div>                        
                 @empty
                     <p class="text-sm text-gray-400">Aucun seuil approché ni fractionnement détecté.</p>
                 @endforelse
