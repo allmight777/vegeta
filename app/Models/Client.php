@@ -24,7 +24,7 @@ class Client extends Model
     protected $table = 'clients';
 
     protected $fillable = [
-        'reseau_id', 'type', 'nature_relation', 'statut_ppe',
+        'reseau_id', 'identite_id', 'type', 'nature_relation', 'statut_ppe',
         'score_completude_kyc', 'source_creation',
         'statut_verification_npi', 'npi_verifie_le', 'npi_tentatives',
     ];
@@ -46,6 +46,21 @@ class Client extends Model
     public function reseau(): BelongsTo
     {
         return $this->belongsTo(Reseau::class);
+    }
+
+    /**
+     * La personne physique réelle derrière cette fiche : une identité peut porter
+     * plusieurs fiches clients, donc plusieurs comptes, dans plusieurs agences.
+     */
+    public function identite(): BelongsTo
+    {
+        return $this->belongsTo(Identite::class);
+    }
+
+    /** Toutes les fiches de la même personne, celle-ci comprise. */
+    public function clientIdsDeLIdentite(): array
+    {
+        return $this->identite?->clientIds() ?? [$this->id];
     }
 
     public function personnePhysique(): HasOne

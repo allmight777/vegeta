@@ -739,6 +739,43 @@
 
 
 
+        {{-- MODE DE PAIEMENT --}}
+        {{-- Les cumuls et les seuils ne visent que les espèces (Loi art. 17 i) : --}}
+        {{-- sans ce champ, un virement de salaire déclencherait une alerte. --}}
+
+        <div class="champ-operation">
+
+            <label
+                class="champ-operation-label"
+                for="mode_paiement"
+            >
+
+                <i class="fa-solid fa-money-bill-wave"></i>
+
+                Mode de paiement
+
+                <span class="obligatoire">*</span>
+
+            </label>
+
+
+            <select
+                name="mode_paiement"
+                id="mode_paiement"
+                class="champ-operation-input"
+            >
+
+                <option value="especes">Espèces</option>
+
+                <option value="virement">Virement</option>
+
+                <option value="mobile_money">Mobile money</option>
+
+            </select>
+
+        </div>
+
+
         {{-- MONTANT --}}
 
         <div class="champ-operation">

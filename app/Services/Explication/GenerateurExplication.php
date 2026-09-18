@@ -28,10 +28,39 @@ class GenerateurExplication
             "en moins de {$fenetreHeures} heures, chacune sous le seuil habituel. Cumulées, elles dépassent {$seuilFormate}.";
     }
 
-    public function pourFractionnementMultiAgences(int $nbOperations, string $montantFormate, int $nbAgences, string $seuilFormate, int $fenetreJours): string
+    public function pourFractionnementMultiAgences(int $nbOperations, string $montantFormate, int $nbAgences, string $seuilFormate, int $fenetreJours, string $rapprochement = 'npi'): string
     {
-        return "{$nbOperations} dépôts totalisant {$montantFormate} ont été effectués par le même client dans {$nbAgences} agences ".
-            "différentes en {$fenetreJours} jours, chacun sous le seuil habituel. Cumulé, ce montant dépasse {$seuilFormate}.";
+        $critere = $rapprochement === 'npi'
+            ? 'rapprochés par NPI vérifié'
+            : 'rapprochés par empreinte (nom et date de naissance)';
+
+        return "{$nbOperations} dépôts en espèces totalisant {$montantFormate} ont été effectués par la même personne dans ".
+            "{$nbAgences} agences différentes en {$fenetreJours} jours, {$critere}, chacun sous le seuil unitaire. ".
+            "Cumulé, ce montant dépasse {$seuilFormate}.";
+    }
+
+    /**
+     * Le responsable doit comprendre sans cliquer : combien d'opérations, sur combien
+     * de comptes, dans combien d'agences, contre quel plafond et sur quelle base.
+     */
+    public function pourPlafondQuotidien(
+        int $nbOperations,
+        int $nbComptes,
+        int $nbAgences,
+        string $cumulFormate,
+        string $plafondFormate,
+        string $baseCalcul,
+        bool $depasse,
+    ): string {
+        $comptes = $nbComptes > 1 ? "{$nbComptes} comptes" : 'un seul compte';
+        $agences = $nbAgences > 1 ? " dans {$nbAgences} agences différentes" : '';
+        $verdict = $depasse
+            ? "Ce cumul dépasse le plafond quotidien de {$plafondFormate}"
+            : "Ce cumul approche le plafond quotidien de {$plafondFormate}";
+
+        return "{$nbOperations} opérations en espèces aujourd'hui sur {$comptes}{$agences}, ".
+            "totalisant {$cumulFormate} pour la même personne. {$verdict} ".
+            "(calculé sur : {$baseCalcul}).";
     }
 
     public function pourCompteDormant(int $moisInactivite, string $montantFormate): string

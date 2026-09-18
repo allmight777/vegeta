@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CanalOperation;
+use App\Enums\ModePaiement;
 use App\Enums\TypeOperation;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +18,7 @@ class Operation extends Model
     protected $table = 'operations';
 
     protected $fillable = [
-        'compte_id', 'agence_id', 'agent_id', 'type', 'montant',
+        'compte_id', 'agence_id', 'agent_id', 'type', 'montant', 'mode_paiement',
         'devise_code', 'effectuee_le', 'canal',
     ];
 
@@ -26,6 +27,7 @@ class Operation extends Model
         return [
             'type' => TypeOperation::class,
             'canal' => CanalOperation::class,
+            'mode_paiement' => ModePaiement::class,
             'montant' => 'decimal:2',
             'effectuee_le' => 'datetime',
         ];

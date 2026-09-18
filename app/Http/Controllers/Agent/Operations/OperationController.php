@@ -45,6 +45,7 @@ class OperationController extends Controller
             'agent_id' => $agent->id,
             'type' => $donnees['type'],
             'montant' => $donnees['montant'],
+            'mode_paiement' => $donnees['mode_paiement'],
             'devise_code' => 'XOF',
             'effectuee_le' => $donnees['effectuee_le'] ?? now(),
             'canal' => CanalOperation::Guichet,
