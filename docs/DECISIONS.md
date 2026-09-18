@@ -105,8 +105,8 @@ prompt (`nom chiffré, nom_idx`, `npi_idx` seul) :
   `verrouille_jusqu_au` du socle complet) — seule une limitation de débit
   (`RateLimiter::for('connexion', 5/minute par identifiant+IP)`) protège la connexion.
 - Pas de réinitialisation de mot de passe par e-mail : un admin réseau désactive/recrée un compte
-  agent depuis l'écran de gestion (non construit dans ce MVP faute de temps ; les comptes de démo
-  sont recréés par le seeder).
+  agent depuis l'écran de gestion (construit depuis, voir §17 ; les comptes de démo sont recréés
+  par le seeder).
 - Rôles agent : `caissier` et `responsable_agence` depuis `09_PROMPT_TROIS_PROFILS.md` (fusion des
   trois rôles d'origine `guichet`/`responsable_lbcft`/`direction`, voir §17), vérifiés par un
   middleware dédié (`role.agent:...`) — pas de table de permissions à granularité fine comme le
@@ -483,3 +483,85 @@ suppositions, option la plus prudente retenue, documentée ici plutôt que devin
   contrainte elle-même est inchangée, seul son nom (métadonnée arbitraire) change, donc sans risque
   de dérive pour une base déjà migrée sous SQLite. Les tests restent sur SQLite en mémoire
   (`phpunit.xml` inchangé) — seule la connexion par défaut de l'application change.
+
+## 19. Simulation de dépôt mobile money à l'inscription — demande orale, sans texte de prompt dédié
+
+Demande formulée hors des prompts écrits : reproduire, à l'inscription d'un client, l'écran de
+confirmation qu'affiche un vrai transfert mobile money (MTN/Moov/Celtiis Bénin — numéro + nom du
+titulaire), pour que le caissier compare visuellement ce nom à celui qu'il saisit. CLAUDE.md §8
+appliqué : pas de suppositions, option la plus prudente retenue, documentée ici.
+
+- **Écarté après discussion avec l'utilisateur : un vrai appel USSD ou une vraie API marchand
+  MTN/Moov/Celtiis.** Deux raisons, pas seulement réglementaires : (1) techniquement impossible
+  depuis une application web sans modem GSM physique ou contrat marchand réel (identifiants,
+  sandbox) — aucun des deux n'existe dans ce dépôt ; (2) même réalisable, chaque vérification
+  aurait débité un vrai compte et récupéré l'identité d'un vrai abonné, interdit par CLAUDE.md §2.1
+  (« aucune donnée personnelle réelle, pas d'extraction d'un système existant »).
+- **Option retenue : annuaire numéro → titulaire entièrement synthétique**
+  (`comptes_mobile_monnaie_simules`, `source = demo`, seedé par
+  `Database\Seeders\Demo\AnnuaireMobileMonnaieSimuleSeeder`, jeu fixe de noms béninois déjà utilisés
+  ailleurs dans le dépôt — aucun Faker). `App\Services\Kyc\SimulateurDepotMobileMonnaie` fait une
+  recherche exacte par index aveugle (même mécanisme que `personnes_physiques.telephone_idx`),
+  jamais un appel réseau. Préfixes opérateurs (`App\Enums\OperateurMobileMonnaie::depuisPrefixe()`)
+  codés en dur : c'est le plan de numérotation public béninois, pas une donnée personnelle.
+- **Contrairement à `VerificateurTelephoneExistant` (§16), le nom trouvé EST renvoyé au
+  navigateur.** Ce n'est pas l'identité d'un autre client interne (donc pas de non-divulgation à
+  respecter ici) mais un référentiel externe simulé — exactement ce qu'affiche un vrai écran
+  MTN/Moov/Celtiis, que le caissier doit pouvoir lire pour comparer. La comparaison elle-même reste
+  faite par empreinte (`ComparateurEmpreinte::dice`, seuil 0.7, même seuil que §16), jamais par
+  correspondance exacte de chaîne.
+- **Écran récapitulatif ajouté avant la confirmation** (`resources/views/agent/clients/creer.blade.php`,
+  étape Alpine `saisie` → `recap`) plutôt qu'un simple ajout d'icône au blur : demande explicite de
+  l'utilisateur. Aucune persistance intermédiaire — le récapitulatif est une confirmation UX
+  côté navigateur avant le même (et unique) `POST` déjà existant vers `agent.clients.stocker`.
+- **Un écart de nom ne bloque jamais le caissier.** « L'outil recommande, l'humain décide »
+  (CLAUDE.md §3, dernière ligne) : `App\Services\Kyc\DetecteurIncoherenceDepotSimule`, appelé côté
+  serveur dans `CreateurClient::creer()` indépendamment de ce que le caissier a vu à l'écran, se
+  contente de lever une `Alerte` (type `IncoherenceDepotSimule`, `faits` = opérateur + score
+  uniquement, jamais un nom) visible dans l'espace du responsable de l'agence de création du client.
+- **Colonne `agents.email`/`email_idx` ajoutée** (migration additive `add_email_aux_agents`),
+  `App\Mail\AlerteConformiteMail` créé sur le même modèle que `App\Mail\RapportJournalierMail`
+  (déjà existant pour les rapports quotidiens, §20 ci-dessous — la remarque du §17 « aucune infra
+  e-mail dans ce dépôt » était donc erronée, corrigée ici après l'avoir découvert en creusant §20).
+  Contenu du mail volontairement minimal (gravité, type, agence, lien vers le tableau de bord) : jamais un nom
+  de client, l'e-mail étant un canal moins sûr que l'application. Portée choisie avec
+  l'utilisateur : responsables de l'agence de création du client **uniquement** (pas tout le
+  réseau) — jamais le caissier connecté (rôle exclu de la requête), jamais un administrateur (table
+  `admins` jamais interrogée par ce service). Driver `MAIL_MAILER=log` conservé : l'e-mail est
+  réellement construit et mis en file (`Mail::queue`, driver `database`), mais atterrit dans
+  `storage/logs/laravel.log` plutôt que sur un vrai SMTP, cohérent avec « terminal standard, sans
+  dépendance réseau pour la démo ».
+
+## 20. Alignement du rapport quotidien sur le format papier FECECAM — photos fournies par l'utilisateur
+
+Demande orale, avec photos de gabarits papier réellement utilisés (FECECAM-Bénin, agence Alibori/
+Banikoara, tableaux vierges — aucune donnée personnelle sur les photos). CLAUDE.md §8 appliqué.
+
+- **Constat avant toute modification : la fonctionnalité de rapport quotidien existait déjà
+  presque intégralement** (`App\Services\Rapports\GenerateurRapportJournalier`,
+  `App\Http\Controllers\Agent\Rapports\RapportJournalierController`, `App\Mail\RapportJournalierMail`,
+  `App\Console\Commands\Rapports\EnvoyerRapportsQuotidiens` planifiée à 20h dans `routes/console.php`,
+  page déjà liée depuis le tableau de bord caissier). Décision : **ne pas reconstruire**, seulement
+  combler les écarts trouvés en comparant les photos au PDF déjà produit — cohérent avec « ne pas
+  dupliquer un travail déjà fait ».
+- **Bug corrigé, hors du périmètre de la demande mais trouvé en creusant** :
+  `resources/views/agent/rapports/index.blade.php` chargeait Chart.js depuis
+  `cdn.jsdelivr.net` alors que le paquet est déjà installé (`package.json`) et déjà bundlé par Vite
+  (`resources/js/app.js` expose `window.Chart`) — le `<script>` CDN était redondant et enfreignait
+  CLAUDE.md §2.2 (« pas de CDN ») en plus de risquer de casser la démo hors wifi. Retiré.
+- **Écarts comblés** (données déjà calculées ailleurs dans le dépôt, aucune nouvelle notion
+  métier) : colonne « Compte » ajoutée sur « Comptes dormants réactivés » (résolue depuis
+  `Alerte->faits['compte_id']`, jamais stocké en clair sur l'alerte elle-même) ; colonne « Plafond
+  quotidien (cotation) » ajoutée sur « Opérations inhabituelles quotidiennes par cotation »,
+  reprenant `Identite::plafond_quotidien_especes` déjà calculé par
+  `App\Services\Identite\CalculateurPlafondQuotidien` — le mot « cotation » du gabarit papier
+  désigne ce plafond, pas une notion nouvelle.
+- **Écarté après question à l'utilisateur : construire une notation de risque client
+  (« cotation ») pour la section « Liste des modifications effectuées sur cotations ».** Cette
+  notion n'existe nulle part dans le dépôt (aucun champ, aucun modèle, aucun historique) ; l'ajouter
+  aurait été une vraie fonctionnalité nouvelle (échelle, règles de changement, autorisation), pas un
+  ajustement de rapport. L'utilisateur a choisi de laisser cette section absente pour l'instant —
+  à traiter séparément si le besoin est confirmé.
+- **Écarté après question à l'utilisateur : reproduire toutes les colonnes KYC du « brouillard des
+  ouvertures »** (profession, pièce d'identité, téléphone, adresse, etc., visibles sur les photos).
+  L'utilisateur a choisi de garder la version résumée actuelle (4 colonnes) plutôt que ~14.

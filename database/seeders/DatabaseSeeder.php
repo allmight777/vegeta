@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Demo\AnnuaireMobileMonnaieSimuleSeeder;
 use Database\Seeders\Demo\DemoCoreBankingSeeder;
 use Database\Seeders\Detection\ReglesDetectionSeeder;
 use Database\Seeders\Listes\ListesDemoSeeder;
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ReglesDetectionSeeder::class,
             DemoComptesSeeder::class,
             DemoCoreBankingSeeder::class,
+            AnnuaireMobileMonnaieSimuleSeeder::class,
             // Scénarios de démonstration ajoutés au fil des phases suivantes.
         ]);
     }

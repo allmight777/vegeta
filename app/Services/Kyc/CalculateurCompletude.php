@@ -20,6 +20,8 @@ class CalculateurCompletude
      */
     public function evaluer(Client $client): array
     {
+        $client->loadMissing($client->type === TypeClient::PersonneMorale ? 'personneMorale' : 'personnePhysique');
+
         return $client->type === TypeClient::PersonneMorale
             ? $this->evaluerPersonneMorale($client)
             : $this->evaluerPersonnePhysique($client);
@@ -113,6 +115,8 @@ class CalculateurCompletude
      */
     public function champsBloquantsManquants(Client $client): array
     {
+        $client->loadMissing($client->type === TypeClient::PersonneMorale ? 'personneMorale' : 'personnePhysique');
+
         $personne = $client->type === TypeClient::PersonneMorale ? $client->personneMorale : $client->personnePhysique;
         $champs = $client->type === TypeClient::PersonneMorale
             ? $this->referentiel->champsPlats('personne_morale') + $this->referentiel->champsCalcules('personne_morale')

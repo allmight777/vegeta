@@ -179,7 +179,7 @@ class ImportateurCsv
         $meilleur = null;
         $meilleurScore = 0.0;
 
-        foreach (PersonnePhysique::whereHas('client', fn ($q) => $q->where('reseau_id', $agence->reseau_id))->get() as $existante) {
+        foreach (PersonnePhysique::with('client')->whereHas('client', fn ($q) => $q->where('reseau_id', $agence->reseau_id))->get() as $existante) {
             $score = $empreinte->similariteCombinee($vecteurCible->versOctets(), $existante->empreinte_combinee);
             if ($score !== null && $score > $meilleurScore) {
                 $meilleurScore = $score;

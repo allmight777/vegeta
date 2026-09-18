@@ -19,7 +19,7 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
 
     protected $table = 'agents';
 
-    protected $fillable = ['agence_id', 'nom', 'matricule', 'mot_de_passe', 'role', 'actif', 'civilite'];
+    protected $fillable = ['agence_id', 'nom', 'matricule', 'email', 'mot_de_passe', 'role', 'actif', 'civilite'];
 
     protected $hidden = ['mot_de_passe', 'remember_token'];
 
@@ -27,6 +27,7 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
     {
         return [
             'matricule' => ChiffreIndexe::class.':matricule_idx,matricule',
+            'email' => ChiffreIndexe::class.':email_idx,email',
             'role' => RoleAgent::class,
             'actif' => 'boolean',
         ];
