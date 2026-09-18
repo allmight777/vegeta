@@ -15,6 +15,7 @@ use App\Models\Signataire;
 use App\Models\VerificationNpiEnAttente;
 use App\Services\Audit\Consignateur;
 use App\Services\Filtrage\MoteurFiltrage;
+use App\Services\Identite\ResolveurIdentite;
 
 /**
  * Factorise la création complète d'un client (personne physique ou morale, avec
@@ -28,6 +29,7 @@ class CreateurClient
         private readonly CalculateurCompletude $completude,
         private readonly MoteurFiltrage $moteurFiltrage,
         private readonly ResolveurStatutNpi $resolveurStatutNpi,
+        private readonly ResolveurIdentite $resolveurIdentite,
     ) {}
 
     /**
@@ -47,6 +49,11 @@ class CreateurClient
         } else {
             $this->creerPersonneMorale($client, $donnees, $agent);
         }
+
+        // Rattachement à la personne physique réelle : NPI d'abord, empreinte en secours.
+        // Doit venir après appliquerNpi() (npi_idx écrit) et avant l'évaluation de
+        // complétude, qui alimente le plafond quotidien de l'identité.
+        $this->resolveurIdentite->rattacher($client->fresh('personnePhysique'), $agent);
 
         $this->completude->evaluer($client->fresh(['personnePhysique', 'personneMorale']));
         $this->moteurFiltrage->filtrer($client->fresh());

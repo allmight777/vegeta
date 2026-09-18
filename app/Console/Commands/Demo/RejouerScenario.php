@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Demo;
 
+use App\Enums\ModePaiement;
 use App\Enums\NatureRelation;
 use App\Enums\RoleSignataire;
 use App\Enums\SourceCreation;
@@ -20,6 +21,7 @@ use App\Models\Reseau;
 use App\Models\Signataire;
 use App\Services\Detection\DetecteurFractionnement;
 use App\Services\Filtrage\MoteurFiltrage;
+use App\Services\Identite\ResolveurIdentite;
 use App\Services\Kyc\CalculateurCompletude;
 use App\Services\Securite\IndexAveugle;
 use Illuminate\Console\Command;
@@ -31,9 +33,9 @@ use Illuminate\Support\Carbon;
  */
 class RejouerScenario extends Command
 {
-    protected $signature = 'demo:scenario {code : 1 a 6}';
+    protected $signature = 'demo:scenario {code : 1 a 7}';
 
-    protected $description = 'Rejoue un des 6 scénarios de démonstration du MVP CIF-Empreinte.';
+    protected $description = 'Rejoue un des 7 scénarios de démonstration du MVP CIF-Empreinte.';
 
     public function handle(): int
     {
@@ -47,7 +49,7 @@ class RejouerScenario extends Command
         $methode = 'scenario'.$code;
 
         if (! method_exists($this, $methode)) {
-            $this->error('Code de scénario inconnu. Utilisez une valeur entre 1 et 6.');
+            $this->error('Code de scénario inconnu. Utilisez une valeur entre 1 et 7.');
 
             return self::FAILURE;
         }
@@ -118,16 +120,25 @@ class RejouerScenario extends Command
 
         // Noms distincts de ceux des autres seeders de démo pour éviter toute collision
         // de rapprochement par empreinte avec un client déjà seedé.
-        $compteDassa = $this->clientEtCompte($dassa, 'GBAGUIDI', 'Sêmévo', '1985-09-03', 'CPT-DEMO-DASSA');
-        $compteSavalou = $this->clientEtCompte($savalou, 'GBAGUIDI', 'Semevo', '1985-09-03', 'CPT-DEMO-SAVALOU');
+        // Deux fiches, deux orthographes, deux agences — mais le même NPI vérifié.
+        $compteDassa = $this->clientEtCompte($dassa, 'GBAGUIDI', 'Sêmévo', '1985-09-03', 'CPT-DEMO-DASSA', '1985090312345');
+        $compteSavalou = $this->clientEtCompte($savalou, 'GBAGUIDI', 'Semevo', '1985-09-03', 'CPT-DEMO-SAVALOU', '1985090312345');
 
         $maintenant = now();
         $detecteur = app(DetecteurFractionnement::class);
 
-        $op1 = $this->deposer($compteDassa, 900000, $maintenant->copy()->subDays(2));
-        $detecteur->analyserApresOperation($op1->fresh(['compte']));
-        $op2 = $this->deposer($compteSavalou, 950000, $maintenant);
-        $detecteur->analyserApresOperation($op2->fresh(['compte']));
+        // Chaque dépôt reste sous le seuil unitaire (5 M) ; cumulés, ils dépassent 15 M.
+        $depots = [
+            [$compteDassa, 4800000, $maintenant->copy()->subDays(2)],
+            [$compteSavalou, 4900000, $maintenant->copy()->subDays(1)],
+            [$compteDassa, 4700000, $maintenant->copy()->subHours(6)],
+            [$compteSavalou, 4800000, $maintenant],
+        ];
+
+        foreach ($depots as [$compte, $montant, $date]) {
+            $operation = $this->deposer($compte, $montant, $date);
+            $detecteur->analyserApresOperation($operation->fresh(['compte']));
+        }
 
         $alerte = Alerte::where('type', 'fractionnement_multi_agences')->latest()->first();
         $this->line($alerte !== null
@@ -179,7 +190,7 @@ class RejouerScenario extends Command
         $this->line('  Toute tentative d\'accès direct du guichet aux écrans filtrage/conformité est journalisée (action: tentative_acces_refusee).');
     }
 
-    private function clientEtCompte(Agence $agence, string $nom, string $prenoms, string $dateNaissance, string $numero): Compte
+    private function clientEtCompte(Agence $agence, string $nom, string $prenoms, string $dateNaissance, string $numero, ?string $npi = null, float $revenus = 20000000): Compte
     {
         $nomIdx = app(IndexAveugle::class)->calculer($nom, 'nom');
         // Comparaison exacte sur nom ET prénoms (le nom seul ne suffit pas : deux
@@ -202,8 +213,17 @@ class RejouerScenario extends Command
                 'nom' => $nom,
                 'prenoms' => $prenoms,
                 'date_naissance' => $dateNaissance,
+                'revenus_mensuels_estimes' => $revenus,
                 'champs_manquants' => [],
             ]);
+
+            if ($npi !== null) {
+                $personne->definirNpi($npi);
+                $personne->saveQuietly();
+            }
+
+            // Rattachement à la personne physique réelle : NPI d'abord, empreinte ensuite.
+            app(ResolveurIdentite::class)->rattacher($client->fresh('personnePhysique'));
         }
 
         $client = $personne->client;
@@ -226,9 +246,55 @@ class RejouerScenario extends Command
             'agence_id' => $compte->agence_id,
             'type' => TypeOperation::Depot,
             'montant' => $montant,
+            'mode_paiement' => ModePaiement::Especes,
             'devise_code' => 'XOF',
             'effectuee_le' => $date,
             'canal' => 'guichet',
         ]);
+    }
+
+    /**
+     * Plafond quotidien : le cumul d'espèces d'une même personne, sur tous ses comptes
+     * et toutes les agences, dépasse le plafond déduit de son activité déclarée.
+     * Fondement : Loi uniforme art. 17 i) — les opérations en espèces multiples d'une
+     * même personne dans la journée sont considérées comme une opération unique.
+     */
+    private function scenario7(): void
+    {
+        $this->info('Scénario 7 — Plafond quotidien dépassé sur plusieurs comptes');
+
+        $reseau = Reseau::firstOrCreate(['code' => 'ALPHA'], ['nom' => 'Réseau Alpha']);
+        $dassa = Agence::firstOrCreate(['reseau_id' => $reseau->id, 'code' => 'DASSA'], ['nom' => 'Agence de Dassa']);
+        $savalou = Agence::firstOrCreate(['reseau_id' => $reseau->id, 'code' => 'SAVALOU'], ['nom' => 'Agence de Savalou']);
+
+        // Commerçante de marché : 800 000 FCFA déclarés au KYC, donc un plafond
+        // quotidien de 1 200 000 FCFA (coefficient 1,5 de config/identite.php).
+        $npi = '1979041556789';
+        $compteDassa = $this->clientEtCompte($dassa, 'HOUNKPATIN', 'Alimatou', '1979-04-15', 'CPT-DEMO-PLAFOND-1', $npi, 800000);
+        $compteSavalou = $this->clientEtCompte($savalou, 'HOUNKPATIN', 'Alimatou A.', '1979-04-15', 'CPT-DEMO-PLAFOND-2', $npi, 800000);
+
+        $identite = $compteDassa->client->fresh('identite')->identite;
+        $this->line('  Plafond quotidien calculé : '
+            .number_format((float) $identite?->plafond_quotidien_especes, 0, ',', ' ').' XOF'
+            .' ('.$identite?->base_calcul_plafond.')');
+
+        $maintenant = now();
+        $detecteur = app(DetecteurFractionnement::class);
+
+        // Deux dépôts anodins pris séparément, sur deux comptes et deux agences.
+        foreach ([[$compteDassa, 500000, 3], [$compteSavalou, 800000, 0]] as [$compte, $montant, $heures]) {
+            $operation = $this->deposer($compte, $montant, $maintenant->copy()->subHours($heures));
+            $detecteur->analyserApresOperation($operation->fresh(['compte']));
+
+            $this->line('  Dépôt de '.number_format($montant, 0, ',', ' ').' XOF à '.$compte->agence->nom);
+        }
+
+        $alerte = Alerte::whereIn('type', ['plafond_quotidien_depasse', 'plafond_quotidien_approche'])
+            ->latest()
+            ->first();
+
+        $this->line($alerte !== null
+            ? '  Alerte '.$alerte->gravite->value.' : '.$alerte->explication_texte
+            : '  Aucune alerte (alerte déjà levée aujourd\'hui — relancez `migrate:fresh --seed` pour un état propre).');
     }
 }

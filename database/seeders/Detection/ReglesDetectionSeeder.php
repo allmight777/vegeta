@@ -17,14 +17,16 @@ class ReglesDetectionSeeder extends Seeder
             [
                 'code' => 'FRACTIONNEMENT_GUICHET',
                 'libelle' => 'Fractionnement au guichet',
-                'parametres' => ['seuil' => 1000000, 'fenetre_heures' => 48, 'min_operations' => 2],
+                // seuil_unitaire : au-dessous duquel chaque dépôt passe inaperçu ;
+                // seuil_cumul : au-dessus duquel la somme devient déclarable.
+                'parametres' => ['seuil_unitaire' => 5000000, 'seuil_cumul' => 15000000, 'fenetre_heures' => 48, 'min_operations' => 2],
                 'source' => 'demo',
                 'reference_texte' => 'Loi art. 17 i) — hypothèse de seuil à calibrer',
             ],
             [
                 'code' => 'FRACTIONNEMENT_MULTI_AGENCES',
                 'libelle' => 'Fractionnement multi-agences',
-                'parametres' => ['seuil' => 1500000, 'fenetre_jours' => 7, 'min_operations' => 2, 'seuil_rapprochement' => 0.85],
+                'parametres' => ['seuil_unitaire' => 5000000, 'seuil_cumul' => 15000000, 'fenetre_jours' => 7, 'min_operations' => 2],
                 'source' => 'demo',
                 'reference_texte' => 'Loi art. 72 al. 3, art. 17 i) — hypothèse de seuil à calibrer',
             ],
@@ -41,6 +43,14 @@ class ReglesDetectionSeeder extends Seeder
                 'parametres' => ['mois_inactivite' => 6, 'montant_min' => 100000],
                 'source' => 'demo',
                 'reference_texte' => 'Briefing CIF — durée d\'inactivité à confirmer avec les mentors',
+            ],
+            [
+                'code' => 'PLAFOND_QUOTIDIEN_IDENTITE',
+                'libelle' => 'Plafond quotidien espèces, tous comptes de la personne',
+                'parametres' => ['ratio_alerte_approche' => 0.8],
+                'source' => 'demo',
+                'reference_texte' => "Loi art. 17 i) — opérations en espèces multiples d'une même personne dans la journée "
+                    .'considérées comme une opération unique ; plafond calculé sur le profil (config/identite.php)',
             ],
         ];
 

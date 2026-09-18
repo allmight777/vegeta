@@ -3,32 +3,46 @@
 namespace App\Services\Detection;
 
 use App\Enums\GraviteAlerte;
+use App\Enums\ModePaiement;
 use App\Enums\StatutAlerte;
 use App\Enums\TypeAlerte;
-use App\Enums\TypeClient;
 use App\Enums\TypeOperation;
 use App\Models\Alerte;
 use App\Models\DeclarationCentif;
 use App\Models\Operation;
-use App\Models\PersonnePhysique;
 use App\Models\RegleDetection;
 use App\Services\Audit\Consignateur;
-use App\Services\Empreinte\ServiceEmpreinte;
 use App\Services\Explication\GenerateurExplication;
+use App\Services\Identite\CompteurCumuls;
+use Illuminate\Support\Collection;
 
 /**
- * Les 4 règles du MVP resserré (§6.3, §11). Chaque exécution est journalisée : quelles
- * opérations ont été rapprochées et sur quel critère (transparence, jamais une boîte noire).
+ * Les 5 règles du MVP resserré. Chaque exécution est journalisée : quelles opérations ont
+ * été rapprochées et sur quel critère (transparence, jamais une boîte noire).
+ *
+ * Deux principes tiennent tout le fichier :
+ *  - l'unité de contrôle est la PERSONNE (identité), pas le compte ni la fiche client ;
+ *  - seules les ESPÈCES sont concernées par les seuils et les cumuls (Loi art. 17 i, 72).
  */
 class DetecteurFractionnement
 {
     public function __construct(
-        private readonly ServiceEmpreinte $empreinte,
         private readonly GenerateurExplication $explication,
+        private readonly CompteurCumuls $compteurCumuls,
+        private readonly SurveillantPlafondQuotidien $surveillantPlafond,
     ) {}
 
     public function analyserApresOperation(Operation $operation): void
     {
+        // Le cumul du jour est mis à jour pour toute opération, puis le plafond est
+        // vérifié : c'est l'alerte temps réel attendue au guichet.
+        $cumul = $this->compteurCumuls->enregistrer($operation);
+        $this->surveillantPlafond->verifier($operation, $cumul);
+
+        if ($operation->mode_paiement !== ModePaiement::Especes) {
+            return;
+        }
+
         if ($operation->type !== TypeOperation::Depot) {
             $this->verifierSeuilCentif($operation);
 
@@ -46,6 +60,11 @@ class DetecteurFractionnement
         return RegleDetection::where('code', $code)->where('actif', true)->first();
     }
 
+    /**
+     * Fractionnement sur un même compte : ce qui signe l'intention, ce n'est pas le cumul
+     * seul (un gros versement légitime le dépasserait aussi), c'est une série de dépôts
+     * dont CHACUN reste sous le seuil unitaire alors que leur somme le franchit.
+     */
     private function verifierGuichet(Operation $operation): void
     {
         $regle = $this->regleActive('FRACTIONNEMENT_GUICHET');
@@ -57,21 +76,20 @@ class DetecteurFractionnement
         $fenetreDebut = $operation->effectuee_le->copy()->subHours((int) $params['fenetre_heures']);
         $operations = Operation::where('compte_id', $operation->compte_id)
             ->where('type', TypeOperation::Depot)
+            ->where('mode_paiement', ModePaiement::Especes)
             ->whereBetween('effectuee_le', [$fenetreDebut, $operation->effectuee_le])
             ->get();
 
-        if ($operations->count() < $params['min_operations']) {
-            return;
-        }
-        $cumul = (float) $operations->sum('montant');
-        if ($cumul < $params['seuil']) {
+        if (! $this->ressembleAUnFractionnement($operations, $params)) {
             return;
         }
 
         $client = $operation->compte->client;
-        if ($this->alerteDejaOuverte($client->id, TypeAlerte::FractionnementGuichet)) {
+        if ($this->alerteDejaOuverte($client->clientIdsDeLIdentite(), TypeAlerte::FractionnementGuichet)) {
             return;
         }
+
+        $cumul = (float) $operations->sum('montant');
 
         Alerte::create([
             'type' => TypeAlerte::FractionnementGuichet,
@@ -81,13 +99,14 @@ class DetecteurFractionnement
             'explication_texte' => $this->explication->pourFractionnementGuichet(
                 $operations->count(),
                 $this->formaterMontant($cumul, $operation->devise_code),
-                $this->formaterMontant((float) $params['seuil'], $operation->devise_code),
+                $this->formaterMontant((float) $params['seuil_cumul'], $operation->devise_code),
                 (int) $params['fenetre_heures'],
             ),
             'faits' => [
                 'nb_operations' => $operations->count(),
                 'montant_cumule' => $cumul,
-                'seuil' => $params['seuil'],
+                'seuil_unitaire' => $params['seuil_unitaire'],
+                'seuil_cumul' => $params['seuil_cumul'],
                 'compte_id' => $operation->compte_id,
                 'operations_ids' => $operations->pluck('id')->all(),
             ],
@@ -97,6 +116,12 @@ class DetecteurFractionnement
         Consignateur::enregistrer('systeme', null, 'detection_fractionnement_guichet', 'client', $client->id);
     }
 
+    /**
+     * Même logique, mais à l'échelle de la personne : toutes ses fiches, tous ses comptes,
+     * toutes les agences. Le groupe de fiches vient de l'identité (rapprochée par NPI, ou
+     * par empreinte en secours) — plus aucune comparaison d'empreintes ici, donc plus de
+     * balayage de toute la base à chaque opération.
+     */
     private function verifierMultiAgences(Operation $operation): void
     {
         $regle = $this->regleActive('FRACTIONNEMENT_MULTI_AGENCES');
@@ -106,37 +131,17 @@ class DetecteurFractionnement
         $params = $regle->parametres;
 
         $client = $operation->compte->client;
-        if ($client->type !== TypeClient::PersonnePhysique) {
-            return;
-        }
-        $personne = $client->personnePhysique;
-        if ($personne?->empreinte_combinee === null) {
-            return;
-        }
-
-        $groupeClientIds = collect([$client->id]);
-        foreach (PersonnePhysique::whereHas('client', fn ($q) => $q->where('reseau_id', $client->reseau_id)->where('id', '!=', $client->id))->get() as $autre) {
-            $score = $this->empreinte->similariteCombinee($personne->empreinte_combinee, $autre->empreinte_combinee);
-            if ($score !== null && $score >= (float) $params['seuil_rapprochement']) {
-                $groupeClientIds->push($autre->client_id);
-            }
-        }
-
-        if ($groupeClientIds->count() < 2) {
-            return;
-        }
+        $identite = $client->identite;
+        $clientIds = $client->clientIdsDeLIdentite();
 
         $fenetreDebut = $operation->effectuee_le->copy()->subDays((int) $params['fenetre_jours']);
-        $operations = Operation::whereHas('compte', fn ($q) => $q->whereIn('client_id', $groupeClientIds))
+        $operations = Operation::whereHas('compte', fn ($q) => $q->whereIn('client_id', $clientIds))
             ->where('type', TypeOperation::Depot)
+            ->where('mode_paiement', ModePaiement::Especes)
             ->whereBetween('effectuee_le', [$fenetreDebut, $operation->effectuee_le])
             ->get();
 
-        if ($operations->count() < $params['min_operations']) {
-            return;
-        }
-        $cumul = (float) $operations->sum('montant');
-        if ($cumul < $params['seuil'] || $operations->max('montant') >= $params['seuil']) {
+        if (! $this->ressembleAUnFractionnement($operations, $params)) {
             return;
         }
 
@@ -145,9 +150,12 @@ class DetecteurFractionnement
             return;
         }
 
-        if ($this->alerteDejaOuverte($client->id, TypeAlerte::FractionnementMultiAgences)) {
+        if ($this->alerteDejaOuverte($clientIds, TypeAlerte::FractionnementMultiAgences)) {
             return;
         }
+
+        $cumul = (float) $operations->sum('montant');
+        $rapprochement = $identite?->rapprocheeParNpi() ? 'npi' : 'empreinte';
 
         Alerte::create([
             'type' => TypeAlerte::FractionnementMultiAgences,
@@ -158,21 +166,44 @@ class DetecteurFractionnement
                 $operations->count(),
                 $this->formaterMontant($cumul, $operation->devise_code),
                 $nbAgences,
-                $this->formaterMontant((float) $params['seuil'], $operation->devise_code),
+                $this->formaterMontant((float) $params['seuil_cumul'], $operation->devise_code),
                 (int) $params['fenetre_jours'],
+                $rapprochement,
             ),
             'faits' => [
+                'identite_id' => $identite?->id,
+                'rapprochement' => $rapprochement,
                 'nb_operations' => $operations->count(),
                 'montant_cumule' => $cumul,
                 'nb_agences' => $nbAgences,
-                'seuil' => $params['seuil'],
-                'clients_rapproches' => $groupeClientIds->count(),
+                'seuil_unitaire' => $params['seuil_unitaire'],
+                'seuil_cumul' => $params['seuil_cumul'],
+                'fiches_rapprochees' => count($clientIds),
                 'operations_ids' => $operations->pluck('id')->all(),
             ],
             'statut' => StatutAlerte::Nouvelle,
         ]);
 
         Consignateur::enregistrer('systeme', null, 'detection_fractionnement_multi_agences', 'client', $client->id);
+    }
+
+    /**
+     * @param  Collection<int, Operation>  $operations
+     * @param  array<string, mixed>  $params
+     */
+    private function ressembleAUnFractionnement(Collection $operations, array $params): bool
+    {
+        if ($operations->count() < (int) $params['min_operations']) {
+            return false;
+        }
+
+        // Aucun dépôt ne doit atteindre le seuil unitaire : sinon ce n'est pas un
+        // fractionnement, c'est une opération visible, traitée par la règle de seuil.
+        if ((float) $operations->max('montant') >= (float) $params['seuil_unitaire']) {
+            return false;
+        }
+
+        return (float) $operations->sum('montant') >= (float) $params['seuil_cumul'];
     }
 
     private function verifierDormant(Operation $operation): void
@@ -194,7 +225,7 @@ class DetecteurFractionnement
         }
 
         $client = $compte->client;
-        if ($this->alerteDejaOuverte($client->id, TypeAlerte::CompteDormantReactive)) {
+        if ($this->alerteDejaOuverte([$client->id], TypeAlerte::CompteDormantReactive)) {
             return;
         }
 
@@ -218,6 +249,11 @@ class DetecteurFractionnement
         Consignateur::enregistrer('systeme', null, 'detection_compte_dormant', 'client', $client->id);
     }
 
+    /**
+     * Cumul mensuel d'espèces de la PERSONNE (toutes ses fiches), pas du seul compte.
+     * Libellé volontairement distinct d'une déclaration de soupçon : ici, c'est un seuil
+     * qui déclenche, pas une analyse humaine.
+     */
     private function verifierSeuilCentif(Operation $operation): void
     {
         $regle = $this->regleActive('SEUIL_MENSUEL_CENTIF');
@@ -228,7 +264,8 @@ class DetecteurFractionnement
         $client = $operation->compte->client;
         $periode = $operation->effectuee_le->format('Y-m');
 
-        $cumul = (float) Operation::whereHas('compte', fn ($q) => $q->where('client_id', $client->id))
+        $cumul = (float) Operation::whereHas('compte', fn ($q) => $q->whereIn('client_id', $client->clientIdsDeLIdentite()))
+            ->where('mode_paiement', ModePaiement::Especes)
             ->whereBetween('effectuee_le', [$operation->effectuee_le->copy()->startOfMonth(), $operation->effectuee_le->copy()->endOfMonth()])
             ->sum('montant');
 
@@ -244,9 +281,12 @@ class DetecteurFractionnement
         Consignateur::enregistrer('systeme', null, 'seuil_centif_atteint', 'client', $client->id);
     }
 
-    private function alerteDejaOuverte(string $clientId, TypeAlerte $type): bool
+    /**
+     * @param  array<int, string>  $clientIds
+     */
+    private function alerteDejaOuverte(array $clientIds, TypeAlerte $type): bool
     {
-        return Alerte::where('client_id', $clientId)
+        return Alerte::whereIn('client_id', $clientIds)
             ->where('type', $type)
             ->where('statut', '!=', StatutAlerte::Traitee)
             ->exists();
@@ -258,8 +298,6 @@ class DetecteurFractionnement
      */
     private function formaterMontant(float $montant, string $devise): string
     {
-        $entier = number_format($montant, 0, ',', ' ');
-
-        return $entier.' '.$devise;
+        return number_format($montant, 0, ',', ' ').' '.$devise;
     }
 }
