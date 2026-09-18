@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Admin\Authentification\ConnexionController as AdminConnexionController;
 use App\Http\Controllers\Agent\Authentification\ConnexionController as AgentConnexionController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Rapports\AccesRapportPartageController;
+use Illuminate\Support\Facades\Route;
 
 // Pas de page d'accueil publique : on renvoie directement vers l'espace agent (guichet en premier).
 Route::redirect('/', '/connexion');

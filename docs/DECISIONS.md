@@ -453,10 +453,11 @@ appliqué : pas de suppositions, option la plus prudente retenue, documentée ic
   serveur dans `CreateurClient::creer()` indépendamment de ce que le caissier a vu à l'écran, se
   contente de lever une `Alerte` (type `IncoherenceDepotSimule`, `faits` = opérateur + score
   uniquement, jamais un nom) visible dans l'espace du responsable de l'agence de création du client.
-- **Première infra e-mail du dépôt** (`agents.email`/`email_idx`, migration additive
-  `add_email_aux_agents`, `App\Mail\AlerteConformiteMail`) — contredit la remarque du §17
-  (« aucune infra e-mail dans ce dépôt »), devenue nécessaire pour cette alerte précise. Contenu du
-  mail volontairement minimal (gravité, type, agence, lien vers le tableau de bord) : jamais un nom
+- **Colonne `agents.email`/`email_idx` ajoutée** (migration additive `add_email_aux_agents`),
+  `App\Mail\AlerteConformiteMail` créé sur le même modèle que `App\Mail\RapportJournalierMail`
+  (déjà existant pour les rapports quotidiens, §19 ci-dessous — la remarque du §17 « aucune infra
+  e-mail dans ce dépôt » était donc erronée, corrigée ici après l'avoir découvert en creusant §19).
+  Contenu du mail volontairement minimal (gravité, type, agence, lien vers le tableau de bord) : jamais un nom
   de client, l'e-mail étant un canal moins sûr que l'application. Portée choisie avec
   l'utilisateur : responsables de l'agence de création du client **uniquement** (pas tout le
   réseau) — jamais le caissier connecté (rôle exclu de la requête), jamais un administrateur (table
@@ -464,3 +465,37 @@ appliqué : pas de suppositions, option la plus prudente retenue, documentée ic
   réellement construit et mis en file (`Mail::queue`, driver `database`), mais atterrit dans
   `storage/logs/laravel.log` plutôt que sur un vrai SMTP, cohérent avec « terminal standard, sans
   dépendance réseau pour la démo ».
+
+## 19. Alignement du rapport quotidien sur le format papier FECECAM — photos fournies par l'utilisateur
+
+Demande orale, avec photos de gabarits papier réellement utilisés (FECECAM-Bénin, agence Alibori/
+Banikoara, tableaux vierges — aucune donnée personnelle sur les photos). CLAUDE.md §8 appliqué.
+
+- **Constat avant toute modification : la fonctionnalité de rapport quotidien existait déjà
+  presque intégralement** (`App\Services\Rapports\GenerateurRapportJournalier`,
+  `App\Http\Controllers\Agent\Rapports\RapportJournalierController`, `App\Mail\RapportJournalierMail`,
+  `App\Console\Commands\Rapports\EnvoyerRapportsQuotidiens` planifiée à 20h dans `routes/console.php`,
+  page déjà liée depuis le tableau de bord caissier). Décision : **ne pas reconstruire**, seulement
+  combler les écarts trouvés en comparant les photos au PDF déjà produit — cohérent avec « ne pas
+  dupliquer un travail déjà fait ».
+- **Bug corrigé, hors du périmètre de la demande mais trouvé en creusant** :
+  `resources/views/agent/rapports/index.blade.php` chargeait Chart.js depuis
+  `cdn.jsdelivr.net` alors que le paquet est déjà installé (`package.json`) et déjà bundlé par Vite
+  (`resources/js/app.js` expose `window.Chart`) — le `<script>` CDN était redondant et enfreignait
+  CLAUDE.md §2.2 (« pas de CDN ») en plus de risquer de casser la démo hors wifi. Retiré.
+- **Écarts comblés** (données déjà calculées ailleurs dans le dépôt, aucune nouvelle notion
+  métier) : colonne « Compte » ajoutée sur « Comptes dormants réactivés » (résolue depuis
+  `Alerte->faits['compte_id']`, jamais stocké en clair sur l'alerte elle-même) ; colonne « Plafond
+  quotidien (cotation) » ajoutée sur « Opérations inhabituelles quotidiennes par cotation »,
+  reprenant `Identite::plafond_quotidien_especes` déjà calculé par
+  `App\Services\Identite\CalculateurPlafondQuotidien` — le mot « cotation » du gabarit papier
+  désigne ce plafond, pas une notion nouvelle.
+- **Écarté après question à l'utilisateur : construire une notation de risque client
+  (« cotation ») pour la section « Liste des modifications effectuées sur cotations ».** Cette
+  notion n'existe nulle part dans le dépôt (aucun champ, aucun modèle, aucun historique) ; l'ajouter
+  aurait été une vraie fonctionnalité nouvelle (échelle, règles de changement, autorisation), pas un
+  ajustement de rapport. L'utilisateur a choisi de laisser cette section absente pour l'instant —
+  à traiter séparément si le besoin est confirmé.
+- **Écarté après question à l'utilisateur : reproduire toutes les colonnes KYC du « brouillard des
+  ouvertures »** (profession, pièce d'identité, téléphone, adresse, etc., visibles sur les photos).
+  L'utilisateur a choisi de garder la version résumée actuelle (4 colonnes) plutôt que ~14.

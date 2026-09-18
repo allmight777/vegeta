@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 class EnvoyerRapportsQuotidiens extends Command
 {
     protected $signature = 'rapports:envoyer-quotidiens {--date= : Date du rapport (YYYY-MM-DD)}';
+
     protected $description = 'Génère et envoie le rapport quotidien sécurisé à chaque responsable d’agence.';
 
     public function handle(GenerateurRapportJournalier $generateur): int

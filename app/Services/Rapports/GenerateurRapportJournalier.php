@@ -7,6 +7,7 @@ use App\Models\Agence;
 use App\Models\Agent;
 use App\Models\Alerte;
 use App\Models\Client;
+use App\Models\Compte;
 use App\Models\Operation;
 use App\Models\RapportJournalier;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -44,7 +45,7 @@ class GenerateurRapportJournalier
     /** @return array<string, Collection|array|int> */
     public function donnees(Agence $agence, CarbonImmutable $debut, CarbonImmutable $fin): array
     {
-        $operations = Operation::with(['compte.client.personnePhysique', 'compte.client.personneMorale'])
+        $operations = Operation::with(['compte.client.personnePhysique', 'compte.client.personneMorale', 'compte.client.identite'])
             ->where('agence_id', $agence->id)
             ->whereBetween('effectuee_le', [$debut->startOfDay(), $fin->endOfDay()])
             ->orderBy('effectuee_le')
@@ -63,6 +64,11 @@ class GenerateurRapportJournalier
             ->whereHas('client.comptes', fn ($query) => $query->where('agence_id', $agence->id))
             ->get();
 
+        // Le numéro de compte réactivé n'est pas une colonne d'Alerte (faits = jamais un
+        // nom, mais un identifiant technique) : il vient de faits['compte_id'].
+        $comptesParId = Compte::whereIn('id', $comptesDormantsReactives->pluck('faits.compte_id')->filter())
+            ->get()->keyBy('id');
+
         $clients = Client::with(['personnePhysique', 'personneMorale', 'comptes'])
             ->where('agence_creation_id', $agence->id)
             ->whereBetween('created_at', [$debut->startOfDay(), $fin->endOfDay()])
@@ -73,6 +79,7 @@ class GenerateurRapportJournalier
             'operationsInhabituelles' => $operationsInhabituelles,
             'depotParClient' => $depotParClient,
             'comptesDormantsReactives' => $comptesDormantsReactives,
+            'comptesParId' => $comptesParId,
             'clientsPhysiques' => $clients->filter(fn (Client $client) => $client->type->value === 'personne_physique'),
             'clientsMoraux' => $clients->filter(fn (Client $client) => $client->type->value === 'personne_morale'),
             'seuilInhabituel' => $seuilInhabituel,
