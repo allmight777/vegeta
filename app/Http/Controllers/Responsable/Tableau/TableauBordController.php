@@ -27,6 +27,21 @@ class TableauBordController extends Controller
         $clientsDeLAgence = Client::deLAgence($agenceId);
         $clientIdsDeLAgence = (clone $clientsDeLAgence)->pluck('id')->all();
 
+        // Une alerte de cumul est déclenchée par la dernière opération, qui peut avoir eu
+        // lieu dans une autre agence — c'est même tout l'intérêt de la détection
+        // multi-agences. Le responsable doit donc voir les alertes de toutes les fiches
+        // de ses membres, y compris celles ouvertes ailleurs. Les dossiers à compléter,
+        // eux, restent strictement ceux de son agence : ce sont ses tâches à lui.
+        $identiteIds = Client::whereIn('id', $clientIdsDeLAgence)
+            ->whereNotNull('identite_id')
+            ->pluck('identite_id')
+            ->all();
+
+        $clientIdsSurveilles = array_values(array_unique(array_merge(
+            $clientIdsDeLAgence,
+            Client::whereIn('identite_id', $identiteIds)->pluck('id')->all(),
+        )));        
+
         // Tout ce qui relève d'un seuil ou d'un cumul va dans le bloc dédié,
         // le reste (filtrage, NPI) reste dans les alertes du jour.
         $typesFractionnement = [
@@ -36,7 +51,7 @@ class TableauBordController extends Controller
             'plafond_quotidien_depasse',
         ];
 
-        $alertesOuvertes = Alerte::whereIn('client_id', $clientIdsDeLAgence)
+        $alertesOuvertes = Alerte::whereIn('client_id', $clientIdsSurveilles)        
             ->where('statut', '!=', StatutAlerte::Traitee)
             ->orderByRaw("CASE gravite WHEN 'critique' THEN 0 WHEN 'attention' THEN 1 ELSE 2 END")
             ->get();
@@ -51,7 +66,7 @@ class TableauBordController extends Controller
             // directe avec une chaîne échoue silencieusement et vide le bloc.
             'alertesDuJour' => $alertesOuvertes->reject(fn ($alerte) => in_array($alerte->type->value, $typesFractionnement, true))->take(15),
             'seuilsEtFractionnements' => $alertesOuvertes->filter(fn ($alerte) => in_array($alerte->type->value, $typesFractionnement, true))->values(),
-            'declarationsAVenir' => DeclarationCentif::whereIn('client_id', $clientIdsDeLAgence)
+            'declarationsAVenir' => DeclarationCentif::whereIn('client_id', $clientIdsSurveilles)            
                 ->where('statut', StatutDeclarationCentif::APreparer)
                 ->get(),
             'npiEnAttente' => (clone $clientsDeLAgence)->with(['personnePhysique', 'personneMorale'])
