@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 // Rattrapage NPI en mode dégradé (07_PROMPT_MODE_DEGRADE_NPI_OCR §2.4).
 Schedule::command('npi:verifier-en-attente')->everyFiveMinutes();
+Schedule::command('rapports:envoyer-quotidiens')->dailyAt('20:00')->timezone(config('app.timezone'));

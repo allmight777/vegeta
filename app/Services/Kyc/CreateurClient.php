@@ -30,6 +30,7 @@ class CreateurClient
         private readonly MoteurFiltrage $moteurFiltrage,
         private readonly ResolveurStatutNpi $resolveurStatutNpi,
         private readonly ResolveurIdentite $resolveurIdentite,
+        private readonly DetecteurIncoherenceDepotSimule $detecteurIncoherenceDepotSimule,
     ) {}
 
     /**
@@ -58,6 +59,7 @@ class CreateurClient
 
         $this->completude->evaluer($client->fresh(['personnePhysique', 'personneMorale']));
         $this->moteurFiltrage->filtrer($client->fresh());
+        $this->detecteurIncoherenceDepotSimule->verifier($client->fresh(['personnePhysique', 'personneMorale']), $agent);
 
         Consignateur::enregistrer('agent', $agent?->id, 'creation_client', 'client', $client->id);
 

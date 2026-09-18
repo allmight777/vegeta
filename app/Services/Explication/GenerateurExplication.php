@@ -69,6 +69,20 @@ class GenerateurExplication
             "Une opération de {$montantFormate} vient de le réactiver — l'exécutant est tracé.";
     }
 
+    /**
+     * Jamais le nom saisi ni le nom simulé trouvé (même principe que pourFiltrage) : la
+     * fiche complète reste accessible au responsable depuis le tableau de bord, mais
+     * cette phrase d'audit n'en a pas besoin.
+     */
+    public function pourIncoherenceDepotSimule(string $operateurLibelle, float $score): string
+    {
+        $pourcentage = round($score * 100).' %';
+
+        return 'Le nom saisi par le caissier ne correspond pas au titulaire connu du numéro de téléphone '.
+            "déclaré (opérateur {$operateurLibelle}, similarité {$pourcentage} — simulation de dépôt). ".
+            "Vérifiez l'identité avant de poursuivre.";
+    }
+
     private function nomCible(Client|Signataire $cible): string
     {
         return $cible instanceof Signataire ? (string) $cible->nom : $cible->nomAffichage();

@@ -378,6 +378,44 @@ BOUTONS DES CHAMPS REPETABLES
             }
         }
     };
+
+    window.__resultatSimulationDepot = null;
+
+    // Simulation de dépôt mobile money (annuaire synthétique, jamais un vrai appel
+    // USSD/API opérateur — docs/DECISIONS.md). Ne change aucune icône existante : le
+    // résultat est simplement mis en cache pour l'écran récapitulatif avant confirmation.
+    window.verifierSimulationDepot = async function (input) {
+        const telephone = input.value.trim();
+
+        if (!telephone) {
+            window.__resultatSimulationDepot = null;
+            return;
+        }
+
+        try {
+            const reponse = await fetch(
+                @json(route('agent.clients.simulation-depot.verifier')),
+                {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN':
+                            document.querySelector(
+                                'meta[name="csrf-token"]'
+                            )?.content ?? '',
+                        'Accept': 'application/json',
+                    },
+
+                    body: JSON.stringify({ telephone }),
+                }
+            );
+
+            window.__resultatSimulationDepot = await reponse.json();
+        } catch (e) {
+            window.__resultatSimulationDepot = null;
+        }
+    };
 </script>
 
 

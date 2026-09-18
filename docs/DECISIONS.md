@@ -417,3 +417,50 @@ suppositions, option la plus prudente retenue, documentée ici plutôt que devin
   le prompt (« ne pas passer de temps significatif ici »). `layouts/responsable.blade.php` se
   distingue de `layouts/agent.blade.php` par une teinte d'accent différente (bleu plutôt que jaune)
   réutilisant les mêmes tokens CSS, sans logo par réseau ni `reseaux.logo_path`.
+
+## 18. Simulation de dépôt mobile money à l'inscription — demande orale, sans texte de prompt dédié
+
+Demande formulée hors des prompts écrits : reproduire, à l'inscription d'un client, l'écran de
+confirmation qu'affiche un vrai transfert mobile money (MTN/Moov/Celtiis Bénin — numéro + nom du
+titulaire), pour que le caissier compare visuellement ce nom à celui qu'il saisit. CLAUDE.md §8
+appliqué : pas de suppositions, option la plus prudente retenue, documentée ici.
+
+- **Écarté après discussion avec l'utilisateur : un vrai appel USSD ou une vraie API marchand
+  MTN/Moov/Celtiis.** Deux raisons, pas seulement réglementaires : (1) techniquement impossible
+  depuis une application web sans modem GSM physique ou contrat marchand réel (identifiants,
+  sandbox) — aucun des deux n'existe dans ce dépôt ; (2) même réalisable, chaque vérification
+  aurait débité un vrai compte et récupéré l'identité d'un vrai abonné, interdit par CLAUDE.md §2.1
+  (« aucune donnée personnelle réelle, pas d'extraction d'un système existant »).
+- **Option retenue : annuaire numéro → titulaire entièrement synthétique**
+  (`comptes_mobile_monnaie_simules`, `source = demo`, seedé par
+  `Database\Seeders\Demo\AnnuaireMobileMonnaieSimuleSeeder`, jeu fixe de noms béninois déjà utilisés
+  ailleurs dans le dépôt — aucun Faker). `App\Services\Kyc\SimulateurDepotMobileMonnaie` fait une
+  recherche exacte par index aveugle (même mécanisme que `personnes_physiques.telephone_idx`),
+  jamais un appel réseau. Préfixes opérateurs (`App\Enums\OperateurMobileMonnaie::depuisPrefixe()`)
+  codés en dur : c'est le plan de numérotation public béninois, pas une donnée personnelle.
+- **Contrairement à `VerificateurTelephoneExistant` (§16), le nom trouvé EST renvoyé au
+  navigateur.** Ce n'est pas l'identité d'un autre client interne (donc pas de non-divulgation à
+  respecter ici) mais un référentiel externe simulé — exactement ce qu'affiche un vrai écran
+  MTN/Moov/Celtiis, que le caissier doit pouvoir lire pour comparer. La comparaison elle-même reste
+  faite par empreinte (`ComparateurEmpreinte::dice`, seuil 0.7, même seuil que §16), jamais par
+  correspondance exacte de chaîne.
+- **Écran récapitulatif ajouté avant la confirmation** (`resources/views/agent/clients/creer.blade.php`,
+  étape Alpine `saisie` → `recap`) plutôt qu'un simple ajout d'icône au blur : demande explicite de
+  l'utilisateur. Aucune persistance intermédiaire — le récapitulatif est une confirmation UX
+  côté navigateur avant le même (et unique) `POST` déjà existant vers `agent.clients.stocker`.
+- **Un écart de nom ne bloque jamais le caissier.** « L'outil recommande, l'humain décide »
+  (CLAUDE.md §3, dernière ligne) : `App\Services\Kyc\DetecteurIncoherenceDepotSimule`, appelé côté
+  serveur dans `CreateurClient::creer()` indépendamment de ce que le caissier a vu à l'écran, se
+  contente de lever une `Alerte` (type `IncoherenceDepotSimule`, `faits` = opérateur + score
+  uniquement, jamais un nom) visible dans l'espace du responsable de l'agence de création du client.
+- **Première infra e-mail du dépôt** (`agents.email`/`email_idx`, migration additive
+  `add_email_aux_agents`, `App\Mail\AlerteConformiteMail`) — contredit la remarque du §17
+  (« aucune infra e-mail dans ce dépôt »), devenue nécessaire pour cette alerte précise. Contenu du
+  mail volontairement minimal (gravité, type, agence, lien vers le tableau de bord) : jamais un nom
+  de client, l'e-mail étant un canal moins sûr que l'application. Portée choisie avec
+  l'utilisateur : responsables de l'agence de création du client **uniquement** (pas tout le
+  réseau) — jamais le caissier connecté (rôle exclu de la requête), jamais un administrateur (table
+  `admins` jamais interrogée par ce service). Driver `MAIL_MAILER=log` conservé : l'e-mail est
+  réellement construit et mis en file (`Mail::queue`, driver `database`), mais atterrit dans
+  `storage/logs/laravel.log` plutôt que sur un vrai SMTP, cohérent avec « terminal standard, sans
+  dépendance réseau pour la démo ».

@@ -1908,7 +1908,7 @@
 
 
                 <a
-                    href="{{ Route::has('agent.historique') ? route('agent.historique') : url()->current() }}"
+                    href="{{ route('agent.operations.historique') }}"
                     class="quick-action"
                 >
 
@@ -1922,7 +1922,7 @@
 
 
                 <a
-                    href="{{ Route::has('agent.export') ? route('agent.export') : url()->current() }}"
+                    href="{{ route('agent.rapports.index') }}"
                     class="quick-action"
                 >
 

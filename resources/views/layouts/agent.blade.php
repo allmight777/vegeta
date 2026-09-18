@@ -1845,27 +1845,14 @@
                 </a>
 
 
-                <a
-                    href="{{ Route::has('agent.historique')
-                        ? route('agent.historique')
-                        : url('/agent/historique') }}"
-                    class="sidebar-link {{ request()->routeIs('agent.historique') ? 'active' : '' }}"
-                >
-                    <i class="fa-solid fa-chart-line"></i>
-                    <span>Activité</span>
-                </a>
-
-
                 <div class="sidebar-section-title">
                     Gestion
                 </div>
 
 
                 <a
-                    href="{{ Route::has('agent.historique')
-                        ? route('agent.historique')
-                        : url('/agent/historique') }}"
-                    class="sidebar-link"
+                    href="{{ route('agent.operations.historique') }}"
+                    class="sidebar-link {{ request()->routeIs('agent.operations.historique') ? 'active' : '' }}"
                 >
                     <i class="fa-solid fa-clock-rotate-left"></i>
                     <span>Historique</span>
@@ -1873,10 +1860,8 @@
 
 
                 <a
-                    href="{{ Route::has('agent.export')
-                        ? route('agent.export')
-                        : url('/agent/export') }}"
-                    class="sidebar-link"
+                    href="{{ route('agent.rapports.index') }}"
+                    class="sidebar-link {{ request()->routeIs('agent.rapports.*') ? 'active' : '' }}"
                 >
                     <i class="fa-solid fa-file-export"></i>
                     <span>Rapports</span>

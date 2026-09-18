@@ -810,7 +810,7 @@
 
 <div
     class="fiche-page"
-    x-data="{ type: '{{ old('type', 'personne_physique') }}' }"
+    x-data="{ type: '{{ old('type', 'personne_physique') }}', etape: 'saisie' }"
 >
 
 
@@ -898,147 +898,200 @@
 
 
         {{-- =================================================
-             TYPE DE CLIENT
+             ÉTAPE 1 : SAISIE
         ================================================== --}}
 
-        <details class="fiche-section" open>
+        <div x-show="etape === 'saisie'">
 
-            <summary>
-                Type de client
-            </summary>
+            {{-- TYPE DE CLIENT --}}
 
+            <details class="fiche-section" open>
 
-            <div class="fiche-section-corps">
-
-
-                <div class="champ-fiche">
-
-                    <label
-                        class="champ-fiche-label"
-                        for="type"
-                    >
-                        Type de client
-                        <span class="obligatoire">*</span>
-                    </label>
+                <summary>
+                    Type de client
+                </summary>
 
 
-                    <select
-                        name="type"
-                        id="type"
-                        x-model="type"
-                        class="champ-fiche-input"
-                    >
+                <div class="fiche-section-corps">
 
-                        <option value="personne_physique">
-                            Personne physique
-                        </option>
 
-                        <option value="personne_morale">
-                            Personne morale
-                        </option>
+                    <div class="champ-fiche">
 
-                    </select>
+                        <label
+                            class="champ-fiche-label"
+                            for="type"
+                        >
+                            Type de client
+                            <span class="obligatoire">*</span>
+                        </label>
+
+
+                        <select
+                            name="type"
+                            id="type"
+                            x-model="type"
+                            class="champ-fiche-input"
+                        >
+
+                            <option value="personne_physique">
+                                Personne physique
+                            </option>
+
+                            <option value="personne_morale">
+                                Personne morale
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="champ-fiche">
+
+                        <label
+                            class="champ-fiche-label"
+                            for="nature_relation"
+                        >
+                            Nature de la relation
+                            <span class="obligatoire">*</span>
+                        </label>
+
+
+                        <select
+                            name="nature_relation"
+                            id="nature_relation"
+                            class="champ-fiche-input"
+                        >
+
+                            <option value="titulaire_compte">
+                                Titulaire de compte
+                            </option>
+
+                            <option value="occasionnel">
+                                Client occasionnel
+                            </option>
+
+                        </select>
+
+                    </div>
+
 
                 </div>
 
-
-                <div class="champ-fiche">
-
-                    <label
-                        class="champ-fiche-label"
-                        for="nature_relation"
-                    >
-                        Nature de la relation
-                        <span class="obligatoire">*</span>
-                    </label>
+            </details>
 
 
-                    <select
-                        name="nature_relation"
-                        id="nature_relation"
-                        class="champ-fiche-input"
-                    >
+            {{-- FORMULAIRE PERSONNE PHYSIQUE --}}
 
-                        <option value="titulaire_compte">
-                            Titulaire de compte
-                        </option>
+            <div
+                x-show="type === 'personne_physique'"
+                x-cloak
+            >
 
-                        <option value="occasionnel">
-                            Client occasionnel
-                        </option>
-
-                    </select>
-
-                </div>
-
+                @include(
+                    'agent.clients._formulaire',
+                    [
+                        'type' => 'personne_physique',
+                        'valeurs' => old()
+                    ]
+                )
 
             </div>
 
-        </details>
 
+            {{-- FORMULAIRE PERSONNE MORALE --}}
 
+            <div
+                x-show="type === 'personne_morale'"
+                x-cloak
+            >
 
-        {{-- =================================================
-             FORMULAIRE PERSONNE PHYSIQUE
-        ================================================== --}}
-
-        <div
-            x-show="type === 'personne_physique'"
-            x-cloak
-        >
-
-            @include(
-                'agent.clients._formulaire',
-                [
-                    'type' => 'personne_physique',
-                    'valeurs' => old()
-                ]
-            )
-
-        </div>
-
-
-
-        {{-- =================================================
-             FORMULAIRE PERSONNE MORALE
-        ================================================== --}}
-
-        <div
-            x-show="type === 'personne_morale'"
-            x-cloak
-        >
-
-            @include(
-                'agent.clients._formulaire',
-                [
-                    'type' => 'personne_morale',
-                    'valeurs' => old(),
-                    'repetables' => [
-                        'signataires' => old('signataires', [])
+                @include(
+                    'agent.clients._formulaire',
+                    [
+                        'type' => 'personne_morale',
+                        'valeurs' => old(),
+                        'repetables' => [
+                            'signataires' => old('signataires', [])
+                        ]
                     ]
-                ]
-            )
+                )
+
+            </div>
 
         </div>
 
 
 
         {{-- =================================================
-             ACTION
+             ÉTAPE 2 : RÉCAPITULATIF AVANT CONFIRMATION
+        ================================================== --}}
+
+        <div
+            x-show="etape === 'recap'"
+            x-cloak
+            class="fiche-section"
+            style="border-color: rgba(240, 229, 53, 0.45);"
+        >
+
+            <div style="padding: 16px 22px; font-weight: 800; color: var(--dark); font-size: 0.82rem;">
+                Récapitulatif avant enregistrement
+            </div>
+
+            <div id="recap-simulation-depot" class="fiche-section-corps" style="display: block;"></div>
+
+        </div>
+
+
+
+        {{-- =================================================
+             ACTIONS
         ================================================== --}}
 
         <div class="fiche-actions">
 
             <button
-                type="submit"
+                type="button"
                 class="btn-primary"
+                x-show="etape === 'saisie'"
+                @click="window.afficherRecapitulatif(); etape = 'recap'"
             >
 
                 <span>
-                    Créer et continuer la fiche
+                    Vérifier et continuer
                 </span>
 
                 <i class="fa-solid fa-arrow-right"></i>
+
+            </button>
+
+            <button
+                type="button"
+                class="btn-primary"
+                x-show="etape === 'recap'"
+                x-cloak
+                style="background: #FFFFFF; color: var(--dark); border: 1px solid var(--border); box-shadow: none;"
+                @click="etape = 'saisie'"
+            >
+
+                <span>
+                    Retour
+                </span>
+
+            </button>
+
+            <button
+                type="submit"
+                class="btn-primary"
+                x-show="etape === 'recap'"
+                x-cloak
+            >
+
+                <span>
+                    Confirmer l'inscription
+                </span>
+
+                <i class="fa-solid fa-check"></i>
 
             </button>
 
@@ -1049,5 +1102,91 @@
 
 
 </div>
+
+
+<style>
+    .recap-ligne {
+        margin: 0 0 10px;
+        font-size: 0.78rem;
+        color: var(--text);
+    }
+
+    .recap-ok {
+        color: #15803D;
+        font-weight: 700;
+    }
+
+    .recap-alerte {
+        color: var(--danger);
+        font-weight: 700;
+    }
+</style>
+
+<script>
+    // Construit le récapitulatif à partir des champs déjà saisis (aucun aller-retour
+    // serveur) + du résultat de la simulation de dépôt mis en cache au blur du téléphone
+    // (window.__resultatSimulationDepot, voir _formulaire.blade.php). Le formulaire
+    // personne physique et le formulaire personne morale utilisent les mêmes "name"
+    // (ex. "telephone") : un seul est visible à la fois, on ne lit donc que le champ
+    // visible pour éviter de lire par erreur celui de l'autre type, resté dans le DOM.
+    function champVisible(nom) {
+        const elements = document.querySelectorAll(`[name="${nom}"]`);
+
+        for (const element of elements) {
+            if (element.offsetParent !== null) {
+                return element;
+            }
+        }
+
+        return null;
+    }
+
+    function normaliserNom(valeur) {
+        return (valeur ?? '')
+            .toUpperCase()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .replace(/[^A-Z ]/g, '')
+            .trim();
+    }
+
+    function echapper(valeur) {
+        const div = document.createElement('div');
+        div.textContent = valeur ?? '';
+        return div.innerHTML;
+    }
+
+    window.afficherRecapitulatif = function () {
+        const conteneur = document.getElementById('recap-simulation-depot');
+        if (!conteneur) {
+            return;
+        }
+
+        const nom = champVisible('nom')?.value?.trim() ?? '';
+        const prenoms = champVisible('prenoms')?.value?.trim() ?? '';
+        const raisonSociale = champVisible('raison_sociale')?.value?.trim() ?? '';
+        const nomSaisi = [prenoms, nom].filter(Boolean).join(' ').trim() || raisonSociale;
+        const telephone = champVisible('telephone')?.value?.trim() ?? '';
+        const resultat = window.__resultatSimulationDepot;
+
+        let contenu = `<p class="recap-ligne pleine-largeur"><strong>Client :</strong> ${echapper(nomSaisi) || '—'}</p>`;
+
+        if (!telephone) {
+            contenu += '<p class="recap-ligne pleine-largeur">Aucun numéro de téléphone saisi — pas de simulation de dépôt possible.</p>';
+        } else if (!resultat || !resultat.trouve) {
+            contenu += `<p class="recap-ligne pleine-largeur"><strong>Téléphone :</strong> ${echapper(telephone)} — numéro non reconnu dans l'annuaire mobile money simulé.</p>`;
+        } else {
+            const correspond = normaliserNom(nomSaisi) === normaliserNom(resultat.nom_titulaire);
+
+            contenu += `<p class="recap-ligne pleine-largeur"><strong>Téléphone :</strong> ${echapper(telephone)} (${echapper(resultat.operateur_libelle ?? 'opérateur inconnu')})</p>`;
+            contenu += `<p class="recap-ligne pleine-largeur"><strong>Titulaire simulé du dépôt :</strong> ${echapper(resultat.nom_titulaire)}</p>`;
+            contenu += correspond
+                ? '<p class="recap-ligne pleine-largeur recap-ok">Le nom saisi correspond au titulaire simulé.</p>'
+                : '<p class="recap-ligne pleine-largeur recap-alerte">Le nom saisi ne correspond pas au titulaire simulé du dépôt — vérifiez l\'identité avant de confirmer. Le responsable d\'agence sera alerté.</p>';
+        }
+
+        conteneur.innerHTML = contenu;
+    };
+</script>
 
 @endsection
