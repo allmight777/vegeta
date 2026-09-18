@@ -27,6 +27,8 @@
         href="https://fonts.googleapis.com"
     >
 
+      <link rel="shortcut icon" href="{{ asset('images/fececam.jpg') }}" type="image/x-icon">
+
     <link
         rel="preconnect"
         href="https://fonts.gstatic.com"
