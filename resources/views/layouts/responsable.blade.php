@@ -820,27 +820,7 @@
     </header>
 
 
-    @if (session('statut'))
-
-        <div class="agent-alert-conteneur">
-
-            <div class="agent-alert">
-
-                <div class="agent-alert-icon">
-                    <i class="fa-solid fa-check"></i>
-                </div>
-
-                <span>
-                    {{ session('statut') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
-
-
+  
     <div class="agent-shell">
 
         <aside class="agent-sidebar">
@@ -888,7 +868,7 @@
                     <span>Questions escaladées</span>
                 </a>
 
-                <div class="sidebar-section-title">
+            {{--     <div class="sidebar-section-title">
                     Supervision
                 </div>
 
@@ -899,7 +879,7 @@
                     <i class="fa-solid fa-users"></i>
                     <span>Clients (lecture seule)</span>
                 </a>
-
+ --}}
             </nav>
 
             <div class="sidebar-bottom">

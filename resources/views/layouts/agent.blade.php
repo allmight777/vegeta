@@ -1754,27 +1754,7 @@
          MESSAGE SESSION
     ====================================================== --}}
 
-    @if (session('statut'))
-
-        <div class="agent-alert-conteneur">
-
-            <div class="agent-alert">
-
-                <div class="agent-alert-icon">
-
-                    <i class="fa-solid fa-check"></i>
-
-                </div>
-
-                <span>
-                    {{ session('statut') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
+   
 
 
 

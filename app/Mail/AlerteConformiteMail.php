@@ -1,27 +1,46 @@
 <?php
+// app/Mail/AlerteConformiteMail.php
 
 namespace App\Mail;
 
-use App\Models\Alerte;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
 
-/**
- * Contenu volontairement minimal : gravité, type, agence, horodatage, lien vers le
- * tableau de bord — jamais un nom de client ni un numéro (l'e-mail est un canal moins
- * sûr que l'application, CLAUDE.md §5 "Données personnelles"). Le détail reste dans
- * l'espace responsable, jamais dans la boîte mail.
- */
 class AlerteConformiteMail extends Mailable implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, SerializesModels;
 
-    public function __construct(public readonly Alerte $alerte) {}
+    public function __construct(
+        public string $gravite,
+        public string $typeLibelle,
+        public string $agenceNom,
+        public string $explication,
+        public string $lienDashboard,
+    ) {
+    }
 
-    public function build(): self
+    public function envelope(): Envelope
     {
-        return $this->subject('CIF-Empreinte — nouvelle alerte de conformité ('.$this->alerte->gravite->libelle().')')
-            ->view('mail.alerte-conformite');
+        return new Envelope(
+            subject: '[CIF-Empreinte] Alerte conformité — '.$this->typeLibelle,
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            view: 'emails.alerte-conformite',
+            with: [
+                'gravite' => $this->gravite,
+                'typeLibelle' => $this->typeLibelle,
+                'agenceNom' => $this->agenceNom,
+                'explication' => $this->explication,
+                'lienDashboard' => $this->lienDashboard,
+            ],
+        );
     }
 }

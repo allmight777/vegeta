@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Agent\Clients\ClientController;
+use App\Http\Controllers\Agent\Clients\ClientLookupController;
 use App\Http\Controllers\Agent\Clients\ImportDocumentController;
 use App\Http\Controllers\Agent\Clients\MandataireController;
 use App\Http\Controllers\Agent\Clients\NpiVerificationController;
@@ -11,24 +12,46 @@ use App\Http\Controllers\Agent\Clients\TelephoneVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('clients')->name('clients.')->group(function () {
+
+    // -----------------------------------------------------------------
+    // Routes fixes (déclarées AVANT les routes paramétrées {client})
+    // pour éviter que "lookup" soit interprété comme un ID.
+    // -----------------------------------------------------------------
+
     Route::get('/', [ClientController::class, 'index'])->name('index');
     Route::get('/nouveau', [ClientController::class, 'creer'])->name('creer');
     Route::post('/', [ClientController::class, 'stocker'])->name('stocker');
-    Route::get('/{client}/completer', [ClientController::class, 'completer'])->name('completer');
-    Route::put('/{client}/completer', [ClientController::class, 'mettreAJour'])->name('mettre-a-jour');
+
+    // AJOUT : chargement des infos client pour pré-remplir le formulaire d'opération
+    Route::get('/lookup', [ClientLookupController::class, 'afficher'])->name('lookup');
 
     Route::post('/npi/verifier', [NpiVerificationController::class, 'verifier'])->name('npi.verifier');
     Route::post('/telephone/verifier', [TelephoneVerificationController::class, 'verifier'])->name('telephone.verifier');
     Route::post('/simulation-depot/verifier', [SimulationDepotMobileMonnaieController::class, 'verifier'])->name('simulation-depot.verifier');
 
+    // -----------------------------------------------------------------
+    // Routes paramétrées {client} — après les routes fixes ci-dessus
+    // -----------------------------------------------------------------
+
+    Route::get('/{client}/completer', [ClientController::class, 'completer'])->name('completer');
+    Route::put('/{client}/completer', [ClientController::class, 'mettreAJour'])->name('mettre-a-jour');
+
     Route::get('/{client}/systeme-existant', [SystemeExistantController::class, 'rechercher'])->name('systeme-existant.rechercher');
     Route::post('/{client}/systeme-existant', [SystemeExistantController::class, 'appliquer'])->name('systeme-existant.appliquer');
+
+    // -----------------------------------------------------------------
+    // Routes rattachées à d'autres entités
+    // -----------------------------------------------------------------
 
     Route::post('/personnes-morales/{personneMorale}/signataires', [SignataireController::class, 'stocker'])->name('signataires.stocker');
     Route::delete('/signataires/{signataire}', [SignataireController::class, 'detruire'])->name('signataires.detruire');
 
     Route::post('/personnes-physiques/{personnePhysique}/mandataires', [MandataireController::class, 'stocker'])->name('mandataires.stocker');
     Route::delete('/mandataires/{mandataire}', [MandataireController::class, 'detruire'])->name('mandataires.detruire');
+
+    // -----------------------------------------------------------------
+    // Import
+    // -----------------------------------------------------------------
 
     Route::prefix('import')->name('import.')->group(function () {
         Route::get('/', [ImportDocumentController::class, 'creer'])->name('creer');

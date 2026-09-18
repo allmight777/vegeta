@@ -18,8 +18,17 @@ class Alerte extends Model
     protected $table = 'alertes';
 
     protected $fillable = [
-        'type', 'client_id', 'regle_detection_id', 'resultat_filtrage_id', 'gravite',
-        'explication_texte', 'faits', 'statut', 'traitee_par_agent_id', 'traitee_le',
+        'type',
+        'agence_id',
+        'client_id',
+        'regle_detection_id',
+        'resultat_filtrage_id',
+        'gravite',
+        'explication_texte',
+        'faits',
+        'statut',
+        'traitee_par_agent_id',
+        'traitee_le',
     ];
 
     protected function casts(): array
@@ -31,6 +40,11 @@ class Alerte extends Model
             'statut' => StatutAlerte::class,
             'traitee_le' => 'datetime',
         ];
+    }
+
+    public function agence(): BelongsTo
+    {
+        return $this->belongsTo(Agence::class);
     }
 
     public function client(): BelongsTo
