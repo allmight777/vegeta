@@ -39,6 +39,7 @@ class CreateurClient
     {
         $client = Client::create([
             'reseau_id' => $reseauId,
+            'agence_creation_id' => $agent?->agence_id,
             'type' => $donnees['type'],
             'nature_relation' => $donnees['nature_relation'],
             'source_creation' => $source,
@@ -83,7 +84,7 @@ class CreateurClient
             ]);
         }
 
-        if ($agent?->estResponsableLbcft() && ($donnees['fiche_rlbcft'] ?? null)) {
+        if ($agent?->estResponsableAgence() && ($donnees['fiche_rlbcft'] ?? null)) {
             $client->ficheRlbcft()->updateOrCreate([], $donnees['fiche_rlbcft']);
         }
     }

@@ -1823,6 +1823,22 @@
 
 
                 <div class="sidebar-section-title">
+                    Comptes
+                </div>
+
+
+                <a
+                    href="{{ Route::has('admin.agents.index')
+                        ? route('admin.agents.index')
+                        : url('/admin/agents') }}"
+                    class="sidebar-link {{ request()->routeIs('admin.agents.*') ? 'active' : '' }}"
+                >
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span>Caissiers &amp; responsables</span>
+                </a>
+
+
+                <div class="sidebar-section-title">
                     Conformité
                 </div>
 

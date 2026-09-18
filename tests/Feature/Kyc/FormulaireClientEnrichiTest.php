@@ -16,7 +16,7 @@ class FormulaireClientEnrichiTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function agenceEtAgent(RoleAgent $role = RoleAgent::Guichet): Agent
+    private function agenceEtAgent(RoleAgent $role = RoleAgent::Caissier): Agent
     {
         $reseau = Reseau::create(['nom' => 'Réseau Test', 'code' => 'RT']);
         $agence = Agence::create(['reseau_id' => $reseau->id, 'nom' => 'Agence Test', 'code' => 'AT']);

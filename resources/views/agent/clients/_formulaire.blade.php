@@ -15,7 +15,7 @@
 $referentiel = app(\App\Services\Kyc\ReferentielFicheAdhesion::class);
 $groupes = $referentiel->groupes($type);
 $agent = auth('agent')->user();
-$voitRlbcft = $agent && $agent->estResponsableLbcft();
+$voitRlbcft = $agent && $agent->estResponsableAgence();
 $enCompletion = $client !== null;
 @endphp
 

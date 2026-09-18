@@ -1183,7 +1183,7 @@ $errors = $errors ?? null;
 
                 <span class="status-dot"></span>
 
-                Guichet Actif
+                Terminal Actif
 
             </span>
 
@@ -1225,7 +1225,7 @@ $errors = $errors ?? null;
 
                 <h2>
                     Authentification
-                    <span>Agent Guichet</span>
+                    <span>Agent</span>
                 </h2>
 
 
@@ -1312,7 +1312,7 @@ $errors = $errors ?? null;
 
                     <p>
                         Saisissez vos identifiants pour ouvrir
-                        votre session de guichet.
+                        votre session.
                     </p>
 
                 </div>
@@ -1421,7 +1421,7 @@ $errors = $errors ?? null;
                     >
 
                         <span id="loginBtnLabel">
-                            Se connecter au guichet
+                            Se connecter
                         </span>
 
                         <i class="fa-solid fa-arrow-right-to-bracket"></i>

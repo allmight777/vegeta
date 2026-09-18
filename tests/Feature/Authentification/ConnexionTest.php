@@ -29,7 +29,7 @@ class ConnexionTest extends TestCase
             'nom' => 'Test Agent',
             'matricule' => 'GUI-9999',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
             'actif' => true,
         ]);
 
@@ -49,7 +49,7 @@ class ConnexionTest extends TestCase
             'nom' => 'Test Agent',
             'matricule' => 'GUI-9998',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
             'actif' => true,
         ]);
 
@@ -88,7 +88,7 @@ class ConnexionTest extends TestCase
             'nom' => 'Agent Désactivé',
             'matricule' => 'GUI-9997',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
             'actif' => false,
         ]);
 
@@ -108,7 +108,7 @@ class ConnexionTest extends TestCase
             'nom' => 'Test Agent',
             'matricule' => 'GUI-9996',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
             'actif' => true,
         ]);
 

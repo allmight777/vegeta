@@ -20,7 +20,7 @@ class CompleterClientRequest extends FormRequest
 
         $regles = $referentiel->reglesValidation($type);
 
-        if ($this->user('agent')?->estResponsableLbcft()) {
+        if ($this->user('agent')?->estResponsableAgence()) {
             $groupeRlbcft = $referentiel->groupeFicheRlbcft($type);
 
             if ($type === 'personne_morale') {

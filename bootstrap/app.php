@@ -25,6 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->name('agent.')
                     ->group($fichier);
             }
+
+            foreach (glob(__DIR__.'/../routes/responsable/*.php') as $fichier) {
+                Route::middleware(['web', 'auth:agent', 'role.agent:responsable_agence'])
+                    ->prefix('espace/responsable')
+                    ->name('responsable.')
+                    ->group($fichier);
+            }
         },
     )
     ->withMiddleware(function (Middleware $middleware) {

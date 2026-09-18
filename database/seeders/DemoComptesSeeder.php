@@ -34,9 +34,8 @@ class DemoComptesSeeder extends Seeder
         $this->creerAdmin($indexAveugle, 'admin.plateforme@cif-empreinte.demo', null, 'Admin CIF (plateforme)');
         $this->creerAdmin($indexAveugle, 'admin.alpha@cif-empreinte.demo', $alpha->id, 'Admin réseau Alpha');
 
-        $this->creerAgent($indexAveugle, 'GUI-0001', $dassa->id, RoleAgent::Guichet, 'Agent guichet');
-        $this->creerAgent($indexAveugle, 'LBC-0001', $dassa->id, RoleAgent::ResponsableLbcft, 'Responsable LBC/FT');
-        $this->creerAgent($indexAveugle, 'DIR-0001', $dassa->id, RoleAgent::Direction, 'Direction');
+        $this->creerAgent($indexAveugle, 'CAI-0001', $dassa->id, RoleAgent::Caissier, 'Caissier');
+        $this->creerAgent($indexAveugle, 'RES-0001', $dassa->id, RoleAgent::ResponsableAgence, "Responsable d'agence");
     }
 
     private function creerAdmin(IndexAveugle $indexAveugle, string $email, ?int $reseauId, string $nom): void

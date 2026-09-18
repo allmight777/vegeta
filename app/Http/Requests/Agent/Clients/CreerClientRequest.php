@@ -42,7 +42,7 @@ class CreerClientRequest extends FormRequest
             }
         }
 
-        if ($this->user('agent')?->estResponsableLbcft()) {
+        if ($this->user('agent')?->estResponsableAgence()) {
             $groupeRlbcft = $referentiel->groupeFicheRlbcft($type ?? 'personne_physique');
             foreach ($groupeRlbcft['champs'] ?? [] as $code => $definition) {
                 $regles["fiche_rlbcft.{$code}"] = $referentiel->reglesPourChamp($definition);

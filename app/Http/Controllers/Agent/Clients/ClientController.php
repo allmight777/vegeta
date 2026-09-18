@@ -72,7 +72,7 @@ class ClientController extends Controller
             'champsManquants' => $personne?->champs_manquants ?? [],
         ];
 
-        if ($agent?->estResponsableLbcft()) {
+        if ($agent?->estResponsableAgence()) {
             if ($type === 'personne_morale') {
                 $donnees['signatairesExistants'] = $client->personneMorale?->signataires;
                 $donnees['fichesRlbcftSignataires'] = $client->personneMorale?->signataires
@@ -100,7 +100,7 @@ class ClientController extends Controller
                 $this->appliquerNpiSurPersonne($personne, $client, $donnees['npi']);
             }
 
-            if (auth('agent')->user()?->estResponsableLbcft() && ($donnees['fiche_rlbcft'] ?? null)) {
+            if (auth('agent')->user()?->estResponsableAgence() && ($donnees['fiche_rlbcft'] ?? null)) {
                 $client->ficheRlbcft()->updateOrCreate([], $donnees['fiche_rlbcft']);
             }
         } else {
@@ -114,7 +114,7 @@ class ClientController extends Controller
             ]));
             $client->personneMorale?->fill($champs)->save();
 
-            if (auth('agent')->user()?->estResponsableLbcft() && ($donnees['fiche_rlbcft'] ?? null)) {
+            if (auth('agent')->user()?->estResponsableAgence() && ($donnees['fiche_rlbcft'] ?? null)) {
                 foreach ($donnees['fiche_rlbcft'] as $signataireId => $champsFiche) {
                     $signataire = $client->personneMorale?->signataires->firstWhere('id', $signataireId);
                     $signataire?->ficheRlbcft()->updateOrCreate([], $champsFiche);

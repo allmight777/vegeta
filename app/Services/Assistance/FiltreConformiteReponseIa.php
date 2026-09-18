@@ -19,7 +19,7 @@ class FiltreConformiteReponseIa
 
     public function filtrer(string $reponse, Agent|Admin $utilisateur, ?int $agentId = null): string
     {
-        if (! ($utilisateur instanceof Agent && $utilisateur->estGuichet())) {
+        if (! ($utilisateur instanceof Agent && $utilisateur->estCaissier())) {
             return $reponse;
         }
 

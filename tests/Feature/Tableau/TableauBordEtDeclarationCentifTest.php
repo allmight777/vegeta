@@ -38,12 +38,12 @@ class TableauBordEtDeclarationCentifTest extends TestCase
         $conformite = Agent::create([
             'agence_id' => $agence->id,
             'nom' => 'Conformité',
-            'matricule' => 'LBC-9',
+            'matricule' => 'RES-9',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::ResponsableLbcft,
+            'role' => RoleAgent::ResponsableAgence,
         ]);
 
-        $reponse = $this->actingAs($conformite, 'agent')->get(route('agent.tableau-de-bord.index'));
+        $reponse = $this->actingAs($conformite, 'agent')->get(route('responsable.tableau-de-bord.index'));
 
         $reponse->assertOk();
         $reponse->assertSee('Dossiers à compléter');
@@ -52,18 +52,18 @@ class TableauBordEtDeclarationCentifTest extends TestCase
         $reponse->assertSee('Déclarations CENTIF à venir');
     }
 
-    public function test_le_tableau_de_bord_guichet_est_simplifie_et_sans_alertes(): void
+    public function test_le_tableau_de_bord_caissier_est_simplifie_et_sans_alertes(): void
     {
         $agence = $this->agence();
-        $guichet = Agent::create([
+        $caissier = Agent::create([
             'agence_id' => $agence->id,
-            'nom' => 'Guichet',
-            'matricule' => 'GUI-9',
+            'nom' => 'Caissier',
+            'matricule' => 'CAI-9',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
         ]);
 
-        $reponse = $this->actingAs($guichet, 'agent')->get(route('agent.tableau-de-bord.index'));
+        $reponse = $this->actingAs($caissier, 'agent')->get(route('agent.tableau-de-bord.index'));
 
         $reponse->assertOk();
         $reponse->assertSee('Opérations du jour');
@@ -102,14 +102,14 @@ class TableauBordEtDeclarationCentifTest extends TestCase
         $conformite = Agent::create([
             'agence_id' => $agence->id,
             'nom' => 'Conformité',
-            'matricule' => 'LBC-8',
+            'matricule' => 'RES-8',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Direction,
+            'role' => RoleAgent::ResponsableAgence,
         ]);
 
-        $reponse = $this->actingAs($conformite, 'agent')->post("/espace/conformite/declarations-centif/{$declaration->id}/generer");
+        $reponse = $this->actingAs($conformite, 'agent')->post("/espace/responsable/conformite/declarations-centif/{$declaration->id}/generer");
 
-        $reponse->assertRedirect(route('agent.tableau-de-bord.index'));
+        $reponse->assertRedirect(route('responsable.tableau-de-bord.index'));
         $declaration->refresh();
         $this->assertSame('generee', $declaration->statut->value);
         $this->assertNotNull($declaration->fichier_pdf_path);

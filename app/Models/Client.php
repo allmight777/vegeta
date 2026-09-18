@@ -7,6 +7,7 @@ use App\Enums\SourceCreation;
 use App\Enums\StatutPpe;
 use App\Enums\StatutVerificationNpi;
 use App\Enums\TypeClient;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +25,7 @@ class Client extends Model
     protected $table = 'clients';
 
     protected $fillable = [
-        'reseau_id', 'identite_id', 'type', 'nature_relation', 'statut_ppe',
+        'reseau_id', 'agence_creation_id', 'identite_id', 'type', 'nature_relation', 'statut_ppe',
         'score_completude_kyc', 'source_creation',
         'statut_verification_npi', 'npi_verifie_le', 'npi_tentatives',
     ];
@@ -46,6 +47,24 @@ class Client extends Model
     public function reseau(): BelongsTo
     {
         return $this->belongsTo(Reseau::class);
+    }
+
+    public function agenceCreation(): BelongsTo
+    {
+        return $this->belongsTo(Agence::class, 'agence_creation_id');
+    }
+
+    /**
+     * Clients rattachés à une agence : créés là-bas, ou y ayant au moins un compte —
+     * un client n'a pas d'`agence_id` propre (consolidation multi-agences, cf. migration
+     * `add_agence_creation_id_to_clients_table`).
+     */
+    public function scopeDeLAgence(Builder $query, int $agenceId): Builder
+    {
+        return $query->where(function (Builder $q) use ($agenceId) {
+            $q->where('agence_creation_id', $agenceId)
+                ->orWhereHas('comptes', fn (Builder $c) => $c->where('agence_id', $agenceId));
+        });
     }
 
     /**
@@ -95,7 +114,7 @@ class Client extends Model
 
     /**
      * Fiche complémentaire RLBC/FT du client lui-même (distincte de celle de chacun de
-     * ses signataires) — jamais chargée ni rendue sans Agent::estResponsableLbcft().
+     * ses signataires) — jamais chargée ni rendue sans Agent::estResponsableAgence().
      */
     public function ficheRlbcft(): MorphOne
     {

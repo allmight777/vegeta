@@ -107,10 +107,10 @@ prompt (`nom chiffré, nom_idx`, `npi_idx` seul) :
 - Pas de réinitialisation de mot de passe par e-mail : un admin réseau désactive/recrée un compte
   agent depuis l'écran de gestion (non construit dans ce MVP faute de temps ; les comptes de démo
   sont recréés par le seeder).
-- Rôles agent limités aux trois du prompt resserré (`guichet`, `responsable_lbcft`, `direction`),
-  vérifiés par un middleware dédié (`role.agent:...`) et par les `Policy` Laravel standard — pas
-  de table de permissions à granularité fine comme le socle complet (`clients.voir_identite_complete`,
-  etc.).
+- Rôles agent : `caissier` et `responsable_agence` depuis `09_PROMPT_TROIS_PROFILS.md` (fusion des
+  trois rôles d'origine `guichet`/`responsable_lbcft`/`direction`, voir §17), vérifiés par un
+  middleware dédié (`role.agent:...`) — pas de table de permissions à granularité fine comme le
+  socle complet (`clients.voir_identite_complete`, etc.).
 
 ## 7. `ContexteReseau` simplifié
 
@@ -180,10 +180,11 @@ périmètre.
   filtrage, fiche RLBC/FT) — pas de fusion des deux tables.
 - **Fiche RLBC/FT strictement réservée au rôle `responsable_lbcft`** : le prompt dit « visible
   uniquement au rôle responsable_lbcft », sans trancher pour le rôle `direction`. Choix le plus
-  prudent conservé : seul `responsable_lbcft` voit et enregistre cette fiche (ni `guichet`, ni
-  `direction`), aussi bien côté vue (`_formulaire.blade.php`) que côté serveur (règles de
-  validation générées seulement pour ce rôle, `ClientController`/`CreateurClient` vérifient à
-  nouveau `Agent::estResponsableLbcft()` avant toute écriture — défense en profondeur).
+  prudent conservé à l'époque : seul `responsable_lbcft` voyait et enregistrait cette fiche (ni
+  `guichet`, ni `direction`). **Superseded par §17** : `responsable_lbcft` et `direction` ont
+  fusionné en `responsable_agence` (`09_PROMPT_TROIS_PROFILS.md`), qui hérite de l'union des deux
+  accès — la fiche RLBC/FT est donc désormais visible/modifiable par `responsable_agence` (ni
+  `caissier`), toujours vérifié côté serveur par `Agent::estResponsableAgence()`.
 - **Extraction de documents** : voir `docs/COMPOSANTS_TIERS.md`. Seule l'extraction `.docx` est
   réellement fonctionnelle (`ZipArchive`, sans nouvelle dépendance). Le mappeur
   (`MappeurChampsExtraits`) est un heuristique regex « libellé : valeur », pas un modèle entraîné —
@@ -344,3 +345,75 @@ suppositions, option la plus prudente retenue, documentée ici plutôt que devin
   sans contrôle de doublon au blur — le brancher demanderait de dupliquer la logique JS des groupes
   répétables (déjà faite pour le NPI dans `_formulaire.blade.php`) pour un signataire, pas le client
   lui-même, jugé hors du périmètre de la demande initiale (« quand il [le client] veut s'inscrire »).
+
+## 17. `09_PROMPT_TROIS_PROFILS` — fusion des rôles, espace Responsable, comptes admin
+
+- **Fusion `guichet` → `caissier`, `responsable_lbcft` + `direction` → `responsable_agence`** :
+  script `php artisan agents:migrer-roles` (`App\Console\Commands\Agents\MigrerRoles`),
+  transactionnel, idempotent, ne supprime jamais de ligne (un doublon `responsable_lbcft` +
+  `direction` sur la même agence devient deux comptes `responsable_agence` distincts, à nettoyer
+  manuellement par un administrateur si besoin — conforme au prompt §2.1). Les anciennes valeurs
+  d'enum (`Guichet`, `ResponsableLbcft`, `Direction`) restent dans `App\Enums\RoleAgent`, marquées
+  `@deprecated`, en attendant un commit `refactor` séparé une fois la migration de données vérifiée
+  en production. **Non exécutée par cette session** ni sur la base de démonstration, à la demande
+  explicite du prompt — l'utilisateur relance lui-même `agents:migrer-roles` puis les seeders.
+- **Autorisation : middleware `role.agent:...` conservé, pas de nouvelles classes `Policy`.** Le
+  prompt demandait des « policies dédiées, une par ressource ». Ce dépôt n'a jamais utilisé de
+  `Policy` Laravel pour un contrôle de rôle (seule `ClientPolicy` existe, et c'est un contrôle de
+  complétude KYC, pas de rôle) — toute la logique de rôle passe déjà par
+  `App\Http\Middleware\RoleAgentAutorise`, générique et journalisant toute tentative refusée
+  (`tentative_acces_refusee`). Introduire un système de `Policy` parallèle pour le seul rôle
+  n'aurait apporté aucune garantie supplémentaire (même 403 sur accès direct par URL, même
+  journalisation) pour un coût de code plus élevé — cohérent avec §6 ci-dessus.
+- **`routes/responsable/` est un répertoire multi-fichiers**, pas le fichier unique
+  `routes/responsable.php` mentionné littéralement par le prompt — cohérent avec `CLAUDE.md` §5
+  (« un fichier par domaine ») et avec `routes/agent/`, `routes/admin/` déjà en place. Chargé par
+  un nouveau bloc `glob()` dans `bootstrap/app.php`, guard `agent` partagé avec `routes/agent/*`
+  (pas de garde séparée : `caissier` et `responsable_agence` restent deux valeurs de rôle sur la
+  même table `agents`, comme demandé par le prompt §6), gate unique
+  `role.agent:responsable_agence`.
+- **Les clients n'ont pas d'`agence_id` propre** (seulement `reseau_id` — consolidation
+  multi-agences volontaire, `CLAUDE.md` §1). Impossible donc de scoper littéralement « les
+  dossiers de mon agence » sans une donnée supplémentaire. Option la plus prudente retenue
+  (`CLAUDE.md` §8) plutôt que de laisser ces blocs du tableau de bord réseau entier ou de deviner
+  un schéma plus lourd : nouvelle colonne `clients.agence_creation_id` (nullable, renseignée à la
+  création par `CreateurClient` depuis l'agence de l'agent créateur), combinée avec
+  `comptes.agence_id` existant dans un scope Eloquent `Client::scopeDeLAgence()` (« créé ici, ou au
+  moins un compte ici »). Utilisé par `Responsable\Tableau\TableauBordController`,
+  `Responsable\Filtrage\FiltrageController` et `Responsable\Clients\ClientController`.
+- **Vue consolidée d'une identité (`Responsable\Identites\IdentiteController`) : accès conditionné
+  à l'agence, contenu non filtré une fois l'accès accordé.** Le prompt interdit explicitement au
+  responsable d'agence de voir les autres agences de son réseau (§9, « ce qu'il ne faut surtout pas
+  faire »). Mais cet écran existe spécifiquement pour détecter le fractionnement **inter-agences**
+  (`CLAUDE.md` §1, §3) : le vider de tout ce qui dépasse l'agence du responsable viderait la
+  fonctionnalité de son but. Choix retenu : le responsable ne peut ouvrir la vue consolidée d'une
+  identité que si celle-ci a un pied dans son agence (`Client::deLAgence()` sur au moins un des
+  clients de l'identité), mais une fois l'accès accordé, la vue reste inchangée (tous les comptes,
+  toutes agences confondues) — lecture la plus proche de l'esprit du contrôle réglementaire, la
+  restriction du prompt étant interprétée comme « quels dossiers atterrissent dans sa file », pas
+  « quelles données peut-il voir sur un dossier qu'il a le droit d'ouvrir ».
+- **Fiche RLBC/FT : accès conservé via `Agent\Clients\ClientController` partagé, pas de blocage
+  d'écriture pour `responsable_agence`.** Le tableau de permissions du prompt (§3) marque la
+  création/complétion client « lecture seule (supervision) » pour le responsable, mais la fiche
+  RLBC/FT est une ligne séparée du tableau, marquée simplement « Oui ». Verrouiller tout
+  `routes/agent/clients.php` au rôle `caissier` aurait supprimé la capacité déjà testée
+  (`FicheRlbcftVisibiliteTest`) du responsable à renseigner cette fiche via le même formulaire
+  partagé qu'avant la restructuration. Choix retenu : `routes/agent/clients.php` reste accessible
+  aux deux rôles comme avant (aucune régression), et `Responsable\Clients\ClientController` (lecture
+  seule, nouveau) s'ajoute pour la supervision de liste — il ne remplace pas l'accès existant.
+- **Gestion des comptes côté admin, construite from scratch** (`Admin\Agents\AgentController`,
+  `routes/admin/agents.php`, vues `admin/agents/*`) : aucun écran de ce type n'existait avant ce
+  prompt (§6 mentionnait déjà l'absence d'écran de gestion, "non construit... faute de temps").
+  Périmètre minimal : lister/filtrer par agence et rôle, créer (mot de passe généré affiché une
+  seule fois, aucune infra e-mail dans ce dépôt), activer/désactiver, réinitialiser le mot de passe.
+  Un admin réseau ne voit et ne peut agir que sur les agences de son propre réseau
+  (`estAdminPlateforme()` sinon filtré par `reseau_id`) — plus strict que le précédent
+  `Admin\Import\ImportController::creer()`, qui liste toutes les agences sans filtre réseau (écart
+  pré-existant, hors périmètre de ce prompt, non corrigé ici).
+- **Champ `agents.civilite`** (`m`/`f`/`non_precise`, défaut `non_precise`) : affichage uniquement
+  (« Caissier »/« Caissière »/« Caissier / Caissière » via `RoleAgent::libelle(?string $civilite)`)
+  — ne change jamais la valeur de code `role`, conforme au prompt §2.2.
+- **Personnalisation du logo par réseau (prompt §5.1) : non faite.** Explicitement secondaire dans
+  le prompt (« ne pas passer de temps significatif ici »). `layouts/responsable.blade.php` se
+  distingue de `layouts/agent.blade.php` par une teinte d'accent différente (bleu plutôt que jaune)
+  réutilisant les mêmes tokens CSS, sans logo par réseau ni `reseaux.logo_path`.

@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Fiche complémentaire de validation RLBC/FT — une ligne par client OU par signataire
- * contrôlé (polymorphe). Strictement invisible au rôle guichet (Loi art. 63) : jamais
- * chargée ni rendue sans Agent::estResponsableLbcft().
+ * contrôlé (polymorphe). Strictement invisible au rôle caissier (Loi art. 63) : jamais
+ * chargée ni rendue sans Agent::estResponsableAgence().
  */
 class FicheRlbcft extends Model
 {

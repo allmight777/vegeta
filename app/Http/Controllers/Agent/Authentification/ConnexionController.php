@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Agent\Authentification;
 
+use App\Enums\RoleAgent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Agent\Authentification\ConnexionRequest;
 use App\Models\Agent;
@@ -39,7 +40,11 @@ class ConnexionController extends Controller
         $request->session()->regenerate();
         Consignateur::enregistrer('agent', $agent->id, 'connexion');
 
-        return redirect()->intended(route('agent.tableau-de-bord.index'));
+        $accueil = $agent->role === RoleAgent::ResponsableAgence
+            ? route('responsable.tableau-de-bord.index')
+            : route('agent.tableau-de-bord.index');
+
+        return redirect()->intended($accueil);
     }
 
     public function detruire(Request $request): RedirectResponse

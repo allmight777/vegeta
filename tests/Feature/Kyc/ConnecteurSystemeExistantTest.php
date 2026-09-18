@@ -29,7 +29,7 @@ class ConnecteurSystemeExistantTest extends TestCase
             'nom' => 'Agent Test',
             'matricule' => 'GUI-'.uniqid(),
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
         ]);
 
         return [$agence, $agent];

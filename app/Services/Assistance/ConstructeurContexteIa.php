@@ -26,7 +26,7 @@ class ConstructeurContexteIa
      */
     public function construire(Agent|Admin $utilisateur, string $ecran, array $donneesEcran = []): array
     {
-        $estGuichet = $utilisateur instanceof Agent && $utilisateur->estGuichet();
+        $estCaissier = $utilisateur instanceof Agent && $utilisateur->estCaissier();
 
         $contexte = [
             'role' => $this->role($utilisateur),
@@ -39,7 +39,7 @@ class ConstructeurContexteIa
             $contexte['champs_manquants'] = array_values(array_map('strval', $donneesEcran['champs_manquants']));
         }
 
-        if (! $estGuichet && filled($donneesEcran['explication_alerte'] ?? null)) {
+        if (! $estCaissier && filled($donneesEcran['explication_alerte'] ?? null)) {
             $contexte['explication_alerte'] = (string) $donneesEcran['explication_alerte'];
         }
 

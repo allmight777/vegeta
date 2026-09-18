@@ -70,7 +70,7 @@ class Signataire extends Model
 
     /**
      * Fiche complémentaire RLBC/FT propre à ce signataire contrôlé (§2.2) — jamais
-     * chargée ni rendue sans Agent::estResponsableLbcft().
+     * chargée ni rendue sans Agent::estResponsableAgence().
      */
     public function ficheRlbcft(): MorphOne
     {

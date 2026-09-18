@@ -64,7 +64,7 @@ class CompletudeEtImportTest extends TestCase
             'nom' => 'Agent Test',
             'matricule' => 'GUI-0002',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
         ]);
         $client = Client::create([
             'reseau_id' => $agence->reseau_id,

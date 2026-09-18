@@ -22,7 +22,7 @@ class EscaladeAssistantIaTest extends TestCase
         return Agent::create([
             'agence_id' => $agence->id,
             'nom' => 'Agent Test',
-            'matricule' => 'GUI-'.uniqid(),
+            'matricule' => 'CAI-'.uniqid(),
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
             'role' => $role,
         ]);
@@ -38,9 +38,9 @@ class EscaladeAssistantIaTest extends TestCase
     public function test_une_question_transmise_explicitement_cree_une_ligne_en_attente(): void
     {
         $agence = $this->agence();
-        $guichet = $this->agent(RoleAgent::Guichet, $agence);
+        $caissier = $this->agent(RoleAgent::Caissier, $agence);
 
-        $reponse = $this->actingAs($guichet, 'agent')->postJson(route('agent.assistant.escalader'), [
+        $reponse = $this->actingAs($caissier, 'agent')->postJson(route('agent.assistant.escalader'), [
             'question' => 'Quelle est la procédure exacte pour une fusion de deux réseaux ?',
             'ecran' => 'agent.tableau-de-bord.index',
             'reponse_ia' => 'Je n\'ai pas d\'information là-dessus dans ma base de connaissances.',
@@ -54,9 +54,9 @@ class EscaladeAssistantIaTest extends TestCase
     public function test_poser_une_question_seule_ne_cree_jamais_automatiquement_une_escalade(): void
     {
         $agence = $this->agence();
-        $guichet = $this->agent(RoleAgent::Guichet, $agence);
+        $caissier = $this->agent(RoleAgent::Caissier, $agence);
 
-        $this->actingAs($guichet, 'agent')->postJson(route('agent.assistant.repondre'), [
+        $this->actingAs($caissier, 'agent')->postJson(route('agent.assistant.repondre'), [
             'question' => 'Quelle est la procédure exacte pour une fusion de deux réseaux ?',
             'ecran' => 'agent.tableau-de-bord.index',
         ]);
@@ -67,18 +67,18 @@ class EscaladeAssistantIaTest extends TestCase
     public function test_une_reponse_de_responsable_alimente_immediatement_la_base_de_connaissances(): void
     {
         $agence = $this->agence();
-        $guichet = $this->agent(RoleAgent::Guichet, $agence);
-        $responsable = $this->agent(RoleAgent::ResponsableLbcft, $agence);
+        $caissier = $this->agent(RoleAgent::Caissier, $agence);
+        $responsable = $this->agent(RoleAgent::ResponsableAgence, $agence);
 
         $escalade = EscaladeAssistantIa::create([
-            'agent_id' => $guichet->id,
-            'role_agent' => RoleAgent::Guichet->value,
+            'agent_id' => $caissier->id,
+            'role_agent' => RoleAgent::Caissier->value,
             'question' => 'Comment gérer une fusion de deux réseaux dans CIF-Empreinte ?',
             'contexte_ecran' => 'agent.tableau-de-bord.index',
             'statut' => StatutEscalade::EnAttente,
         ]);
 
-        $reponse = $this->actingAs($responsable, 'agent')->post(route('agent.assistance.escalades.repondre', $escalade), [
+        $reponse = $this->actingAs($responsable, 'agent')->post(route('responsable.assistance.escalades.repondre', $escalade), [
             'reponse_responsable' => 'Contactez la direction technique pour toute fusion de réseaux.',
         ]);
 
@@ -92,11 +92,11 @@ class EscaladeAssistantIaTest extends TestCase
         $this->assertSame('Contactez la direction technique pour toute fusion de réseaux.', $trouve['reponse']);
     }
 
-    public function test_un_guichet_ne_peut_pas_acceder_a_l_ecran_des_escalades(): void
+    public function test_un_caissier_ne_peut_pas_acceder_a_l_ecran_des_escalades(): void
     {
         $agence = $this->agence();
-        $guichet = $this->agent(RoleAgent::Guichet, $agence);
+        $caissier = $this->agent(RoleAgent::Caissier, $agence);
 
-        $this->actingAs($guichet, 'agent')->get(route('agent.assistance.escalades.index'))->assertForbidden();
+        $this->actingAs($caissier, 'agent')->get(route('responsable.assistance.escalades.index'))->assertForbidden();
     }
 }

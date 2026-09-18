@@ -9,10 +9,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Restreint une route agent à une liste de rôles (ex. filtrage.decider, alertes.voir).
- * Usage : ->middleware('role.agent:responsable_lbcft,direction')
+ * Usage : ->middleware('role.agent:responsable_agence')
  *
  * Toute tentative refusée est journalisée (problème 6, art. 63 : non-divulgation au
- * guichet) — même une tentative par URL directe doit laisser une trace pour la
+ * caissier) — même une tentative par URL directe doit laisser une trace pour la
  * conformité, jamais un message expliquant pourquoi au demandeur.
  */
 class RoleAgentAutorise

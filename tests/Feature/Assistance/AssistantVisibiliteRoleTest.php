@@ -19,15 +19,15 @@ class AssistantVisibiliteRoleTest extends TestCase
     {
         $reseau = Reseau::create(['nom' => 'Réseau Test', 'code' => 'RT']);
         $agence = Agence::create(['reseau_id' => $reseau->id, 'nom' => 'Agence Test', 'code' => 'AT']);
-        $guichet = Agent::create([
+        $caissier = Agent::create([
             'agence_id' => $agence->id,
             'nom' => 'Agent Test',
-            'matricule' => 'GUI-'.uniqid(),
+            'matricule' => 'CAI-'.uniqid(),
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
         ]);
 
-        $this->actingAs($guichet, 'agent')->get(route('agent.clients.index'))
+        $this->actingAs($caissier, 'agent')->get(route('agent.clients.index'))
             ->assertOk()
             ->assertSee('Assistant CIF-Empreinte');
     }

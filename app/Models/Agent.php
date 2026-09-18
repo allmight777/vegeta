@@ -19,7 +19,7 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
 
     protected $table = 'agents';
 
-    protected $fillable = ['agence_id', 'nom', 'matricule', 'mot_de_passe', 'role', 'actif'];
+    protected $fillable = ['agence_id', 'nom', 'matricule', 'mot_de_passe', 'role', 'actif', 'civilite'];
 
     protected $hidden = ['mot_de_passe', 'remember_token'];
 
@@ -47,11 +47,23 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
         return $this->hasMany(Operation::class);
     }
 
+    public function estCaissier(): bool
+    {
+        return $this->role === RoleAgent::Caissier;
+    }
+
+    public function estResponsableAgence(): bool
+    {
+        return $this->role === RoleAgent::ResponsableAgence;
+    }
+
+    /** @deprecated Utiliser estCaissier(). */
     public function estGuichet(): bool
     {
         return $this->role === RoleAgent::Guichet;
     }
 
+    /** @deprecated Utiliser estResponsableAgence(). */
     public function estResponsableLbcft(): bool
     {
         return $this->role === RoleAgent::ResponsableLbcft;

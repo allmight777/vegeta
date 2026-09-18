@@ -27,7 +27,7 @@ class FicheRlbcftVisibiliteTest extends TestCase
         return Agent::create([
             'agence_id' => $agence->id,
             'nom' => 'Agent Test',
-            'matricule' => 'GUI-'.uniqid(),
+            'matricule' => 'AGT-'.uniqid(),
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
             'role' => $role,
         ]);
@@ -46,24 +46,24 @@ class FicheRlbcftVisibiliteTest extends TestCase
         return $client;
     }
 
-    public function test_le_guichet_ne_voit_jamais_le_groupe_fiche_rlbcft_sur_creer_et_completer(): void
+    public function test_le_caissier_ne_voit_jamais_le_groupe_fiche_rlbcft_sur_creer_et_completer(): void
     {
-        $guichet = $this->agent(RoleAgent::Guichet);
-        $client = $this->client($guichet);
+        $caissier = $this->agent(RoleAgent::Caissier);
+        $client = $this->client($caissier);
 
-        $this->actingAs($guichet, 'agent')->get(route('agent.clients.creer'))
+        $this->actingAs($caissier, 'agent')->get(route('agent.clients.creer'))
             ->assertOk()->assertDontSee('Fiche complémentaire RLBC/FT');
 
-        $this->actingAs($guichet, 'agent')->get(route('agent.clients.completer', $client))
+        $this->actingAs($caissier, 'agent')->get(route('agent.clients.completer', $client))
             ->assertOk()->assertDontSee('Fiche complémentaire RLBC/FT');
     }
 
-    public function test_le_guichet_ne_peut_pas_forcer_l_enregistrement_de_la_fiche_rlbcft_meme_en_injectant_les_champs(): void
+    public function test_le_caissier_ne_peut_pas_forcer_l_enregistrement_de_la_fiche_rlbcft_meme_en_injectant_les_champs(): void
     {
-        $guichet = $this->agent(RoleAgent::Guichet);
-        $client = $this->client($guichet);
+        $caissier = $this->agent(RoleAgent::Caissier);
+        $client = $this->client($caissier);
 
-        $reponse = $this->actingAs($guichet, 'agent')->put(route('agent.clients.mettre-a-jour', $client), [
+        $reponse = $this->actingAs($caissier, 'agent')->put(route('agent.clients.mettre-a-jour', $client), [
             'nom' => 'KPADONOU',
             'prenoms' => 'Fidèle',
             'date_naissance' => '1988-03-14',
@@ -77,9 +77,9 @@ class FicheRlbcftVisibiliteTest extends TestCase
         $this->assertNull($client->ficheRlbcft);
     }
 
-    public function test_le_responsable_lbcft_voit_le_groupe_et_peut_l_enregistrer(): void
+    public function test_le_responsable_d_agence_voit_le_groupe_et_peut_l_enregistrer(): void
     {
-        $responsable = $this->agent(RoleAgent::ResponsableLbcft);
+        $responsable = $this->agent(RoleAgent::ResponsableAgence);
         $client = $this->client($responsable);
 
         $this->actingAs($responsable, 'agent')->get(route('agent.clients.completer', $client))

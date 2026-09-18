@@ -101,7 +101,7 @@ class MoteurFiltrageTest extends TestCase
             'nom' => 'Agent',
             'matricule' => 'GUI-1',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
         ]);
         $this->assertFalse($agent->can('peutValiderOperation', $client->fresh()));
     }
@@ -136,10 +136,10 @@ class MoteurFiltrageTest extends TestCase
             'nom' => 'Guichet',
             'matricule' => 'GUI-2',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::Guichet,
+            'role' => RoleAgent::Caissier,
         ]);
 
-        $this->actingAs($guichet, 'agent')->get('/espace/filtrage')->assertForbidden();
+        $this->actingAs($guichet, 'agent')->get('/espace/responsable/filtrage')->assertForbidden();
     }
 
     public function test_la_conformite_peut_confirmer_une_correspondance(): void
@@ -161,15 +161,15 @@ class MoteurFiltrageTest extends TestCase
             'nom' => 'Conformité',
             'matricule' => 'LBC-2',
             'mot_de_passe' => Hash::make('un-mot-de-passe-solide'),
-            'role' => RoleAgent::ResponsableLbcft,
+            'role' => RoleAgent::ResponsableAgence,
         ]);
 
-        $reponse = $this->actingAs($conformite, 'agent')->put("/espace/filtrage/{$resultat->id}/decider", [
+        $reponse = $this->actingAs($conformite, 'agent')->put("/espace/responsable/filtrage/{$resultat->id}/decider", [
             'statut' => 'confirme',
             'motif' => 'Correspondance vérifiée manuellement avec la pièce d\'identité.',
         ]);
 
-        $reponse->assertRedirect(route('agent.filtrage.index'));
+        $reponse->assertRedirect(route('responsable.filtrage.index'));
         $this->assertSame('confirme', $resultat->fresh()->statut->value);
         $this->assertSame('traitee', Alerte::where('resultat_filtrage_id', $resultat->id)->first()->statut->value);
     }

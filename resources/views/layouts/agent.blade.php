@@ -14,7 +14,7 @@
 
     <title>
         {{ config('app.name', 'CIF-Empreinte') }}
-        — @yield('titre', 'Espace agent')
+        — @yield('titre', 'Espace caissier')
     </title>
 
     @vite([
@@ -1672,13 +1672,13 @@
 
                     <div
                         class="guichet-status"
-                        title="Guichet actif"
+                        title="Caisse active"
                     >
 
                         <span class="guichet-status-dot"></span>
 
                         <span>
-                            Guichet actif
+                            Caisse active
                         </span>
 
                     </div>
@@ -1707,7 +1707,8 @@
 
                             <span class="agent-profile-role">
 
-                                Agent guichet
+                                {{ auth('agent')->user()->role->libelle(auth('agent')->user()->civilite) }}
+                                — {{ auth('agent')->user()->agence->nom }}
 
                             </span>
 
@@ -1933,7 +1934,7 @@
                     <div class="agent-page-heading-left">
 
                         <div class="agent-page-eyebrow">
-                            Espace agent
+                            Espace caissier
                         </div>
 
 

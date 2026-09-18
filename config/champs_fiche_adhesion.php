@@ -19,7 +19,7 @@ use App\Enums\SourceValeur;
 |
 | Les groupes "mandataires"/"signataires" sont répétables (min/max). Le groupe
 | "fiche_rlbcft" n'est jamais affiché ni accepté si l'agent n'a pas le rôle
-| responsable_lbcft (Loi art. 63 — vérifié aussi côté serveur, pas seulement la vue).
+| responsable_agence (Loi art. 63 — vérifié aussi côté serveur, pas seulement la vue).
 |
 */
 
@@ -117,7 +117,7 @@ return [
 
             'fiche_rlbcft' => [
                 'libelle' => 'Fiche complémentaire RLBC/FT',
-                'visible_role' => 'responsable_lbcft',
+                'visible_role' => 'responsable_agence',
                 'champs' => [
                     'ppe_national' => ['libelle' => 'PPE national', 'type_saisie' => 'checkbox', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 2 §50'],
                     'ppe_etranger' => ['libelle' => 'PPE étranger', 'type_saisie' => 'checkbox', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 2 §50'],
@@ -208,7 +208,7 @@ return [
 
             'fiche_rlbcft' => [
                 'libelle' => 'Fiche complémentaire de validation RLBC/FT (par signataire contrôlé)',
-                'visible_role' => 'responsable_lbcft',
+                'visible_role' => 'responsable_agence',
                 'par_signataire' => true,
                 'champs' => [
                     'ppe_national' => ['libelle' => 'PPE national', 'type_saisie' => 'checkbox', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 2 §50'],

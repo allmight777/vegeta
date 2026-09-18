@@ -31,7 +31,7 @@ class ConstructeurContexteIaTest extends TestCase
 
     public function test_seules_les_cles_de_la_liste_blanche_peuvent_apparaitre_dans_le_contexte(): void
     {
-        $responsable = $this->agent(RoleAgent::ResponsableLbcft);
+        $responsable = $this->agent(RoleAgent::ResponsableAgence);
 
         $contexte = app(ConstructeurContexteIa::class)->construire($responsable, 'agent.clients.completer', [
             'champs_manquants' => ['date_naissance'],
@@ -47,11 +47,11 @@ class ConstructeurContexteIaTest extends TestCase
         $this->assertArrayNotHasKey('npi', $contexte);
     }
 
-    public function test_l_explication_d_alerte_n_est_jamais_transmise_pour_un_agent_guichet(): void
+    public function test_l_explication_d_alerte_n_est_jamais_transmise_pour_un_agent_caissier(): void
     {
-        $guichet = $this->agent(RoleAgent::Guichet);
+        $caissier = $this->agent(RoleAgent::Caissier);
 
-        $contexte = app(ConstructeurContexteIa::class)->construire($guichet, 'agent.tableau-de-bord.index', [
+        $contexte = app(ConstructeurContexteIa::class)->construire($caissier, 'agent.tableau-de-bord.index', [
             'explication_alerte' => 'Texte déjà généré par le système.',
         ]);
 
@@ -60,11 +60,11 @@ class ConstructeurContexteIaTest extends TestCase
 
     public function test_le_role_transmis_est_une_valeur_d_enum_jamais_le_nom_de_l_agent(): void
     {
-        $guichet = $this->agent(RoleAgent::Guichet);
+        $caissier = $this->agent(RoleAgent::Caissier);
 
-        $contexte = app(ConstructeurContexteIa::class)->construire($guichet, 'agent.clients.index');
+        $contexte = app(ConstructeurContexteIa::class)->construire($caissier, 'agent.clients.index');
 
-        $this->assertSame('guichet', $contexte['role']);
+        $this->assertSame('caissier', $contexte['role']);
         $this->assertStringNotContainsString('Agent Test', json_encode($contexte));
     }
 }

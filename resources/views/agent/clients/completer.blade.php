@@ -1825,7 +1825,7 @@
                                         @endif
 
 
-                                        @unless (auth('agent')->user()->estGuichet())
+                                        @unless (auth('agent')->user()->estCaissier())
 
                                             <x-badge-statut-filtrage :statut="$signataire->statut_filtrage" />
 
