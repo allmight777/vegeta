@@ -24,7 +24,9 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['filtrable_type', 'filtrable_id', 'entree_liste_id']);
+            // Nom explicite et court : le nom auto-généré dépasse la limite d'identifiant
+            // MySQL (64 caractères) — 10_PROMPT_ASSISTANT_IA_DOCUMENTS_ET_INFRA §7.
+            $table->unique(['filtrable_type', 'filtrable_id', 'entree_liste_id'], 'resultats_filtrage_cible_liste_unique');
             $table->index(['statut']);
         });
     }

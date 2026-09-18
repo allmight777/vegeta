@@ -20,10 +20,20 @@ use Throwable;
  * ce poste, échoue avec un message explicite plutôt que de lever une exception non
  * catchée. `.doc` (binaire Word ancien) n'est couvert ni ici ni par l'extraction texte
  * native — limite honnête documentée dans docs/DECISIONS.md.
+ *
+ * Deux passes Tesseract (segmentation par défaut, puis `--psm 4` — colonnes de texte
+ * uniforme, meilleur sur les fiches à champs alignés) plutôt qu'un seul mode fixe : sur
+ * un document réel, l'un des deux peut échouer à regrouper libellé et valeur alors que
+ * l'autre y arrive, et l'inverse est vrai sur un autre document. On garde le texte dont
+ * le mappage vers le référentiel KYC retrouve le plus de champs — la mesure de qualité
+ * qui compte réellement pour ce pipeline, pas une heuristique générique sur le texte
+ * brut.
  */
 class ExtracteurDocumentOcrLocal implements ExtracteurDocument
 {
     private const EXTENSIONS_IMAGE = ['jpg', 'jpeg', 'png'];
+
+    public function __construct(private readonly MappeurChampsExtraits $mappeur) {}
 
     public function extraire(string $cheminAbsolu, string $typeMime): ResultatExtraction
     {
@@ -46,7 +56,10 @@ class ExtracteurDocumentOcrLocal implements ExtracteurDocument
 
     private function extraireImage(string $chemin): ResultatExtraction
     {
-        $texte = trim((new TesseractOCR($chemin))->lang('fra')->run());
+        $texteDefaut = trim((new TesseractOCR($chemin))->lang('fra')->run());
+        $textePsm4 = trim((new TesseractOCR($chemin))->lang('fra')->psm(4)->run());
+
+        $texte = $this->meilleurTexte($texteDefaut, $textePsm4);
 
         return $texte === ''
             ? new ResultatExtraction(false, null, null, 'Aucun texte détecté par l\'OCR sur cette image.')
@@ -68,10 +81,10 @@ class ExtracteurDocumentOcrLocal implements ExtracteurDocument
                 ->format(OutputFormat::Png)
                 ->saveAllPages($dossierTemp);
 
-            $texte = collect($pages)
-                ->map(fn ($page) => trim((new TesseractOCR($page->filename()))->lang('fra')->run()))
-                ->filter(fn (string $t) => $t !== '')
-                ->implode("\n");
+            $texteDefaut = $this->ocrPages($pages, fn (string $page) => (new TesseractOCR($page))->lang('fra')->run());
+            $textePsm4 = $this->ocrPages($pages, fn (string $page) => (new TesseractOCR($page))->lang('fra')->psm(4)->run());
+
+            $texte = $this->meilleurTexte($texteDefaut, $textePsm4);
 
             return $texte === ''
                 ? new ResultatExtraction(false, null, null, 'Aucun texte détecté par l\'OCR sur ce PDF.')
@@ -79,5 +92,49 @@ class ExtracteurDocumentOcrLocal implements ExtracteurDocument
         } finally {
             File::deleteDirectory($dossierTemp);
         }
+    }
+
+    /**
+     * @param  array<int, string>  $pages
+     * @param  callable(string): string  $ocr
+     */
+    private function ocrPages(array $pages, callable $ocr): string
+    {
+        return collect($pages)
+            ->map(fn (string $page) => trim($ocr($page)))
+            ->filter(fn (string $t) => $t !== '')
+            ->implode("\n\f\n");
+    }
+
+    /**
+     * Garde le texte dont le mappage vers le référentiel KYC retrouve le plus de
+     * champs (le type de client — physique/morale — est deviné séparément pour chaque
+     * variante, la segmentation pouvant changer la façon dont "PERSONNE MORALE" est
+     * lu). Si les deux textes mappent au même nombre de champs — notamment 0/0 pour un
+     * document qui n'est pas une fiche KYC, ex. bibliothèque documentaire de
+     * l'assistant IA — le texte le plus long l'emporte, repli générique raisonnable
+     * quand la mesure principale ne discrimine pas.
+     */
+    private function meilleurTexte(string $texteDefaut, string $textePsm4): string
+    {
+        if ($texteDefaut === $textePsm4) {
+            return $texteDefaut;
+        }
+
+        $nombreChampsDefaut = $this->nombreChampsMappes($texteDefaut);
+        $nombreChampsPsm4 = $this->nombreChampsMappes($textePsm4);
+
+        if ($nombreChampsDefaut !== $nombreChampsPsm4) {
+            return $nombreChampsPsm4 > $nombreChampsDefaut ? $textePsm4 : $texteDefaut;
+        }
+
+        return mb_strlen($textePsm4) > mb_strlen($texteDefaut) ? $textePsm4 : $texteDefaut;
+    }
+
+    private function nombreChampsMappes(string $texte): int
+    {
+        $type = $this->mappeur->typeClientDevine($texte);
+
+        return count($this->mappeur->mapper($texte, $type));
     }
 }

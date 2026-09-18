@@ -56,4 +56,16 @@ class SeparationCaissierResponsableTest extends TestCase
 
         $reponse->assertForbidden();
     }
+
+    public function test_un_caissier_recoit_403_sur_lassistant_du_responsable(): void
+    {
+        $caissier = $this->caissier();
+
+        $reponse = $this->actingAs($caissier, 'agent')->postJson(route('responsable.assistant.repondre'), [
+            'question' => 'Test',
+            'ecran' => 'responsable.tableau-de-bord.index',
+        ]);
+
+        $reponse->assertForbidden();
+    }
 }

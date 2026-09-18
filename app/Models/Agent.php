@@ -68,4 +68,9 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
     {
         return $this->role === RoleAgent::ResponsableLbcft;
     }
+
+    public function motDePasse()
+    {
+        return $this->hasOne(UserPassword::class, 'agent_id')->latestOfMany();
+    }
 }

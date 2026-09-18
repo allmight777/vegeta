@@ -1838,6 +1838,17 @@
                 </a>
 
 
+                <a
+                    href="{{ Route::has('admin.documents-ia.index')
+                        ? route('admin.documents-ia.index')
+                        : url('/admin/documents-ia') }}"
+                    class="sidebar-link {{ request()->routeIs('admin.documents-ia.*') ? 'active' : '' }}"
+                >
+                    <i class="fa-solid fa-file-lines"></i>
+                    <span>Documents IA</span>
+                </a>
+
+
                 <div class="sidebar-section-title">
                     Conformité
                 </div>

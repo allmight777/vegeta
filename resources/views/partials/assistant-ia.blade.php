@@ -1,6 +1,16 @@
 @php
-    $assistantUrlRepondre = auth('agent')->check() ? route('agent.assistant.repondre') : route('admin.assistant.repondre');
-    $assistantUrlEscalader = auth('agent')->check() ? route('agent.assistant.escalader') : null;
+    $assistantAgent = auth('agent')->user();
+
+    if ($assistantAgent?->estResponsableAgence()) {
+        $assistantUrlRepondre = route('responsable.assistant.repondre');
+        $assistantUrlEscalader = null;
+    } elseif ($assistantAgent !== null) {
+        $assistantUrlRepondre = route('agent.assistant.repondre');
+        $assistantUrlEscalader = route('agent.assistant.escalader');
+    } else {
+        $assistantUrlRepondre = route('admin.assistant.repondre');
+        $assistantUrlEscalader = null;
+    }
     $assistantEcran = request()->route()?->getName() ?? request()->path();
     $assistantModeLibelle = app(\App\Services\Assistance\SelecteurProviderIa::class)->modeActifLibelle();
     $assistantHorsLigne = str_contains(mb_strtolower($assistantModeLibelle), 'hors connexion');
@@ -523,7 +533,31 @@
 
         word-wrap: break-word;
 
+        overflow-wrap: anywhere;
+
         animation: messageSlide 0.28s ease-out;
+    }
+
+
+    /* Liens générés par formaterMessage() */
+
+    .assistant-ia-message a {
+
+        color: inherit;
+
+        text-decoration: underline;
+
+        text-underline-offset: 2px;
+
+        font-weight: 700;
+
+        transition: opacity 0.2s ease;
+    }
+
+
+    .assistant-ia-message a:hover {
+
+        opacity: 0.75;
     }
 
 
@@ -637,6 +671,94 @@
         border-style: solid;
 
         transform: translateY(-1px);
+    }
+
+
+    /* =========================================================
+       VOIX : LECTURE PAR MESSAGE, MICRO, RÉGLAGE LECTURE AUTO
+    ========================================================= */
+
+    .assistant-ia-ecouter {
+
+        align-self: flex-start;
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        margin-top: 4px;
+
+        padding: 5px 10px;
+
+        border: none;
+
+        background: transparent;
+
+        color: var(--muted-light);
+
+        font-family: inherit;
+
+        font-size: 0.6rem;
+
+        font-weight: 700;
+
+        border-radius: 9px;
+
+        cursor: pointer;
+
+        transition: color 0.2s ease, background 0.2s ease;
+    }
+
+
+    .assistant-ia-ecouter:hover {
+
+        color: var(--dark);
+
+        background: var(--yellow-soft);
+    }
+
+
+    .assistant-ia-micro.actif {
+
+        background: #DC2626;
+
+        animation: assistantMicroPulse 1.4s ease-in-out infinite;
+    }
+
+
+    @keyframes assistantMicroPulse {
+
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35);
+        }
+
+        50% {
+            box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+        }
+    }
+
+
+    .assistant-ia-lecture-toggle {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        margin-left: auto;
+
+        color: var(--muted-light);
+
+        font-size: 0.55rem;
+
+        font-weight: 700;
+
+        cursor: pointer;
+
+        white-space: nowrap;
     }
 
 
@@ -961,13 +1083,18 @@
                 </span>
 
 
-                <span
-                    class="assistant-ia-badge"
-                    :class="{ 'hors-ligne': modeLibelle.toLowerCase().includes('hors connexion') }"
-                    x-text="modeLibelle"
-                ></span>
 
             </div>
+
+
+            <label
+                class="assistant-ia-lecture-toggle"
+                x-show="syntheseSupportee"
+                title="Lire automatiquement chaque réponse à voix haute"
+            >
+                <input type="checkbox" x-model="lectureAutomatique" @change="sauvegarderLectureAutomatique()">
+                Lecture auto
+            </label>
 
 
             <button
@@ -1014,25 +1141,49 @@
 
                 <div style="display: flex; flex-direction: column;">
 
+                    {{-- x-html : le contenu est échappé puis ré-encodé
+                         par formaterMessage() avant d'être injecté, afin
+                         qu'aucune balise issue de l'OCR d'un document ne
+                         puisse être exécutée. Seules les URLs http(s) sont
+                         transformées en liens cliquables. --}}
                     <div
                         class="assistant-ia-message"
                         :class="message.role === 'utilisateur' ? 'utilisateur' : 'assistant'"
-                        x-text="message.contenu"
+                        x-html="formaterMessage(message.contenu)"
                     ></div>
 
 
-                    <button
-                        type="button"
-                        class="assistant-ia-escalader"
-                        x-show="message.role === 'assistant' && message.peutEscalader && urlEscalader && ! message.escaladee"
-                        @click="escalader(index)"
-                    >
+                    <div style="display: flex; align-items: center; gap: 4px;">
 
-                        <i class="fa-solid fa-headset"></i>
+                        <button
+                            type="button"
+                            class="assistant-ia-ecouter"
+                            x-show="message.role === 'assistant' && syntheseSupportee"
+                            @click="lire(message.contenu)"
+                            aria-label="Écouter cette réponse"
+                        >
 
-                        Transmettre à un responsable
+                            <i class="fa-solid fa-volume-high"></i>
 
-                    </button>
+                            Écouter
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="assistant-ia-escalader"
+                            x-show="message.role === 'assistant' && message.peutEscalader && urlEscalader && ! message.escaladee"
+                            @click="escalader(index)"
+                        >
+
+                            <i class="fa-solid fa-headset"></i>
+
+                            Transmettre à un responsable
+
+                        </button>
+
+                    </div>
 
                 </div>
 
@@ -1074,6 +1225,21 @@
 
 
             <button
+                type="button"
+                class="assistant-ia-micro"
+                :class="{ actif: enEcoute }"
+                x-show="dicteeSupportee"
+                @click="basculerDictee()"
+                :aria-label="enEcoute ? 'Arrêter la dictée' : 'Dicter la question'"
+                :title="enEcoute ? 'Arrêter la dictée' : 'Dicter la question'"
+            >
+
+                <i class="fa-solid" :class="enEcoute ? 'fa-microphone' : 'fa-microphone-slash'"></i>
+
+            </button>
+
+
+            <button
                 type="submit"
                 :disabled="enCours || ! question.trim()"
                 aria-label="Envoyer"
@@ -1084,6 +1250,15 @@
             </button>
 
         </form>
+
+
+        <p
+            class="assistant-ia-lecture-toggle"
+            style="padding: 0 12px 10px; margin-left: 0;"
+            x-show="! dicteeSupportee"
+        >
+            Dictée vocale non disponible sur ce navigateur.
+        </p>
 
     </div>
 
@@ -1101,6 +1276,92 @@
                 urlEscalader: config.urlEscalader,
                 ecran: config.ecran,
                 modeLibelle: config.modeLibelle,
+
+                // Voix (10_PROMPT_ASSISTANT_IA_DOCUMENTS_ET_INFRA §6) : API navigateur
+                // natives uniquement, aucune dépendance serveur. Le texte lu est déjà
+                // celui affiché par le widget — donc déjà passé par le filtre de
+                // conformité côté serveur (GestionnaireAssistant), jamais un texte non
+                // filtré.
+                dicteeSupportee: !! (window.SpeechRecognition || window.webkitSpeechRecognition),
+                syntheseSupportee: !! window.speechSynthesis,
+                enEcoute: false,
+                lectureAutomatique: false,
+                reconnaissance: null,
+
+                init() {
+                    try {
+                        this.lectureAutomatique = sessionStorage.getItem('assistantIaLectureAutomatique') === '1';
+                    } catch (e) {
+                        this.lectureAutomatique = false;
+                    }
+                },
+
+                sauvegarderLectureAutomatique() {
+                    try {
+                        sessionStorage.setItem('assistantIaLectureAutomatique', this.lectureAutomatique ? '1' : '0');
+                    } catch (e) {
+                        // Stockage indisponible (navigation privée, quota) : réglage non
+                        // persisté pour cette session, la case reste utilisable.
+                    }
+                },
+
+                basculerDictee() {
+                    if (! this.dicteeSupportee) return;
+
+                    if (this.enEcoute) {
+                        this.reconnaissance?.stop();
+
+                        return;
+                    }
+
+                    const Reconnaissance = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.reconnaissance = new Reconnaissance();
+                    this.reconnaissance.lang = 'fr-FR';
+                    this.reconnaissance.interimResults = false;
+
+                    this.reconnaissance.onstart = () => { this.enEcoute = true; };
+                    this.reconnaissance.onend = () => { this.enEcoute = false; };
+                    this.reconnaissance.onerror = () => { this.enEcoute = false; };
+                    this.reconnaissance.onresult = (evenement) => {
+                        this.question = evenement.results[0][0].transcript;
+                    };
+
+                    this.reconnaissance.start();
+                },
+
+                lire(texte) {
+                    if (! this.syntheseSupportee || ! texte) return;
+
+                    window.speechSynthesis.cancel();
+                    const enonce = new SpeechSynthesisUtterance(texte);
+                    enonce.lang = 'fr-FR';
+                    window.speechSynthesis.speak(enonce);
+                },
+
+                // Met en forme le texte affiché dans les bulles :
+                //   1) échappe d'abord &, < et > pour empêcher toute injection HTML
+                //      depuis le contenu d'un document (OCR, contenu extrait) — le
+                //      serveur peut parfaitement renvoyer du texte brut sans balises ;
+                //   2) transforme uniquement les URLs http(s) que nous savons avoir
+                //      générées (ou qui se trouvent littéralement dans le texte) en
+                //      liens cliquables ouverts dans un nouvel onglet ;
+                //   3) convertit les sauts de ligne \n en <br> pour préserver la mise
+                //      en page d'origine du message.
+                formaterMessage(texte) {
+                    if (! texte) return '';
+
+                    const echappe = String(texte)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+
+                    const avecLiens = echappe.replace(
+                        /(https?:\/\/[^\s<]+)/g,
+                        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+                    );
+
+                    return avecLiens.replace(/\n/g, '<br>');
+                },
 
                 async envoyer() {
                     const question = this.question.trim();
@@ -1131,6 +1392,10 @@
                             peutEscalader: !! donnees.peut_escalader,
                             question,
                         });
+
+                        if (this.lectureAutomatique) {
+                            this.lire(donnees.reponse);
+                        }
                     } catch (e) {
                         this.messages.push({
                             role: 'assistant',

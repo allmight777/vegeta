@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Audit;
 use App\Http\Controllers\Controller;
 use App\Models\JournalAudit;
 use App\Services\Audit\Consignateur;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class JournalAuditController extends Controller
@@ -13,15 +14,16 @@ class JournalAuditController extends Controller
     {
         return view('admin.audit.index', [
             'lignes' => JournalAudit::orderByDesc('id')->paginate(30),
-            'ruptureId' => null,
+            'ruptureId' => session('rupture_id'),
         ]);
     }
 
-    public function verifierChaine(): View
+    public function verifierChaine(): RedirectResponse
     {
-        return view('admin.audit.index', [
-            'lignes' => JournalAudit::orderByDesc('id')->paginate(30),
-            'ruptureId' => Consignateur::premiereRupture() ?? 'aucune',
-        ]);
+        $ruptureId = Consignateur::premiereRupture() ?? 'aucune';
+
+        return redirect()
+            ->route('admin.journal-audit.index')
+            ->with('rupture_id', $ruptureId);
     }
 }

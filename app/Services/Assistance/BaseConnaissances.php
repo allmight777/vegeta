@@ -3,9 +3,9 @@
 namespace App\Services\Assistance;
 
 use App\Models\EscaladeAssistantIa;
+use App\Support\MotsCles;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 
 /**
  * Charge la base de connaissances utilisée par le simulateur (08_PROMPT §6) : les
@@ -29,7 +29,7 @@ class BaseConnaissances
      */
     public function rechercher(string $question): ?array
     {
-        $motsQuestion = $this->normaliser($question);
+        $motsQuestion = MotsCles::extraire($question);
 
         if ($motsQuestion === []) {
             return null;
@@ -39,7 +39,7 @@ class BaseConnaissances
         $meilleurScore = 0;
 
         foreach ($this->charger() as $entree) {
-            $motsEntree = $this->normaliser($entree['question']);
+            $motsEntree = MotsCles::extraire($entree['question']);
             $score = count(array_intersect($motsQuestion, $motsEntree));
 
             if ($score > $meilleurScore) {
@@ -106,16 +106,5 @@ class BaseConnaissances
                 'reponse' => $escalade->reponse_responsable,
                 'source' => 'reponse_responsable',
             ]);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function normaliser(string $texte): array
-    {
-        $ascii = Str::of($texte)->ascii()->lower()->toString();
-        $nettoye = preg_replace('/[^a-z0-9 ]/', ' ', $ascii) ?? '';
-
-        return array_values(array_filter(explode(' ', $nettoye), fn (string $mot) => mb_strlen($mot) > 2));
     }
 }

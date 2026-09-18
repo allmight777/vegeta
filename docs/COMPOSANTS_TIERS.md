@@ -65,6 +65,23 @@ référentiel du projet, corrigé à cette occasion.
   dans `resources/assistance/*.md` — c'est le mode recommandé pour la démonstration
   devant le jury (voir `docs/DECISIONS.md`).
 
+- **Bibliothèque documentaire de l'assistant IA (`10_PROMPT_ASSISTANT_IA_DOCUMENTS_ET_INFRA` §1)** :
+  - **`phpoffice/phpspreadsheet`** (Composer, **licence MIT**, compatible charte PI) : lecture
+    `.xlsx`/`.xls` (`Services\Assistance\ExtracteurTableurExcel`), conversion de chaque feuille en
+    texte tabulaire. Installée avec `--ignore-platform-req=ext-imagick` : l'extension `imagick` est
+    absente sur cette machine de développement (déjà noté ci-dessus pour l'OCR) mais n'est pas
+    utilisée par la lecture de classeur — seuls des writers d'image/graphique non utilisés ici en
+    auraient besoin.
+  - **`.txt`/`.md`** : lecture directe (`Services\Assistance\ExtracteurDocumentTexteBrut`), aucune
+    dépendance.
+  - **Recherche web (§4)** : `Services\Assistance\MoteurRechercheWebApiExterne` utilise l'API
+    HTTP JSON Google Custom Search via `Illuminate\Support\Facades\Http` (déjà fourni par
+    Laravel, aucune dépendance Composer supplémentaire) — clés non fournies à ce dépôt (voir
+    `docs/DECISIONS.md`), `Services\Assistance\MoteurRechercheWebSimulateur` répond en son
+    absence.
+  - **Aucun connecteur Google Drive ni flux OAuth** n'a été ajouté (§4.2, §9 du prompt) : la
+    bibliothèque documentaire ne s'alimente que par upload direct sur le site.
+
 ## Composants déjà déclarés (hérités du MVP resserré)
 
 Voir `composer.json`/`package.json` : `league/csv`, `barryvdh/laravel-dompdf` (licences

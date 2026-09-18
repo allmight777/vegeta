@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistance;
 
+use App\Contracts\OutilAssistantIa;
 use App\Models\Admin;
 use App\Models\Agent;
 use App\Services\Audit\Consignateur;
@@ -26,18 +27,19 @@ class GestionnaireAssistant
 
     /**
      * @param  array<string, mixed>  $donneesEcran
+     * @param  array<int, OutilAssistantIa>  $outils  jeu d'outils autorisés pour ce rôle (10_PROMPT_ASSISTANT_IA_DOCUMENTS_ET_INFRA §2, construit par Services\Assistance\OutilsParRole)
      * @return array{reponse: string, source: string, peut_escalader: bool}
      */
-    public function traiter(Agent|Admin $utilisateur, string $question, string $ecranActuel, array $donneesEcran = []): array
+    public function traiter(Agent|Admin $utilisateur, string $question, string $ecranActuel, array $donneesEcran = [], array $outils = []): array
     {
         $contexte = $this->constructeurContexte->construire($utilisateur, $ecranActuel, $donneesEcran);
         $provider = $this->selecteur->choisir();
         $source = $provider instanceof ProviderIaApiExterne ? 'ia_externe' : 'simulateur';
 
         try {
-            $reponseBrute = $provider->repondre($question, $contexte);
+            $reponseBrute = $provider->repondre($question, $contexte, $outils, $utilisateur);
         } catch (Throwable) {
-            $reponseBrute = app(ProviderIaSimulateur::class)->repondre($question, $contexte);
+            $reponseBrute = app(ProviderIaSimulateur::class)->repondre($question, $contexte, $outils, $utilisateur);
             $source = 'simulateur_repli';
         }
 

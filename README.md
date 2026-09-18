@@ -30,7 +30,8 @@ charges complet (`CLAUDE.md`, `docs/prompts/`).
 
 ## Prérequis
 
-- PHP ≥ 8.3 avec `pdo_sqlite`, `openssl`, `mbstring`, `fileinfo` (aucune extension `intl`, `gmp`
+- PHP ≥ 8.3 avec `pdo_mysql` (connexion par défaut de ce poste), `pdo_sqlite` (suite de tests et
+  nœud d'agence hors ligne), `openssl`, `mbstring`, `fileinfo` (aucune extension `intl`, `gmp`
   ou `redis` requise).
 - Composer 2, Node.js ≥ 18 (npm).
 - Fonctionne sous Linux, macOS et Windows (ex. Laragon, Herd).
@@ -50,6 +51,19 @@ charges complet (`CLAUDE.md`, `docs/prompts/`).
     l'extraction OCR échoue avec un message explicite (jamais une erreur silencieuse) — voir
     `docs/COMPOSANTS_TIERS.md`.
 
+## Base de données locale
+
+Ce poste de développement utilise **MySQL/MariaDB** en local (`DB_CONNECTION=mysql` dans `.env`,
+raison documentée dans `docs/DECISIONS.md`) — créer la base avant la première migration :
+
+```sql
+CREATE DATABASE CIF CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+SQLite reste utilisable (mettre `DB_CONNECTION=sqlite` dans `.env` et `touch database/database.sqlite`)
+et c'est ce que la suite de tests utilise systématiquement (`phpunit.xml`, base en mémoire), quelle
+que soit la connexion par défaut de l'application.
+
 ## Installation
 
 ```bash
@@ -57,7 +71,7 @@ composer install
 npm install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
+# Créer la base MySQL "CIF" (commande ci-dessus) avant cette étape
 php artisan migrate:fresh --seed   # crée les référentiels + comptes et données de démonstration
 npm run build                      # ou `npm run dev` en développement
 php artisan serve

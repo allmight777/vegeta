@@ -3,8 +3,8 @@
 namespace App\Support;
 
 /**
- * Source unique des mots que le rôle guichet ne doit jamais voir (Loi art. 63 —
- * CLAUDE.md §3). Utilisée par NonDivulgationGuichetTest et par
+ * Source unique des mots que le rôle caissier ne doit jamais voir (Loi art. 63 —
+ * CLAUDE.md §3). Utilisée par NonDivulgationCaissierTest et par
  * Services\Assistance\FiltreConformiteReponseIa : une seule liste, jamais dupliquée
  * (08_PROMPT_ASSISTANT_IA_CONFORMITE §3.1).
  *

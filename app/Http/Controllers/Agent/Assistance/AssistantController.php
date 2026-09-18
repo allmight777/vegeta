@@ -10,6 +10,7 @@ use App\Models\Alerte;
 use App\Models\Client;
 use App\Models\EscaladeAssistantIa;
 use App\Services\Assistance\GestionnaireAssistant;
+use App\Services\Assistance\OutilsParRole;
 use App\Services\Audit\Consignateur;
 use App\Services\Contexte\ContexteReseau;
 use App\Support\MotsInterditsConformite;
@@ -19,7 +20,7 @@ class AssistantController extends Controller
 {
     private const QUESTION_FILTREE = '[question filtrée — contenu non enregistré]';
 
-    public function repondre(PoserQuestionRequest $request, GestionnaireAssistant $gestionnaire, ContexteReseau $contexte): JsonResponse
+    public function repondre(PoserQuestionRequest $request, GestionnaireAssistant $gestionnaire, ContexteReseau $contexte, OutilsParRole $outilsParRole): JsonResponse
     {
         $agent = $request->user('agent');
         $donneesEcran = $this->resoudreDonneesEcran($request, $contexte);
@@ -29,6 +30,7 @@ class AssistantController extends Controller
             $request->validated('question'),
             $request->validated('ecran'),
             $donneesEcran,
+            $outilsParRole->pour($agent),
         );
 
         return response()->json($resultat);

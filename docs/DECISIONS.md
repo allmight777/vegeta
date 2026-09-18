@@ -417,3 +417,69 @@ suppositions, option la plus prudente retenue, documentée ici plutôt que devin
   le prompt (« ne pas passer de temps significatif ici »). `layouts/responsable.blade.php` se
   distingue de `layouts/agent.blade.php` par une teinte d'accent différente (bleu plutôt que jaune)
   réutilisant les mêmes tokens CSS, sans logo par réseau ni `reseaux.logo_path`.
+
+## 18. `10_PROMPT_ASSISTANT_IA_DOCUMENTS_ET_INFRA` — outils fixes, bibliothèque, recherche web, MySQL
+
+- **Refus de l'accès SQL libre pour l'IA (§0), remplacé par un jeu fixe d'outils PHP.** Nouveau
+  contrat `App\Contracts\OutilAssistantIa` (`nom()`, `description()`, `schemaParametres()`,
+  `motsCles()`, `executer()`) — chaque outil est une classe écrite à la main sous
+  `app/Services/Assistance/Outils/`, jamais une requête générée par le fournisseur d'IA. Le
+  fournisseur ne reçoit jamais `executer()` : `ProviderIaApiExterne` transmet uniquement les
+  schémas (function-calling façon OpenAI, `tools`/`tool_choice`) et exécute lui-même l'outil choisi
+  côté PHP avant un second appel ; `ProviderIaSimulateur` route par mots-clés
+  (`RouteurOutilsMotsCles`) et **formate directement sa réponse depuis le résultat structuré de
+  l'outil, sans passer par aucun modèle de langage** — c'est le choix le plus sûr pour la
+  non-divulgation, puisque c'est le PHP, jamais un texte généré, qui décide ce qui est montré.
+- **Portée agence jamais prise dans les arguments d'un `Agent`** (`Outils\Concerns\ResoutAgenceOutil`) :
+  pour un `Agent`, l'agence ciblée est toujours `$utilisateur->agence`, jamais un `agence_id`
+  fourni par l'IA — empêche une injection de prompt de faire consulter l'agence d'un autre. Un
+  `Admin` peut cibler une agence via argument, mais toujours revalidée contre son `reseau_id`.
+- **Règle anti-fraude (§5) : extension de `FiltreConformiteReponseIa`, pas une classe séparée.**
+  `masquerSeuils()` recherche, dans toute réponse destinée à un caissier, un groupe de chiffres
+  (espace/espace insécable/virgule/point comme séparateur de milliers) qui, une fois nettoyé,
+  correspond exactement à une valeur `seuil*`/`montant_min` d'une `regles_detection` active — quelle
+  que soit l'origine du texte (outil `consulter_parametre_reglementaire`, base de connaissances,
+  fournisseur externe). C'est le seul point de passage garanti pour toute réponse à ce rôle, donc
+  le bon endroit pour une garantie qui doit tenir « sous aucune reformulation ».
+  `OutilConsulterParametreReglementaire` n'est de toute façon jamais injecté dans le jeu d'outils
+  d'un caissier (`OutilsParRole`) — ce filtre est une défense en profondeur, pas la seule barrière.
+- **Bibliothèque documentaire — visibilité par lot, pas par fichier individuel.** Le prompt décrit
+  « pour chaque fichier déposé, un sélecteur de visibilité ». Option la plus simple retenue
+  (`CLAUDE.md` §8) : un seul réglage de portée/visibilité s'applique à tout le lot déposé en une
+  fois (jusqu'à 10 fichiers) plutôt qu'un contrôle indépendant par fichier — réduit la complexité du
+  formulaire sans contredire l'exigence (l'administrateur choisit la visibilité avant validation).
+  Si des visibilités différentes sont nécessaires pour des fichiers différents, l'administrateur
+  fait plusieurs upload successifs.
+- **`ExtracteurTableurExcel`/`ExtracteurDocumentTexteBrut` implémentent `Contracts\ExtracteurDocument`**
+  existant (07_PROMPT) plutôt qu'une nouvelle interface — `SelecteurExtracteurDocument` route
+  simplement `.xlsx`/`.xls` et `.txt`/`.md` vers ces nouvelles implémentations, aucune duplication
+  du pipeline de stockage/isolation par fichier (`Services\Assistance\TraiteurDocumentIa` réutilise
+  le même patron que `Services\Kyc\ExtracteurDocumentClient`).
+- **`phpoffice/phpspreadsheet` installé avec `--ignore-platform-req=ext-imagick`** : l'extension
+  PHP `imagick` est absente sur cette machine de développement (déjà noté pour l'OCR,
+  `docs/DECISIONS.md` §14) ; la lecture `.xlsx`/`.xls` (`IOFactory::load()`) ne l'utilise pas —
+  seuls des writers d'image/graphique non utilisés ici en auraient besoin.
+- **Trois assistants, trois contrôleurs.** `Responsable\Assistance\AssistantController` (nouveau)
+  s'ajoute à `Agent\Assistance\AssistantController` et `Admin\Assistance\AssistantController`
+  déjà là. `partials/assistant-ia.blade.php` distingue désormais caissier / responsable_agence /
+  admin (plus seulement agent/admin) pour choisir la bonne route — aucune escalade pour responsable
+  et admin, ils sont déjà la cible des escalades des caissiers.
+- **Recherche web : clés Google absentes, comme prévenu par le prompt.** `GOOGLE_SEARCH_API_KEY`/
+  `GOOGLE_SEARCH_ENGINE_ID` ne sont pas fournies à ce dépôt — `SelecteurMoteurRechercheWeb` retombe
+  sur `MoteurRechercheWebSimulateur` (résultats fictifs `source = demo`), exactement comme
+  `SelecteurProviderIa` le fait déjà pour l'assistant. Aucun connecteur Google Drive ni flux OAuth
+  (`GOOGLE_CLIENT_ID`/`SECRET`/`REDIRECT_URI`) n'a été ajouté — explicitement hors périmètre du
+  prompt (§4.2, §9) : la bibliothèque documentaire ne s'alimente que par upload direct (§1).
+- **Bascule MySQL exécutée, pas seulement documentée.** `.env`/`.env.example` :
+  `DB_CONNECTION=mysql`, `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=CIF`, `DB_USERNAME=root`,
+  `DB_PASSWORD=` (vide — limite acceptée pour un poste de démonstration local uniquement, jamais en
+  production réelle). Base `CIF` créée (`utf8mb4`/`utf8mb4_unicode_ci`) sur le serveur MariaDB local
+  déjà en service sur ce poste ; `php artisan migrate` vérifié de bout en bout sur cette base vide.
+  **Un incompatibilité réelle trouvée et corrigée** :
+  `2026_09_17_001400_create_resultats_filtrage_table.php` avait une contrainte unique
+  (`filtrable_type`, `filtrable_id`, `entree_liste_id`) dont le nom auto-généré dépasse la limite
+  d'identifiant MySQL (64 caractères) — jamais un problème sous SQLite, qui n'impose pas cette
+  limite. Corrigée par un nom explicite et court (`resultats_filtrage_cible_liste_unique`) : la
+  contrainte elle-même est inchangée, seul son nom (métadonnée arbitraire) change, donc sans risque
+  de dérive pour une base déjà migrée sous SQLite. Les tests restent sur SQLite en mémoire
+  (`phpunit.xml` inchangé) — seule la connexion par défaut de l'application change.

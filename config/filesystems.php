@@ -57,6 +57,16 @@ return [
             'report' => false,
         ],
 
+        // Bibliothèque documentaire de l'assistant IA (10_PROMPT_ASSISTANT_IA_DOCUMENTS_ET_INFRA
+        // §1) : upload direct admin uniquement, jamais servi publiquement.
+        'documents_ia' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/documents_ia'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
