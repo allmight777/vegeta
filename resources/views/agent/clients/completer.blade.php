@@ -1266,7 +1266,7 @@
 
                     <span class="info-card-value {{ $client->statutConformiteAffichable() ? 'green' : 'warning' }}">
 
-                        {{ $client->statutConformiteAffichable() ? 'À jour' : 'Vérification requise' }}
+                        {{ $client->statutConformiteAffichable() ? 'À jour' : 'Vérification complémentaire requise' }}                        
 
                     </span>
 

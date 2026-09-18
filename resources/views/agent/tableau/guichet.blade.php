@@ -1567,7 +1567,7 @@
                 </strong>
 
                 <span>
-                    Opérations aujourd'hui
+                    Opérations du jour
                 </span>
 
             </div>
