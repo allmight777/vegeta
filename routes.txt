@@ -1,0 +1,64 @@
+
+  ANY       / ................................................................................................................................................ Illuminate\Routing › RedirectController
+  GET|HEAD  admin ............................................................................................................ admin.tableau-de-bord.index › Admin\Tableau\TableauBordController@index
+  GET|HEAD  admin/agents ..................................................................................................................... admin.agents.index › Admin\Agents\AgentController@index
+  POST      admin/agents ................................................................................................................. admin.agents.stocker › Admin\Agents\AgentController@stocker
+  GET|HEAD  admin/agents/creer ............................................................................................................... admin.agents.creer › Admin\Agents\AgentController@creer
+  PUT       admin/agents/{agent}/activer-desactiver ............................................................... admin.agents.activer-desactiver › Admin\Agents\AgentController@activerOuDesactiver
+  PUT       admin/agents/{agent}/reinitialiser-mot-de-passe ........................................... admin.agents.reinitialiser-mot-de-passe › Admin\Agents\AgentController@reinitialiserMotDePasse
+  POST      admin/assistant/repondre ........................................................................................ admin.assistant.repondre › Admin\Assistance\AssistantController@repondre
+  GET|HEAD  admin/connexion ................................................................................................. admin.connexion.creer › Admin\Authentification\ConnexionController@creer
+  POST      admin/connexion ............................................................................................. admin.connexion.stocker › Admin\Authentification\ConnexionController@stocker
+  POST      admin/deconnexion ......................................................................................... admin.connexion.detruire › Admin\Authentification\ConnexionController@detruire
+  GET|HEAD  admin/import .................................................................................................................... admin.import.index › Admin\Import\ImportController@index
+  POST      admin/import/apercu ................................................................................................... admin.import.televerser › Admin\Import\ImportController@televerser
+  POST      admin/import/confirmer .................................................................................................. admin.import.confirmer › Admin\Import\ImportController@confirmer
+  GET|HEAD  admin/import/nouveau ............................................................................................................ admin.import.creer › Admin\Import\ImportController@creer
+  GET|HEAD  admin/journal-audit ................................................................................................. admin.journal-audit.index › Admin\Audit\JournalAuditController@index
+  POST      admin/journal-audit/verifier-chaine .............................................................. admin.journal-audit.verifier-chaine › Admin\Audit\JournalAuditController@verifierChaine
+  GET|HEAD  admin/listes ............................................................................................................... admin.listes.index › Admin\Listes\EntreeListeController@index
+  GET|HEAD  admin/ppe/signataires ................................................................................................ admin.ppe.signataires.index › Admin\Ppe\SignatairesController@index
+  GET|HEAD  admin/regles-detection ..................................................................................... admin.regles-detection.index › Admin\Detection\RegleDetectionController@index
+  GET|HEAD  connexion ....................................................................................................... agent.connexion.creer › Agent\Authentification\ConnexionController@creer
+  POST      connexion ................................................................................................... agent.connexion.stocker › Agent\Authentification\ConnexionController@stocker
+  POST      deconnexion ............................................................................................... agent.connexion.detruire › Agent\Authentification\ConnexionController@detruire
+  GET|HEAD  espace ........................................................................................................... agent.tableau-de-bord.index › Agent\Tableau\TableauBordController@index
+  POST      espace/assistant/escalader .................................................................................... agent.assistant.escalader › Agent\Assistance\AssistantController@escalader
+  POST      espace/assistant/repondre ....................................................................................... agent.assistant.repondre › Agent\Assistance\AssistantController@repondre
+  GET|HEAD  espace/clients ................................................................................................................ agent.clients.index › Agent\Clients\ClientController@index
+  POST      espace/clients ............................................................................................................ agent.clients.stocker › Agent\Clients\ClientController@stocker
+  GET|HEAD  espace/clients/import .......................................................................................... agent.clients.import.creer › Agent\Clients\ImportDocumentController@creer
+  POST      espace/clients/import ...................................................................................... agent.clients.import.stocker › Agent\Clients\ImportDocumentController@stocker
+  GET|HEAD  espace/clients/import/documents/{document}/revoir ............................................................ agent.clients.import.revoir › Agent\Clients\ImportDocumentController@revoir
+  POST      espace/clients/import/documents/{document}/valider ......................................................... agent.clients.import.valider › Agent\Clients\ImportDocumentController@valider
+  GET|HEAD  espace/clients/import/{lot} .................................................................................... agent.clients.import.revue › Agent\Clients\ImportDocumentController@revue
+  DELETE    espace/clients/mandataires/{mandataire} ................................................................. agent.clients.mandataires.detruire › Agent\Clients\MandataireController@detruire
+  GET|HEAD  espace/clients/nouveau ........................................................................................................ agent.clients.creer › Agent\Clients\ClientController@creer
+  POST      espace/clients/npi/verifier ................................................................................ agent.clients.npi.verifier › Agent\Clients\NpiVerificationController@verifier
+  POST      espace/clients/personnes-morales/{personneMorale}/signataires ............................................. agent.clients.signataires.stocker › Agent\Clients\SignataireController@stocker
+  POST      espace/clients/personnes-physiques/{personnePhysique}/mandataires ......................................... agent.clients.mandataires.stocker › Agent\Clients\MandataireController@stocker
+  DELETE    espace/clients/signataires/{signataire} ................................................................. agent.clients.signataires.detruire › Agent\Clients\SignataireController@detruire
+  POST      espace/clients/telephone/verifier .............................................................. agent.clients.telephone.verifier › Agent\Clients\TelephoneVerificationController@verifier
+  GET|HEAD  espace/clients/{client}/completer ..................................................................................... agent.clients.completer › Agent\Clients\ClientController@completer
+  PUT       espace/clients/{client}/completer ............................................................................... agent.clients.mettre-a-jour › Agent\Clients\ClientController@mettreAJour
+  POST      espace/clients/{client}/comptes ........................................................................................... agent.comptes.stocker › Agent\Comptes\CompteController@stocker
+  GET|HEAD  espace/clients/{client}/systeme-existant .................................................. agent.clients.systeme-existant.rechercher › Agent\Clients\SystemeExistantController@rechercher
+  POST      espace/clients/{client}/systeme-existant .................................................... agent.clients.systeme-existant.appliquer › Agent\Clients\SystemeExistantController@appliquer
+  POST      espace/operations ................................................................................................ agent.operations.stocker › Agent\Operations\OperationController@stocker
+  GET|HEAD  espace/operations/nouveau ............................................................................................ agent.operations.creer › Agent\Operations\OperationController@creer
+  GET|HEAD  espace/responsable ................................................................................... responsable.tableau-de-bord.index › Responsable\Tableau\TableauBordController@index
+  GET|HEAD  espace/responsable/assistance/escalades ........................................................ responsable.assistance.escalades.index › Responsable\Assistance\EscaladesController@index
+  POST      espace/responsable/assistance/escalades/{escalade}/repondre .............................. responsable.assistance.escalades.repondre › Responsable\Assistance\EscaladesController@repondre
+  GET|HEAD  espace/responsable/clients ........................................................................................ responsable.clients.index › Responsable\Clients\ClientController@index
+  GET|HEAD  espace/responsable/clients/{client} ......................................................................... responsable.clients.afficher › Responsable\Clients\ClientController@afficher
+  POST      espace/responsable/conformite/alertes-npi/{alerte}/traiter ............................... responsable.conformite.alertes-npi.traiter › Responsable\Conformite\AlerteNpiController@traiter
+  POST      espace/responsable/conformite/declarations-centif/{declarationCentif}/generer responsable.conformite.declarations-centif.generer › Responsable\Conformite\DeclarationCentifController@gen…
+  GET|HEAD  espace/responsable/filtrage ................................................................................... responsable.filtrage.index › Responsable\Filtrage\FiltrageController@index
+  PUT       espace/responsable/filtrage/{resultatFiltrage}/decider .................................................... responsable.filtrage.decider › Responsable\Filtrage\FiltrageController@decider
+  GET|HEAD  espace/responsable/identites/{identite} ............................................................... responsable.identites.afficher › Responsable\Identites\IdentiteController@afficher
+  GET|HEAD  storage/{path} ....................................................................... storage.local › vendor/laravel/framework/src/Illuminate/Filesystem/FilesystemServiceProvider.php:98
+  PUT       storage/{path} ............................................................... storage.local.upload › vendor/laravel/framework/src/Illuminate/Filesystem/FilesystemServiceProvider.php:106
+  GET|HEAD  up ........................................................................................... vendor/laravel/framework/src/Illuminate/Foundation/Configuration/ApplicationBuilder.php:219
+
+                                                                                                                                                                                   Showing [60] routes
+

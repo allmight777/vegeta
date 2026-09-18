@@ -1,118 +1,193 @@
 @extends('layouts.responsable')
 
 @section('titre', 'Vue consolidée de la personne')
+@section('sous-titre', 'Tous les comptes de la même personne, toutes agences confondues')
 
 @section('contenu')
-    <div class="space-y-5">
 
-        {{-- Aucun nom en clair dans cet en-tête : l'identité se lit par ses rattachements. --}}
-        <section class="rounded-md border border-gray-200 bg-white px-4 py-3">
-            <div class="flex flex-wrap items-center gap-2 text-sm">
-                <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                    {{ $clients->count() }} fiche(s) client
+@include('responsable.identites._styles')
+
+<div class="identite-page">
+
+    {{-- Aucun nom en clair ici : l'identité se lit par ses rattachements. --}}
+    <div class="identite-header">
+
+        <div class="identite-avatar">
+            <i class="fa-solid fa-fingerprint"></i>
+        </div>
+
+        <div style="min-width: 0;">
+
+            <h2>Personne physique consolidée</h2>
+
+            <div class="identite-chips">
+
+                <span class="chip-dark">
+                    <i class="fa-solid fa-folder-open"></i>
+                    {{ $clients->count() }} fiche{{ $clients->count() > 1 ? 's' : '' }}
                 </span>
-                <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                    {{ $comptes->count() }} compte(s)
+
+                <span class="chip-dark">
+                    <i class="fa-solid fa-wallet"></i>
+                    {{ $comptes->count() }} compte{{ $comptes->count() > 1 ? 's' : '' }}
                 </span>
-                <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                    {{ $comptes->pluck('agence_id')->unique()->count() }} agence(s)
+
+                <span class="chip-dark">
+                    <i class="fa-solid fa-location-dot"></i>
+                    {{ $comptes->pluck('agence_id')->unique()->count() }} agence{{ $comptes->pluck('agence_id')->unique()->count() > 1 ? 's' : '' }}
                 </span>
+
                 @if ($identite->rapprocheeParNpi())
-                    <span class="rounded bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    <span class="chip-dark npi">
+                        <i class="fa-solid fa-id-card"></i>
                         Rapprochement par NPI vérifié
                     </span>
                 @else
-                    <span class="rounded bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    <span class="chip-dark empreinte">
+                        <i class="fa-solid fa-wave-square"></i>
                         Rapprochement par empreinte — à confirmer
                     </span>
                 @endif
+
             </div>
-        </section>
 
-        <section>
-            <h2 class="mb-2 text-sm font-semibold text-gray-700">Plafond quotidien espèces</h2>
-            <div class="rounded-md border border-gray-200 bg-white px-3 py-3 text-sm">
-                @if ((float) $identite->plafond_quotidien_especes > 0)
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-700">
-                            {{ number_format($cumul?->totalRetenu() ?? 0, 0, ',', ' ') }} XOF aujourd'hui
-                        </span>
-                        <span class="text-gray-400">
-                            plafond {{ number_format((float) $identite->plafond_quotidien_especes, 0, ',', ' ') }} XOF
-                        </span>
-                    </div>
-
-                    <div class="mt-2 h-2 w-full rounded bg-gray-100">
-                        <div class="h-2 rounded {{ $pourcentagePlafond >= 100 ? 'bg-red-500' : ($pourcentagePlafond >= 80 ? 'bg-amber-500' : 'bg-emerald-500') }}"
-                             style="width: {{ $pourcentagePlafond }}%"></div>
-                    </div>
-
-                    <p class="mt-2 text-xs text-gray-400">
-                        {{ $pourcentagePlafond }} % du plafond &middot; calculé sur : {{ $identite->base_calcul_plafond }}
-                        &middot; source {{ $identite->source_plafond->libelle() }}
-                    </p>
-
-                    @if ($cumul !== null)
-                        <p class="mt-1 text-xs text-gray-500">
-                            {{ $cumul->nb_operations }} opération(s) sur {{ $cumul->nb_comptes }} compte(s),
-                            dans {{ $cumul->nb_agences }} agence(s).
-                        </p>
-                    @endif
-                @else
-                    <p class="text-gray-400">Aucun plafond calculé : profil client à compléter.</p>
-                @endif
-            </div>
-        </section>
-
-        <section>
-            <h2 class="mb-2 text-sm font-semibold text-gray-700">Comptes de la personne</h2>
-            <div class="space-y-1.5">
-                @forelse ($comptes as $compte)
-                    <div class="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">
-                        <span class="text-gray-700">{{ $compte->agence->nom }}</span>
-                        <span class="text-xs text-gray-400">
-                            {{ $compte->derniere_operation_le?->diffForHumans() ?? 'aucune opération' }}
-                        </span>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-400">Aucun compte ouvert.</p>
-                @endforelse
-            </div>
-        </section>
-
-        <section>
-            <h2 class="mb-2 text-sm font-semibold text-gray-700">Pourquoi ces comptes sont-ils liés ?</h2>
-            <div class="space-y-1.5">
-                @foreach ($rattachements as $rattachement)
-                    <div class="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">
-                        <div class="flex items-center justify-between">
-                            <a href="{{ route('agent.clients.completer', $rattachement->client) }}" class="text-emerald-700 hover:underline">
-                                {{ $rattachement->client->nomAffichage() }}
-                            </a>
-                            <span class="text-xs text-gray-400">{{ $rattachement->created_at->diffForHumans() }}</span>
-                        </div>
-                        <p class="mt-1 text-xs text-gray-500">{{ $rattachement->justification() }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </section>
-
-        <section>
-            <h2 class="mb-2 text-sm font-semibold text-gray-700">Alertes en cours sur cette personne</h2>
-            <div class="space-y-1.5">
-                @forelse ($alertes as $alerte)
-                    <div class="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">
-                        <div class="flex items-center justify-between">
-                            <x-badge-gravite :gravite="$alerte->gravite" />
-                            <span class="text-xs text-gray-400">{{ $alerte->created_at->diffForHumans() }}</span>
-                        </div>
-                        <p class="mt-1 text-gray-700">{{ $alerte->explication_texte }}</p>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-400">Aucune alerte en cours.</p>
-                @endforelse
-            </div>
-        </section>
+        </div>
 
     </div>
+
+    <div class="bloc">
+
+        <div class="bloc-titre">
+            <i class="fa-solid fa-money-bill-wave"></i>
+            Plafond quotidien espèces
+        </div>
+
+        <div class="bloc-corps">
+
+            @if ((float) $identite->plafond_quotidien_especes > 0)
+
+                @php
+                    $classeJauge = $pourcentagePlafond >= 100 ? 'danger' : ($pourcentagePlafond >= 80 ? 'warn' : '');
+                @endphp
+
+                <div class="jauge-chiffres">
+                    <span class="jauge-cumul">
+                        {{ number_format($cumul?->totalRetenu() ?? 0, 0, ',', ' ') }} XOF
+                    </span>
+                    <span class="jauge-plafond">
+                        plafond {{ number_format((float) $identite->plafond_quotidien_especes, 0, ',', ' ') }} XOF
+                        &middot; {{ $pourcentagePlafond }} %
+                    </span>
+                </div>
+
+                <div class="jauge-bar">
+                    <span class="{{ $classeJauge }}" style="width: {{ $pourcentagePlafond }}%"></span>
+                </div>
+
+                <p class="jauge-note">
+                    Calculé sur : {{ $identite->base_calcul_plafond }}
+                    &middot; source {{ $identite->source_plafond->libelle() }}
+                    @if ($cumul !== null)
+                        <br>
+                        {{ $cumul->nb_operations }} opération{{ $cumul->nb_operations > 1 ? 's' : '' }}
+                        sur {{ $cumul->nb_comptes }} compte{{ $cumul->nb_comptes > 1 ? 's' : '' }},
+                        dans {{ $cumul->nb_agences }} agence{{ $cumul->nb_agences > 1 ? 's' : '' }}.
+                    @endif
+                </p>
+
+            @else
+                <p class="vide">Aucun plafond calculé : profil client à compléter.</p>
+            @endif
+
+        </div>
+
+    </div>
+
+    <div class="bloc">
+
+        <div class="bloc-titre">
+            <i class="fa-solid fa-building-columns"></i>
+            Comptes de la personne
+        </div>
+
+        <div class="bloc-corps">
+
+            @forelse ($comptes as $compte)
+                <div class="ligne">
+                    <div class="ligne-gauche">
+                        <div class="ligne-icone"><i class="fa-solid fa-wallet"></i></div>
+                        <div>
+                            <div class="ligne-titre">{{ $compte->agence->nom }}</div>
+                            <div class="ligne-sous">{{ $compte->statut->libelle() }}</div>
+                        </div>
+                    </div>
+                    <span class="ligne-droite">
+                        {{ $compte->derniere_operation_le?->diffForHumans() ?? 'aucune opération' }}
+                    </span>
+                </div>
+            @empty
+                <p class="vide">Aucun compte ouvert.</p>
+            @endforelse
+
+        </div>
+
+    </div>
+
+    <div class="bloc">
+
+        <div class="bloc-titre">
+            <i class="fa-solid fa-diagram-project"></i>
+            Pourquoi ces comptes sont-ils liés ?
+        </div>
+
+        <div class="bloc-corps">
+
+            @foreach ($rattachements as $rattachement)
+                <div class="ligne">
+                    <div class="ligne-gauche">
+                        <div class="ligne-icone"><i class="fa-solid fa-link"></i></div>
+                        <div>
+                            <div class="ligne-titre">
+                                <a href="{{ route('agent.clients.completer', $rattachement->client) }}">
+                                    {{ $rattachement->client->nomAffichage() }}
+                                </a>
+                            </div>
+                            <div class="ligne-sous">{{ $rattachement->justification() }}</div>
+                        </div>
+                    </div>
+                    <span class="ligne-droite">{{ $rattachement->created_at->diffForHumans() }}</span>
+                </div>
+            @endforeach
+
+        </div>
+
+    </div>
+
+    <div class="bloc">
+
+        <div class="bloc-titre">
+            <i class="fa-solid fa-bell"></i>
+            Alertes en cours sur cette personne
+        </div>
+
+        <div class="bloc-corps">
+
+            @forelse ($alertes as $alerte)
+                <div class="alerte {{ $alerte->gravite->value }}">
+                    <div class="alerte-tete">
+                        <span class="alerte-type">{{ $alerte->type->libelle() }}</span>
+                        <span class="alerte-date">{{ $alerte->created_at->diffForHumans() }}</span>
+                    </div>
+                    <p class="alerte-texte">{{ $alerte->explication_texte }}</p>
+                </div>
+            @empty
+                <p class="vide">Aucune alerte en cours.</p>
+            @endforelse
+
+        </div>
+
+    </div>
+
+</div>
+
 @endsection

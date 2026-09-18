@@ -166,6 +166,7 @@ class MoteurFiltrageTest extends TestCase
 
         $reponse = $this->actingAs($conformite, 'agent')->put("/espace/responsable/filtrage/{$resultat->id}/decider", [
             'statut' => 'confirme',
+            'motif_code' => 'correspondance_confirmee',
             'motif' => 'Correspondance vérifiée manuellement avec la pièce d\'identité.',
         ]);
 
