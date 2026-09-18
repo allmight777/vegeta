@@ -1742,27 +1742,6 @@
          MESSAGE DE SESSION
     ====================================================== --}}
 
-    @if (session('statut'))
-
-        <div class="admin-alert-conteneur">
-
-            <div class="admin-alert">
-
-                <div class="admin-alert-icon">
-
-                    <i class="fa-solid fa-check"></i>
-
-                </div>
-
-                <span>
-                    {{ session('statut') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
 
 
 
@@ -1865,7 +1844,7 @@
                 </a>
 
 
-                <a
+          {{--       <a
                     href="{{ Route::has('admin.ppe.signataires.index')
                         ? route('admin.ppe.signataires.index')
                         : url('/admin/ppe/signataires') }}"
@@ -1874,7 +1853,7 @@
                     <i class="fa-solid fa-user-tie"></i>
                     <span>PPE / Signataires</span>
                 </a>
-
+ --}}
 
                 <a
                     href="{{ Route::has('admin.regles-detection.index')
@@ -1887,12 +1866,14 @@
                 </a>
 
 
-                <div class="sidebar-section-title">
+
+
+          {{--
+ <div class="sidebar-section-title">
                     Opérations
                 </div>
 
-
-                <a
+          <a
                     href="{{ Route::has('admin.import.creer')
                         ? route('admin.import.creer')
                         : url('/admin/import') }}"
@@ -1901,7 +1882,7 @@
                     <i class="fa-solid fa-file-import"></i>
                     <span>Import</span>
                 </a>
-
+ --}}
             </nav>
 
 

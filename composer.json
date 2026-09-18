@@ -11,6 +11,7 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.9",
         "league/csv": "^9.28",
+        "maatwebsite/excel": "^4.0",
         "mpdf/mpdf": "^8.3",
         "phpoffice/phpspreadsheet": "^5.10",
         "spatie/pdf-to-image": "^3.5",

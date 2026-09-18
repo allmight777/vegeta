@@ -37,10 +37,16 @@ return new class extends Migration
             $table->text('motif_detail')->nullable();
 
             $table->foreignId('decide_par_agent_id')->nullable()->constrained('agents')->nullOnDelete();
-            $table->timestamp('decide_le');
+            // dateTime, pas timestamp : sous MariaDB (sql_mode strict), seule la
+            // première colonne timestamp NOT NULL sans défaut explicite reçoit un
+            // défaut implicite (CURRENT_TIMESTAMP) — la suivante ("expire_le") reçoit
+            // un défaut '0000-00-00 00:00:00' que le mode strict rejette à la
+            // création (erreur 1067). dateTime n'a pas cette contrainte historique et
+            // se comporte à l'identique côté Eloquent/Carbon.
+            $table->dateTime('decide_le');
             // Une décision ne vaut jamais à vie : sans péremption, un écart unique
             // rendrait un client invisible pour toujours.
-            $table->timestamp('expire_le');
+            $table->dateTime('expire_le');
 
             $table->unsignedInteger('applications')->default(0);
             $table->timestamp('derniere_application_le')->nullable();
