@@ -19,6 +19,11 @@ use Illuminate\Support\Collection;
  * Filtrage sanctions/PPE (problème 2) : empreinte de la cible → comparaison à
  * entrees_liste → resultats_filtrage + alerte si le score dépasse le seuil bas.
  * Seuils calibrés (§6.1) : jamais de confirmation automatique, toujours une revue humaine.
+ *
+ * Le moteur interroge la mémoire des décisions avant d'alerter : une correspondance
+ * déjà tranchée par le responsable est toujours contrôlée et journalisée, mais ne
+ * relève plus d'alerte. Sans ça, le même homonyme revient chaque jour, sur chaque
+ * dossier de la même personne, et le responsable finit par tout écarter en bloc.
  */
 class MoteurFiltrage
 {
@@ -29,6 +34,7 @@ class MoteurFiltrage
     public function __construct(
         private readonly ServiceEmpreinte $empreinte,
         private readonly GenerateurExplication $explication,
+        private readonly MemoireDecisions $memoire,
     ) {}
 
     /**
@@ -58,10 +64,30 @@ class MoteurFiltrage
             ]);
             $estNouveau = ! $resultat->exists;
             $resultat->fill(['score_similarite' => $score]);
+
+            // Le responsable a-t-il déjà tranché ce cas exact ? La décision suit la
+            // personne et non la fiche : écarté une fois à Dassa, valable à Savalou.
+            $decision = $this->memoire->pour($cible, $entree);
+
             if ($estNouveau) {
-                $resultat->statut = StatutFiltrage::AVerifier;
+                $resultat->statut = $decision?->statut ?? StatutFiltrage::AVerifier;
             }
             $resultat->save();
+
+            if ($decision !== null) {
+                // Contrôle effectué et journalisé (preuve de diligence), mais pas de
+                // nouvelle alerte : c'est du bruit déjà qualifié par un humain.
+                $this->memoire->appliquer($decision, $resultat);
+
+                if ($decision->statut === StatutFiltrage::Confirme) {
+                    // Une correspondance confirmée, elle, doit toujours ressortir.
+                    $this->creerAlerte($cible, $entree, $resultat, $score, GraviteAlerte::Critique);
+                }
+
+                $resultats->push($resultat);
+
+                continue;
+            }
 
             if ($estNouveau) {
                 $this->creerAlerte($cible, $entree, $resultat, $score);
@@ -89,7 +115,7 @@ class MoteurFiltrage
         return $cible->personnePhysique?->empreinte_nom ?? $cible->personneMorale?->empreinte_nom;
     }
 
-    private function creerAlerte(Client|Signataire $cible, EntreeListe $entree, ResultatFiltrage $resultat, float $score): void
+    private function creerAlerte(Client|Signataire $cible, EntreeListe $entree, ResultatFiltrage $resultat, float $score, ?GraviteAlerte $graviteForcee = null): void
     {
         $client = $cible instanceof Client ? $cible : $cible->personneMorale->client;
         $estPpe = in_array($entree->source->value, ['ppe_benin', 'ppe_cedeao'], true);
@@ -98,7 +124,7 @@ class MoteurFiltrage
             'type' => $estPpe ? TypeAlerte::FiltragePpe : TypeAlerte::FiltrageSanction,
             'client_id' => $client->id,
             'resultat_filtrage_id' => $resultat->id,
-            'gravite' => $score >= self::SEUIL_CRITIQUE ? GraviteAlerte::Critique : GraviteAlerte::Attention,
+            'gravite' => $graviteForcee ?? ($score >= self::SEUIL_CRITIQUE ? GraviteAlerte::Critique : GraviteAlerte::Attention),
             'explication_texte' => $this->explication->pourFiltrage($cible, $entree, $score),
             'faits' => [
                 'score_similarite' => round($score, 4),
