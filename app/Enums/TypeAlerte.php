@@ -14,6 +14,7 @@ enum TypeAlerte: string
     case PlafondQuotidienDepasse = 'plafond_quotidien_depasse';
     case NpiInvalideApresVerification = 'npi_invalide_apres_verification';
     case IncoherenceDepotSimule = 'incoherence_depot_simule';
+    case IncoherenceProfil = 'incoherence_profil';
 
     public function libelle(): string
     {
@@ -28,6 +29,7 @@ enum TypeAlerte: string
             self::PlafondQuotidienDepasse => 'Plafond quotidien espèces dépassé (tous comptes)',
             self::NpiInvalideApresVerification => 'NPI invalide après vérification différée',
             self::IncoherenceDepotSimule => 'Nom déclaré différent du titulaire du dépôt mobile money (simulation)',
+            self::IncoherenceProfil => 'Incohérence profil déclaré / opérations observées',
         };
     }
 }

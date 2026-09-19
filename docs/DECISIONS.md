@@ -890,3 +890,53 @@ rejeu des six scénarios et mesures de débit. Décisions et corrections :
   `statut_filtrage`, son statut est dérivé de ses `resultats_filtrage`
   (`Client::statutConformiteAffichable()`). Commentaire ajouté pour éviter une
   « correction » qui introduirait une incohérence.
+
+## 31. Vigilance constante — cohérence profil / opérations (problème 7)
+
+Ajout d'un septième problème traité : la confrontation du profil déclaré au KYC au
+comportement transactionnel réellement observé.
+
+- **Pourquoi** : le dispositif ne couvrait que la vigilance à l'entrée en relation
+  (filtrage listes, complétude KYC) et des seuils absolus (fractionnement, plafond
+  quotidien). La vigilance constante — Loi uniforme art. 18, Instruction BCEAO
+  001-03-2025 art. 6 — n'était pas traitée. Or un seuil absolu ne sait pas qu'un dépôt
+  de 400 000 XOF est banal pour un grossiste et aberrant pour un apprenti tailleur.
+
+- **Un indice isolé ne signale rien.** Le faisceau exige au moins 2 constats
+  concordants et un poids cumulé de 3. C'est la décision de conception la plus
+  importante : alerter sur chaque indicateur aurait noyé la file du responsable
+  d'agence, qui aurait cessé de la lire — moins de conformité, pas plus. Même logique
+  que la mémoire de décisions côté filtrage.
+
+- **L'IA ne produit aucun score.** Indicateurs déterministes, sans appel réseau, dont
+  chaque constat porte les chiffres qui le fondent (`Constat::$fait`) pour être
+  refaisable à la main par un contrôleur. Un signalement LBC/FT non explicable est
+  inopposable. `NarrateurFaisceau` n'intervient qu'en surcouche : narration et actions
+  de remédiation KYC, avec gabarit local hors connexion.
+
+- **Trois indicateurs livrés**, choisis pour leur rapport valeur/effort :
+  `EcartFluxRevenus` (cumul des dépôts rapporté au revenu déclaré),
+  `CompteDePassage` (dépôt retiré à ≥ 80 % sous 48 h, répété — typologie GIABA),
+  `IncoherenceActiviteCanal` (activité déclarée contre canaux réellement utilisés).
+  En ajouter un est une classe de 30 lignes plus une ligne dans `AppServiceProvider` :
+  aucune modification du moteur.
+
+- **Non livrés, assumés** : incohérence géographique, dormance puis afflux, et
+  saisonnalité contredite (celle-ci demande une année d'historique). Le pont vers la
+  déclaration CENTIF et la boucle de mémoire des décisions sur les motifs d'écart
+  justifié sont identifiés mais hors périmètre du MVP.
+
+- **Destinataire** : le responsable d'agence (`RoleAgent::ResponsableAgence`), jamais
+  le caissier — même règle de non-divulgation que le filtrage (Loi art. 63). Aucun
+  nouveau rôle n'a été créé : `ResponsableLbcft` avait déjà été fusionné dans
+  `ResponsableAgence` par `agents:migrer-roles`.
+
+- **Seuils** : tous dans `config/coherence.php`, `source = demo`. Ce sont des
+  hypothèses, pas des valeurs réglementaires, et chaque réseau doit les calibrer sur
+  son propre historique. La table de correspondance activité → canaux attendus est
+  particulièrement dépendante du terrain.
+
+- Scénario de démonstration `demo:scenario 8` et 7 tests de non-régression
+  (`tests/Feature/Coherence/AnalyseCoherenceProfilTest.php`), dont deux tests de
+  faux positif : un membre cohérent et un membre à indice unique ne doivent jamais
+  être signalés.
