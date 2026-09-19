@@ -23,7 +23,11 @@ class GestionnaireCles
         $base64 = config('cles.demo');
 
         if (blank($base64)) {
-            throw new RuntimeException('Clé de chiffrement CLE_CIF_DEMO manquante dans .env.');
+            throw new RuntimeException(
+                'Clé de chiffrement CLE_CIF_DEMO manquante dans .env. '
+                .'Corriger en une commande : echo "CLE_CIF_DEMO=$(openssl rand -base64 32)" >> .env '
+                .'puis php artisan config:clear.'
+            );
         }
 
         $secret = base64_decode($base64, true);

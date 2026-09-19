@@ -13,6 +13,15 @@ class DetecteurConnectiviteTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Ce test porte sur la détection HTTP elle-même : on annule le forçage
+        // appliqué à toute la suite (phpunit.xml) pour exercer la vraie branche.
+        config(['reseau.mode_connectivite' => 'auto']);
+    }
+
     public function test_une_reponse_reussie_signale_la_connectivite_et_est_mise_en_cache(): void
     {
         Cache::flush();

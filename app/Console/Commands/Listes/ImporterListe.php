@@ -3,9 +3,12 @@
 namespace App\Console\Commands\Listes;
 
 use App\Models\EntreeListe;
+use App\Services\Filtrage\RefiltrageParc;
 use App\Services\Securite\IndexAveugle;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use League\Csv\Reader;
+use Throwable;
 
 /**
  * Import d'une liste de sanctions/PPE. Le format ONU réel (XML) n'est pas encore
@@ -14,11 +17,15 @@ use League\Csv\Reader;
  */
 class ImporterListe extends Command
 {
-    protected $signature = 'listes:importer {source : onu|ppe_benin|ppe_cedeao|demo} {--fichier= : chemin vers un CSV nom,categorie}';
+    protected $signature = 'listes:importer
+        {source : onu|ppe_benin|ppe_cedeao|demo}
+        {--fichier= : chemin vers un CSV nom,categorie}
+        {--publiee-le= : date de publication officielle de la liste (mesure du délai réglementaire)}
+        {--sans-refiltrage : n\'enchaîne pas le recontrôle du parc (déconseillé)}';
 
     protected $description = 'Importe une liste de sanctions ou PPE depuis un fichier CSV local (jamais d\'appel réseau).';
 
-    public function handle(IndexAveugle $indexAveugle): int
+    public function handle(IndexAveugle $indexAveugle, RefiltrageParc $refiltrage): int
     {
         $source = $this->argument('source');
         $fichier = $this->option('fichier');
@@ -62,6 +69,42 @@ class ImporterListe extends Command
         }
 
         $this->info("Import terminé : {$ajouts} nouvelle(s) entrée(s) — version {$version}.");
+
+        // Une liste importée mais jamais confrontée au parc existant ne protège de
+        // rien : un membre inscrit hier ne repassera plus jamais par le filtrage.
+        // L'obligation d'agir « sans délai » (24 h) impose donc d'enchaîner ici.
+        if ($this->option('sans-refiltrage')) {
+            $this->warn('Refiltrage du parc ignoré (--sans-refiltrage). Obligation « sans délai » non satisfaite : lancer php artisan listes:refiltrer dès que possible.');
+
+            return self::SUCCESS;
+        }
+
+        if ($ajouts === 0) {
+            $this->line('Aucune nouvelle entrée : refiltrage du parc inutile.');
+
+            return self::SUCCESS;
+        }
+
+        $this->newLine();
+        $this->line('Recontrôle du parc existant contre la liste mise à jour…');
+
+        $publieeLe = null;
+
+        if ($valeur = $this->option('publiee-le')) {
+            try {
+                $publieeLe = Carbon::parse($valeur);
+            } catch (Throwable) {
+                $this->warn('Date de publication illisible : le délai réglementaire ne sera pas mesuré.');
+            }
+        }
+
+        $rapport = $refiltrage->refiltrerTout($publieeLe);
+
+        $this->info($rapport->resume());
+
+        if ($rapport->correspondancesTrouvees() > 0) {
+            $this->warn('Des correspondances ont été relevées sur le parc existant : file de filtrage du responsable conformité à traiter.');
+        }
 
         return self::SUCCESS;
     }

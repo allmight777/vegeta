@@ -1,4 +1,5 @@
 <?php
+
 // app/Models/EntreeListe.php
 
 namespace App\Models;
@@ -46,7 +47,7 @@ class EntreeListe extends Model
             // pas dupliquer la logique de ServiceEmpreinte.
             if ($entree->isDirty('nom') || $entree->isDirty('prenom')) {
                 $entree->nom = trim(
-                    ($entree->nom ?? '') . ' ' . ($entree->prenom ?? '')
+                    ($entree->nom ?? '').' '.($entree->prenom ?? '')
                 );
 
                 app(ServiceEmpreinte::class)->calculerPourEntreeListe($entree);
@@ -75,6 +76,6 @@ class EntreeListe extends Model
      */
     public function nomComplet(): string
     {
-        return trim(($this->nom ?? '') . ' ' . ($this->prenom ?? ''));
+        return trim(($this->nom ?? '').' '.($this->prenom ?? ''));
     }
 }

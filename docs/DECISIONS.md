@@ -821,3 +821,72 @@ le temps le permet.
   (contraire à CLAUDE.md §2 « zéro CDN ») : hors ligne, icônes et police disparaissent — risque de
   démonstration à traiter (télécharger les assets en local) ; (2) les tuiles de statistiques du
   tableau de bord admin comptent tous les réseaux, même pour un admin de réseau.
+
+## 30. Revue finale avant soutenance — corrections appliquées
+
+Revue complète du dépôt le 19/09/2026, avec exécution réelle de la suite de tests,
+rejeu des six scénarios et mesures de débit. Décisions et corrections :
+
+- **`.env.example` livrait `CLE_CIF_DEMO` vide** alors que le README affirmait le
+  contraire : l'installation documentée échouait au premier seeder
+  (`RuntimeException`). Une clé de démonstration publique est désormais fournie, avec
+  la consigne explicite de la régénérer en production. Le message d'erreur de
+  `GestionnaireCles` donne maintenant la commande de réparation.
+
+- **`APP_KEY` ajoutée à `phpunit.xml`** : sans elle, 113 tests échouaient en
+  `MissingAppKeyException` sur toute machine n'ayant pas lancé `key:generate`. La
+  suite ne dépend plus d'une étape manuelle.
+
+- **`vendor/` désynchronisé de `composer.lock`** : 14 paquets déclarés étaient absents
+  (`maatwebsite/excel`, `phpoffice/phpspreadsheet`, `mpdf/*`, `thiagoalessio/tesseract_ocr`,
+  `spatie/pdf-to-image`…). L'application démarrait normalement et n'échouait qu'à
+  l'exécution du chemin concerné — import de listes par l'interface, extraction de
+  tableurs, PDF protégé des identifiants, OCR. Non corrigeable par le code :
+  `composer install` est requis. Un contrôle de cohérence a été ajouté au pré-vol
+  pour que ce mode de défaillance ne puisse plus être silencieux.
+
+- **`installation:verifier`** (nouvelle commande, lecture seule) : PHP, extensions,
+  cohérence des dépendances, les deux clés, base, migrations, données de démonstration,
+  empreintes manquantes, puis l'état de la configuration de démonstration. Chaque
+  échec affiche la commande exacte qui le répare.
+
+- **Refiltrage du parc — trou réglementaire comblé.** `ImportateurListes` créait les
+  entrées sans jamais reconfronter le parc existant : un membre listé après son entrée
+  en relation n'était jamais détecté, alors que `CLAUDE.md` §41 exige la mesure du
+  délai publication → fin de refiltrage. Ajout de `RefiltrageParc`, `RapportRefiltrage`,
+  `listes:refiltrer`, enchaînement automatique après `listes:importer`, mesure du délai
+  contre l'échéance de 24 h et journalisation de la campagne. Six tests de
+  non-régression (`tests/Feature/Filtrage/RefiltrageParcTest.php`).
+
+- **`RESEAU_MODE_CONNECTIVITE`** (`auto` | `en_ligne` | `hors_ligne`) : l'état de
+  connectivité était déduit d'un appel HTTP réel, donc la démonstration dépendait du
+  wifi de la salle — hors ligne, le refus d'un NPI invalide ne se déclenchait pas
+  (branche dégradée) et chaque création de dossier coûtait 2 s de timeout. La suite de
+  tests est figée en `en_ligne` ; `DetecteurConnectiviteTest` repasse en `auto` pour
+  exercer la vraie branche.
+
+- **Performance du chemin chaud.** `MoteurFiltrage` rechargeait et déchiffrait toute la
+  table `entrees_liste` une fois par dossier : mémorisation par instance, avec
+  `rafraichirListes()` avant chaque campagne. `Bitset::et()` utilise l'opérateur `&`
+  natif de PHP sur chaînes binaires au lieu d'une boucle `ord()`/`chr()`, et
+  `nbBitsActifs()` une table de popcount de 256 entrées au lieu d'un `decbin()` +
+  `substr_count()` par octet. Gain mesuré sur la comparaison Dice : **×2,3**
+  (38 800 → 87 500 comparaisons/s). Débit de refiltrage mesuré : **137 dossiers/s**
+  contre 507 entrées de liste.
+
+- **Scénario 2 — donnée de démonstration corrigée.** L'entrée de liste reprenait
+  l'orthographe *exacte* du client (score 100 %), ce qui ne démontrait rien qu'une
+  égalité de chaînes n'aurait fait. Elle est désormais inscrite sous une
+  translittération différente (« AWOUANDJINOU » contre « AHOUANDJINOU »), rapprochée à
+  ~92 % par l'empreinte. Commentaire explicite dans `ListesDemoSeeder` pour éviter une
+  « correction » ultérieure.
+
+- **Ménage du dépôt** : suppression de cinq fichiers commités par accident (un dump
+  Tinker de 73 Ko, deux copies de la page d'aide de `less`, `routes.txt`, un
+  `.php.backup`) et durcissement du `.gitignore`.
+
+- **Fausse piste écartée** : `MoteurFiltrage::mettreAJourStatutCible()` ne traite que
+  les `Signataire`. Ce n'est pas un oubli — un `Client` n'a pas de colonne
+  `statut_filtrage`, son statut est dérivé de ses `resultats_filtrage`
+  (`Client::statutConformiteAffichable()`). Commentaire ajouté pour éviter une
+  « correction » qui introduirait une incohérence.

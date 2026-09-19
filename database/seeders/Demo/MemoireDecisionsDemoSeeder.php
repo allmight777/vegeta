@@ -39,7 +39,7 @@ class MemoireDecisionsDemoSeeder extends Seeder
 
         $entree = EntreeListe::where(
             'nom_idx',
-            $indexAveugle->calculer('AHOUANDJINOU Rachidatou', 'nom')
+            $indexAveugle->calculer('AWOUANDJINOU Rachidatou', 'nom')
         )->first();
 
         if ($entree === null || DecisionFiltrage::where('entree_liste_id', $entree->id)->exists()) {
@@ -78,6 +78,6 @@ class MemoireDecisionsDemoSeeder extends Seeder
             ]);
         }
 
-        $this->command?->info('MemoireDecisionsDemoSeeder : 3 décisions passées créées sur l\'entrée AHOUANDJINOU.');
+        $this->command?->info('MemoireDecisionsDemoSeeder : 3 décisions passées créées sur l\'entrée AWOUANDJINOU.');
     }
 }

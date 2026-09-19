@@ -1,9 +1,9 @@
 <?php
+
 // app/Http/Controllers/Agent/Clients/ClientLookupController.php
 
 namespace App\Http\Controllers\Agent\Clients;
 
-use App\Enums\StatutVerificationNpi;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Compte;

@@ -31,6 +31,19 @@ class MoteurFiltrage
 
     private const SEUIL_CRITIQUE = 0.85;
 
+    /**
+     * Entrées de liste mémorisées pour la durée de vie de l'instance.
+     *
+     * Sans ça, un refiltrage de parc rechargeait — et déchiffrait — la table
+     * entrees_liste une fois par dossier : 10 000 dossiers = 10 000 lectures
+     * complètes de la même table. Le cache est porté par l'instance, donc il ne
+     * survit pas à la requête HTTP et ne peut pas servir des données périmées à
+     * un autre utilisateur.
+     *
+     * @var Collection<int, EntreeListe>|null
+     */
+    private ?Collection $entreesListe = null;
+
     public function __construct(
         private readonly ServiceEmpreinte $empreinte,
         private readonly GenerateurExplication $explication,
@@ -50,7 +63,7 @@ class MoteurFiltrage
 
         $resultats = collect();
 
-        foreach (EntreeListe::all() as $entree) {
+        foreach ($this->entreesListe() as $entree) {
             $score = $this->empreinte->similariteNom($empreinteCible, $entree->empreinte_nom);
 
             if ($score === null || $score < self::SEUIL_BAS) {
@@ -101,6 +114,23 @@ class MoteurFiltrage
     }
 
     /**
+     * @return Collection<int, EntreeListe>
+     */
+    private function entreesListe(): Collection
+    {
+        return $this->entreesListe ??= EntreeListe::all();
+    }
+
+    /**
+     * Vide le cache d'entrées de liste : à appeler après un import, pour que le
+     * refiltrage voie bien les entrées qui viennent d'arriver.
+     */
+    public function rafraichirListes(): void
+    {
+        $this->entreesListe = null;
+    }
+
+    /**
      * Client ne porte pas empreinte_nom en direct : le vecteur vit sur sa personne
      * physique ou morale. Un signataire porte le sien en propre.
      */
@@ -146,6 +176,10 @@ class MoteurFiltrage
     }
 
     /**
+     * Seul un Signataire porte une colonne `statut_filtrage` : pour un Client, le
+     * statut est DÉRIVÉ de ses resultats_filtrage (voir Client::statutConformiteAffichable()),
+     * il n'y a donc rien à écrire — ce n'est pas un oubli, ne pas « corriger ».
+     *
      * @param  Collection<int, ResultatFiltrage>  $resultats
      */
     private function mettreAJourStatutCible(Client|Signataire $cible, Collection $resultats): void

@@ -12,9 +12,15 @@ use Illuminate\Database\Seeder;
  * importé la vraie liste consolidée — voir `listes:importer --source=onu` pour un
  * import réel à partir d'un fichier XML local le jour où l'équipe le fournit.
  *
- * Une entrée reprend volontairement le nom d'un client de démonstration
- * (AHOUANDJINOU Rachidatou, voir DemoCoreBankingSeeder) pour rendre le scénario C
- * rejouable sans configuration manuelle.
+ * Une entrée vise volontairement un client de démonstration (AHOUANDJINOU Rachidatou,
+ * voir DemoCoreBankingSeeder) pour rendre le scénario 2 rejouable sans configuration.
+ *
+ * Elle est inscrite sous une TRANSLITTÉRATION DIFFÉRENTE (« AWOUANDJINOU ») et non sous
+ * l'orthographe exacte du dossier : c'est le cas réel — une liste internationale
+ * translittère un nom béninois comme elle peut, et l'agent de guichet écrit ce qu'il
+ * entend. Une égalité de chaînes, ou même un LIKE, ne détecte rien ici ; l'empreinte
+ * par filtre de Bloom la rapproche à ~92 %. Ne pas « corriger » cette orthographe :
+ * c'est elle qui démontre le moteur.
  */
 class ListesDemoSeeder extends Seeder
 {
@@ -25,7 +31,7 @@ class ListesDemoSeeder extends Seeder
         }
 
         $entrees = [
-            ['source' => 'demo', 'nom' => 'AHOUANDJINOU Rachidatou', 'categorie' => 'Extrait fictif format ONU — démonstration', 'version_liste' => 'DEMO-2026-1'],
+            ['source' => 'demo', 'nom' => 'AWOUANDJINOU Rachidatou', 'categorie' => 'Extrait fictif format ONU — démonstration', 'version_liste' => 'DEMO-2026-1'],
             ['source' => 'demo', 'nom' => 'SOSSOU Moctar', 'categorie' => 'Extrait fictif format ONU — démonstration', 'version_liste' => 'DEMO-2026-1'],
             ['source' => 'ppe_benin', 'nom' => 'ALIDOU Bertin', 'categorie' => 'PPE nationale — ministre (fictif)', 'version_liste' => 'PPE-BENIN-DEMO-1'],
             ['source' => 'ppe_benin', 'nom' => 'KOUASSI Delphine', 'categorie' => 'Conjoint de PPE nationale (fictif)', 'version_liste' => 'PPE-BENIN-DEMO-1'],
