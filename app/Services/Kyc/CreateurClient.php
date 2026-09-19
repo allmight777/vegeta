@@ -4,10 +4,12 @@ namespace App\Services\Kyc;
 
 use App\Enums\SourceCreation;
 use App\Enums\StatutFileAttenteNpi;
+use App\Enums\StatutPpe;
 use App\Enums\StatutVerificationNpi;
 use App\Enums\TypeClient;
 use App\Models\Agent;
 use App\Models\Client;
+use App\Models\DocumentPpe;
 use App\Models\Mandataire;
 use App\Models\PersonneMorale;
 use App\Models\PersonnePhysique;
@@ -18,6 +20,7 @@ use App\Services\Conformite\AnalyseurComportementalContinu;
 use App\Services\Filtrage\AlertesPpeTempsReel;
 use App\Services\Filtrage\MoteurFiltrage;
 use App\Services\Identite\ResolveurIdentite;
+use Illuminate\Http\UploadedFile;
 
 /**
  * Factorise la création complète d'un client (personne physique ou morale, avec
@@ -42,13 +45,20 @@ class CreateurClient
      */
     public function creer(array $donnees, int $reseauId, SourceCreation $source, ?Agent $agent): Client
     {
+        $ppeDeclare = (bool) ($donnees['ppe_declare'] ?? false);
+
         $client = Client::create([
             'reseau_id' => $reseauId,
             'agence_creation_id' => $agent?->agence_id,
             'type' => $donnees['type'],
             'nature_relation' => $donnees['nature_relation'],
             'source_creation' => $source,
+            'ppe_declare' => $ppeDeclare,
+            // Déclarée à l'adhésion : à confirmer par le responsable (Loi art. 29).
+            'statut_ppe' => $ppeDeclare ? StatutPpe::PpeAVerifier : StatutPpe::NonPpe,
         ]);
+
+        $this->enregistrerDocumentsPpe($client, $donnees['documents_ppe'] ?? []);
 
         if ($donnees['type'] === TypeClient::PersonnePhysique->value) {
             $this->creerPersonnePhysique($client, $donnees, $agent);
@@ -85,6 +95,19 @@ class CreateurClient
         $this->analyseurComportemental->analyserSansEchec($client, 'creation_client');
 
         return $client->fresh(['personnePhysique.mandataires', 'personneMorale.signataires']);
+    }
+
+    /** @param  array<int, UploadedFile>  $fichiers */
+    private function enregistrerDocumentsPpe(Client $client, array $fichiers): void
+    {
+        foreach ($fichiers as $fichier) {
+            DocumentPpe::create([
+                'client_id' => $client->id,
+                'chemin_fichier' => $fichier->store("documents-ppe/{$client->id}", 'local'),
+                'nom_fichier_original' => $fichier->getClientOriginalName(),
+                'type_mime' => (string) $fichier->getClientMimeType(),
+            ]);
+        }
     }
 
     private function creerPersonnePhysique(Client $client, array $donnees, ?Agent $agent): void

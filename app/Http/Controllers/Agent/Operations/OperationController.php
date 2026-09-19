@@ -17,6 +17,7 @@ use App\Services\Detection\DetecteurFractionnement;
 use App\Services\Kyc\CalculateurCompletude;
 use App\Services\Kyc\ReferentielFicheAdhesion;
 use App\Services\Operations\DetecteurPlafondInterAgences;
+use App\Services\Ppe\AlerteDepotPpe;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -141,6 +142,13 @@ class OperationController extends Controller
 
         // 5. Détection de fractionnement intra-agence (existant)
         $detecteur->analyserApresOperation($operation->fresh(['compte']));
+
+        // 5b. Dépôt d'une PPE : alerte + e-mail au responsable, quel que soit le montant.
+        try {
+            app(AlerteDepotPpe::class)->analyser($operation->fresh(['compte.client', 'agence']));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         // 6. Contrôle du cumul inter-agences sur la journée
         //    Le caissier n'est JAMAIS notifié — seul le responsable d'agence

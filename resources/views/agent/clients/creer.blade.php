@@ -1,7 +1,5 @@
 @extends('layouts.agent')
 
-
-
 @section('sous-titre', 'Créez une nouvelle fiche client et complétez les informations KYC.')
 
 @section('contenu')
@@ -463,7 +461,6 @@
     }
 
 
-
     /* Champ obligatoire manquant ou invalide : cercle rouge */
     .champ-erreur .champ-fiche-input,
     .champ-erreur select,
@@ -513,6 +510,610 @@
         color: var(--muted-light);
 
         font-weight: 400;
+    }
+
+
+    /* =========================================================
+       BLOC PPE — PERSONNE POLITIQUEMENT EXPOSÉE (raffinement)
+    ========================================================= */
+
+    .ppe-bloc {
+
+        grid-column: 1 / -1;
+
+        padding: 18px 20px;
+
+        border-radius: 16px;
+
+        background: linear-gradient(135deg, #FFFDF7 0%, #FFFCE8 100%);
+
+        border: 1px solid rgba(240, 229, 53, 0.45);
+
+        position: relative;
+
+        overflow: hidden;
+
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+
+    .ppe-bloc::before {
+
+        content: "";
+
+        position: absolute;
+
+        left: 0;
+
+        top: 0;
+
+        bottom: 0;
+
+        width: 4px;
+
+        background: linear-gradient(180deg, #F0E535 0%, #E6D91C 100%);
+    }
+
+
+    .ppe-bloc.actif {
+
+        border-color: rgba(220, 38, 38, 0.45);
+
+        background: linear-gradient(135deg, #FFFDF7 0%, #FEF2F2 100%);
+
+        box-shadow: 0 8px 22px rgba(220, 38, 38, 0.08);
+    }
+
+
+    .ppe-bloc.actif::before {
+
+        background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+    }
+
+
+    /* En-tête du bloc */
+
+    .ppe-head {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 14px;
+
+        flex-wrap: wrap;
+    }
+
+
+    .ppe-head-left {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        min-width: 0;
+
+        flex: 1;
+    }
+
+
+    .ppe-icon {
+
+        width: 42px;
+
+        height: 42px;
+
+        flex-shrink: 0;
+
+        border-radius: 12px;
+
+        background: var(--yellow-soft);
+
+        border: 1px solid rgba(240, 229, 53, 0.45);
+
+        color: #A08F00;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 0.95rem;
+
+        transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+
+
+    .ppe-bloc.actif .ppe-icon {
+
+        background: rgba(220, 38, 38, 0.10);
+
+        border-color: rgba(220, 38, 38, 0.28);
+
+        color: var(--danger);
+    }
+
+
+    .ppe-head-text {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 3px;
+
+        min-width: 0;
+    }
+
+
+    .ppe-head-text strong {
+
+        color: var(--dark);
+
+        font-size: 0.82rem;
+
+        font-weight: 800;
+
+        letter-spacing: -0.2px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .ppe-tag {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        padding: 2px 8px;
+
+        border-radius: 999px;
+
+        background: rgba(240, 229, 53, 0.35);
+
+        color: #7A6A00;
+
+        font-size: 0.54rem;
+
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.5px;
+    }
+
+
+    .ppe-bloc.actif .ppe-tag {
+
+        background: rgba(220, 38, 38, 0.14);
+
+        color: var(--danger);
+    }
+
+
+    .ppe-head-text span {
+
+        color: var(--muted);
+
+        font-size: 0.66rem;
+
+        font-weight: 500;
+
+        line-height: 1.5;
+    }
+
+
+    /* Toggle switch */
+
+    .ppe-toggle {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 10px;
+
+        cursor: pointer;
+
+        user-select: none;
+
+        flex-shrink: 0;
+    }
+
+
+    .ppe-toggle-input {
+
+        position: absolute;
+
+        opacity: 0;
+
+        pointer-events: none;
+    }
+
+
+    .ppe-toggle-track {
+
+        position: relative;
+
+        width: 48px;
+
+        height: 26px;
+
+        border-radius: 999px;
+
+        background: #E2E8F0;
+
+        border: 1px solid #CBD5E1;
+
+        transition: background 0.25s ease, border-color 0.25s ease;
+
+        flex-shrink: 0;
+    }
+
+
+    .ppe-toggle-track::after {
+
+        content: "";
+
+        position: absolute;
+
+        width: 20px;
+
+        height: 20px;
+
+        border-radius: 50%;
+
+        background: #FFFFFF;
+
+        top: 2px;
+
+        left: 2px;
+
+        box-shadow: 0 2px 6px rgba(44, 52, 61, 0.20);
+
+        transition: transform 0.25s ease;
+    }
+
+
+    .ppe-toggle-input:checked + .ppe-toggle-track {
+
+        background: var(--danger);
+
+        border-color: var(--danger);
+    }
+
+
+    .ppe-toggle-input:checked + .ppe-toggle-track::after {
+
+        transform: translateX(22px);
+    }
+
+
+    .ppe-toggle-label {
+
+        font-size: 0.68rem;
+
+        font-weight: 800;
+
+        color: var(--muted);
+
+        letter-spacing: 0.2px;
+    }
+
+
+    .ppe-toggle-input:checked ~ .ppe-toggle-label {
+
+        color: var(--danger);
+    }
+
+
+    /* Zone pièces justificatives */
+
+    .ppe-documents {
+
+        margin-top: 16px;
+
+        padding-top: 16px;
+
+        border-top: 1px dashed rgba(240, 229, 53, 0.50);
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 10px;
+
+        animation: ppe-apparition 0.28s ease;
+    }
+
+
+    .ppe-bloc.actif .ppe-documents {
+
+        border-top-color: rgba(220, 38, 38, 0.25);
+    }
+
+
+    @keyframes ppe-apparition {
+
+        from {
+
+            opacity: 0;
+
+            transform: translateY(-4px);
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform: translateY(0);
+        }
+    }
+
+
+    .ppe-documents-titre {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        font-size: 0.6rem;
+
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.6px;
+
+        color: var(--dark);
+    }
+
+
+    .ppe-documents-titre i {
+
+        color: var(--yellow);
+
+        font-size: 0.72rem;
+    }
+
+
+    .ppe-bloc.actif .ppe-documents-titre i {
+
+        color: var(--danger);
+    }
+
+
+    .ppe-documents-titre .obligatoire {
+
+        color: var(--danger);
+
+        margin-left: 2px;
+    }
+
+
+    /* Zone de dépôt fichier stylisée */
+
+    .ppe-drop {
+
+        position: relative;
+
+        border: 2px dashed #CBD5E1;
+
+        border-radius: 14px;
+
+        background: #FFFFFF;
+
+        padding: 22px 18px;
+
+        text-align: center;
+
+        transition: border-color 0.22s ease, background 0.22s ease;
+
+        cursor: pointer;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .ppe-drop:hover {
+
+        border-color: var(--yellow);
+
+        background: var(--yellow-light);
+    }
+
+
+    .ppe-bloc.actif .ppe-drop:hover {
+
+        border-color: var(--danger);
+
+        background: #FEF2F2;
+    }
+
+
+    .ppe-drop input[type="file"] {
+
+        position: absolute;
+
+        inset: 0;
+
+        opacity: 0;
+
+        cursor: pointer;
+
+        width: 100%;
+
+        height: 100%;
+    }
+
+
+    .ppe-drop-icon {
+
+        width: 44px;
+
+        height: 44px;
+
+        border-radius: 12px;
+
+        background: var(--yellow-soft);
+
+        color: #A08F00;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 1rem;
+
+        transition: background 0.22s ease, color 0.22s ease;
+    }
+
+
+    .ppe-bloc.actif .ppe-drop-icon {
+
+        background: rgba(220, 38, 38, 0.10);
+
+        color: var(--danger);
+    }
+
+
+    .ppe-drop-text {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 2px;
+    }
+
+
+    .ppe-drop-text strong {
+
+        color: var(--dark);
+
+        font-size: 0.74rem;
+
+        font-weight: 800;
+
+        letter-spacing: -0.2px;
+    }
+
+
+    .ppe-drop-text span {
+
+        color: var(--muted);
+
+        font-size: 0.62rem;
+
+        font-weight: 500;
+    }
+
+
+    /* Nom du fichier sélectionné */
+
+    .ppe-fichier-nom {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        padding: 7px 12px;
+
+        border-radius: 999px;
+
+        background: var(--green-soft);
+
+        border: 1px solid rgba(48, 195, 26, 0.28);
+
+        color: #249C13;
+
+        font-size: 0.66rem;
+
+        font-weight: 700;
+
+        max-width: 100%;
+    }
+
+
+    .ppe-fichier-nom i {
+
+        color: var(--green);
+
+        font-size: 0.72rem;
+
+        flex-shrink: 0;
+    }
+
+
+    .ppe-fichier-nom span {
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+    }
+
+
+    /* Info bulle */
+
+    .ppe-info {
+
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 8px;
+
+        padding: 9px 12px;
+
+        border-radius: 10px;
+
+        background: rgba(37, 99, 235, 0.06);
+
+        border: 1px solid rgba(37, 99, 235, 0.18);
+
+        color: #1D4ED8;
+
+        font-size: 0.62rem;
+
+        font-weight: 600;
+
+        line-height: 1.5;
+    }
+
+
+    .ppe-info i {
+
+        color: #2563EB;
+
+        font-size: 0.68rem;
+
+        flex-shrink: 0;
+
+        margin-top: 1px;
     }
 
 
@@ -1146,6 +1747,20 @@
 
             font-size: 0.76rem;
         }
+
+
+        .ppe-head {
+
+            flex-direction: column;
+
+            align-items: flex-start;
+        }
+
+
+        .ppe-toggle {
+
+            align-self: flex-end;
+        }
     }
 
 
@@ -1337,6 +1952,192 @@
                     </div>
 
 
+                    {{-- =====================================================
+                         BLOC PPE — PERSONNE POLITIQUEMENT EXPOSÉE
+                    ====================================================== --}}
+
+                    <div
+                        class="ppe-bloc"
+                        :class="{ 'actif': ppe }"
+                        x-data="{
+                            ppe: {{ old('ppe_declare') ? 'true' : 'false' }},
+                            nomFichier: null,
+                            majNomFichier(evenement) {
+                                const fichiers = evenement.target.files;
+                                this.nomFichier = (fichiers && fichiers.length)
+                                    ? (fichiers.length > 1
+                                        ? fichiers.length + ' fichiers sélectionnés'
+                                        : fichiers[0].name)
+                                    : null;
+                            }
+                        }"
+                    >
+
+
+                        {{-- En-tête : icône + texte + toggle --}}
+
+                        <div class="ppe-head">
+
+
+                            <div class="ppe-head-left">
+
+
+                                <div class="ppe-icon">
+
+                                    <i class="fa-solid fa-landmark"></i>
+
+                                </div>
+
+
+                                <div class="ppe-head-text">
+
+                                    <strong>
+
+                                        Personne politiquement exposée
+
+                                        <span class="ppe-tag" x-text="ppe ? 'PPE déclarée' : 'Option'">
+                                            Option
+                                        </span>
+
+                                    </strong>
+
+                                    <span>
+                                        Cochez si le client est une PPE,
+                                        un proche ou un membre de sa famille.
+                                    </span>
+
+                                </div>
+
+
+                            </div>
+
+
+                            {{-- Toggle switch --}}
+
+                            <label class="ppe-toggle">
+
+                                <input
+                                    type="checkbox"
+                                    name="ppe_declare"
+                                    id="ppe_declare"
+                                    value="1"
+                                    class="ppe-toggle-input"
+                                    x-model="ppe"
+                                    @checked(old('ppe_declare'))
+                                >
+
+                                <span class="ppe-toggle-track"></span>
+
+                                <span
+                                    class="ppe-toggle-label"
+                                    x-text="ppe ? 'Oui' : 'Non'"
+                                >
+                                    Non
+                                </span>
+
+                            </label>
+
+
+                        </div>
+
+
+
+                        {{-- Zone pièces justificatives --}}
+
+                        <div class="ppe-documents" x-show="ppe" x-cloak>
+
+
+                            <div class="ppe-documents-titre">
+
+                                <i class="fa-solid fa-paperclip"></i>
+
+                                Pièces justificatives
+
+                                <span class="obligatoire">*</span>
+
+                            </div>
+
+
+                            <label class="ppe-drop">
+
+                                <input
+                                    type="file"
+                                    name="documents_ppe[]"
+                                    id="documents_ppe"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    multiple
+                                    :required="ppe"
+                                    :disabled="!ppe"
+                                    @change="majNomFichier($event)"
+                                >
+
+
+                                <div class="ppe-drop-icon">
+
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+
+                                </div>
+
+
+                                <div class="ppe-drop-text">
+
+                                    <strong>
+                                        Cliquez pour joindre vos fichiers
+                                    </strong>
+
+                                    <span>
+                                        PDF, JPG ou PNG — 5 Mo max par fichier
+                                    </span>
+
+                                </div>
+
+
+                                <div
+                                    class="ppe-fichier-nom"
+                                    x-show="nomFichier"
+                                    x-cloak
+                                >
+
+                                    <i class="fa-solid fa-circle-check"></i>
+
+                                    <span x-text="nomFichier"></span>
+
+                                </div>
+
+                            </label>
+
+
+                            <div class="ppe-info">
+
+                                <i class="fa-solid fa-circle-info"></i>
+
+                                <span>
+                                    Au moins une pièce est exigée pour valider la déclaration PPE.
+                                    Le dossier sera revu par le contrôleur permanent.
+                                </span>
+
+                            </div>
+
+
+                            @error('documents_ppe')
+                                <p style="color:#DC2626;font-size:.72rem;font-weight:600;margin:0;">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+
+                            @error('documents_ppe.*')
+                                <p style="color:#DC2626;font-size:.72rem;font-weight:600;margin:0;">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+
+
+                        </div>
+
+
+                    </div>
+
+
                 </div>
 
             </details>
@@ -1369,8 +2170,6 @@
             </fieldset>
 
         </div>
-
-       
 
 
 
@@ -1759,7 +2558,6 @@
     }
 
 
-    /* Affiche le récapitulatif complet. */
     /* Entoure en rouge les champs obligatoires vides du formulaire visible ; renvoie true si tout est rempli. */
     window.validerChampsObligatoires = function () {
 
@@ -1817,6 +2615,7 @@
     };
 
 
+    /* Affiche le récapitulatif complet. */
     window.afficherRecapitulatif = function () {
 
         const conteneur = document.getElementById('recap-contenu');

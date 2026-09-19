@@ -9,6 +9,40 @@
 
 <div class="clients-page">
 
+    @if (session('statut'))
+        <p style="color:#19813b;font-weight:600">{{ session('statut') }}</p>
+    @endif
+
+    <details class="ppe-envoi" @if ($errors->any()) open @endif style="margin-bottom:14px">
+        <summary class="filter-link" style="cursor:pointer;display:inline-flex;gap:6px;align-items:center">
+            <i class="fa-solid fa-paper-plane"></i> Envoyer la liste des PPE
+        </summary>
+
+        <form method="POST" action="{{ route('responsable.clients.ppe.envoyer') }}" style="margin-top:10px;display:grid;gap:10px;max-width:420px">
+            @csrf
+
+            <label>E-mail du destinataire
+                <input name="email" type="email" required autocomplete="email" value="{{ old('email') }}" style="width:100%;padding:8px">
+            </label>
+            @error('email')<span style="color:#DC2626;font-size:.8rem">{{ $message }}</span>@enderror
+
+            <label>Code d'accès fort
+                <input name="code_acces" type="password" required autocomplete="new-password" placeholder="12 caractères minimum" style="width:100%;padding:8px">
+            </label>
+            @error('code_acces')<span style="color:#DC2626;font-size:.8rem">{{ $message }}</span>@enderror
+
+            <label>Confirmer le code
+                <input name="code_acces_confirmation" type="password" required autocomplete="new-password" style="width:100%;padding:8px">
+            </label>
+
+            <button type="submit" class="filter-link active" style="border:0;cursor:pointer">
+                <i class="fa-solid fa-paper-plane"></i> Envoyer
+            </button>
+
+            <small style="color:#64748B">Le destinataire reçoit un lien valable 7 jours et doit saisir ce code pour télécharger le PDF.</small>
+        </form>
+    </details>
+
     <div class="clients-toolbar">
 
         <div class="clients-toolbar-left">

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Rapport sécurisé</title>
+    <title>Liste PPE sécurisée</title>
     <style>
         body {
             margin: 0;
@@ -78,10 +78,10 @@
 <body>
     <main class="box">
         <div class="tag">LIEN SÉCURISÉ</div>
-        <h1>Rapport du {{ $rapport->date_fin->format('d/m/Y') }}</h1>
+        <h1>Liste des PPE — {{ $partage->agence->nom }}</h1>
         <p>Ce document est protégé. Saisissez le code d’accès transmis par l’émetteur. Le lien expire le
-            {{ $rapport->expire_le->format('d/m/Y à H:i') }}.</p>
-        <form method="POST" action="{{ route('rapports.partages.telecharger', $jeton) }}">@csrf<label for="code_acces">Code
+            {{ $partage->expire_le->format('d/m/Y à H:i') }}.</p>
+        <form method="POST" action="{{ route('ppe.partages.telecharger', $jeton) }}">@csrf<label for="code_acces">Code
                 d’accès</label><input id="code_acces" name="code_acces" type="password" required autofocus>
             @error('code_acces')
                 <p class="error">{{ $message }}</p>

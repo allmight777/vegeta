@@ -15,6 +15,7 @@ enum TypeAlerte: string
     case NpiInvalideApresVerification = 'npi_invalide_apres_verification';
     case IncoherenceDepotSimule = 'incoherence_depot_simule';
     case IncoherenceProfil = 'incoherence_profil';
+    case DepotPpe = 'depot_ppe';
 
     public function libelle(): string
     {
@@ -30,6 +31,7 @@ enum TypeAlerte: string
             self::NpiInvalideApresVerification => 'NPI invalide après vérification différée',
             self::IncoherenceDepotSimule => 'Nom déclaré différent du titulaire du dépôt mobile money (simulation)',
             self::IncoherenceProfil => 'Incohérence profil déclaré / opérations observées',
+            self::DepotPpe => 'Opération d\'une personne politiquement exposée (PPE)',
         };
     }
 }

@@ -837,6 +837,14 @@
 
 
                 <a
+                    href="{{ route('responsable.ppe.index') }}"
+                    class="sidebar-link {{ request()->routeIs('responsable.ppe.*') ? 'active' : '' }}"
+                >
+                    <i class="fa-solid fa-landmark"></i>
+                    <span>Liste des PPE</span>
+                </a>
+
+                <a
                     href="{{ route('responsable.assistance.escalades.index') }}"
                     class="sidebar-link {{ request()->routeIs('responsable.assistance.*') ? 'active' : '' }}"
                 >

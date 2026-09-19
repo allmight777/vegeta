@@ -1,9 +1,6 @@
 @extends('layouts.admin')
 
-
-
 @section('sous-titre', 'Importez les listes officielles au format Excel ou CSV.')
-
 
 @section('contenu')
 
@@ -922,6 +919,556 @@
 
 
     /* =========================================================
+       SECTION PPE ENREGISTRÉES (nouveau style)
+    ========================================================= */
+
+    .ppe-reseau-card {
+
+        background: #FFFFFF;
+
+        border: 1px solid var(--border);
+
+        border-radius: 20px;
+
+        overflow: hidden;
+
+        box-shadow: var(--shadow-sm);
+
+        width: 100%;
+    }
+
+
+    .ppe-reseau-header {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 14px;
+
+        padding: 16px 22px;
+
+        border-bottom: 1px solid var(--border);
+
+        background:
+            linear-gradient(
+                135deg,
+                #FFFDF7 0%,
+                #FFFCE8 100%
+            );
+
+        position: relative;
+
+        overflow: hidden;
+    }
+
+
+    .ppe-reseau-header::before {
+
+        content: "";
+
+        position: absolute;
+
+        left: 0;
+
+        top: 0;
+
+        bottom: 0;
+
+        width: 4px;
+
+        background:
+            linear-gradient(
+                180deg,
+                #F0E535 0%,
+                #E6D91C 100%
+            );
+    }
+
+
+    .ppe-reseau-header-left {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        min-width: 0;
+    }
+
+
+    .ppe-reseau-header-icon {
+
+        width: 40px;
+
+        height: 40px;
+
+        flex-shrink: 0;
+
+        border-radius: 11px;
+
+        background: var(--yellow-soft);
+
+        border: 1px solid rgba(240, 229, 53, 0.35);
+
+        color: #A08F00;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 0.95rem;
+    }
+
+
+    .ppe-reseau-header-text {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 3px;
+
+        min-width: 0;
+    }
+
+
+    .ppe-reseau-header-text strong {
+
+        color: var(--dark);
+
+        font-size: 0.86rem;
+
+        font-weight: 800;
+
+        letter-spacing: -0.2px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .ppe-reseau-tag {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        padding: 2px 8px;
+
+        border-radius: 999px;
+
+        background: rgba(240, 229, 53, 0.35);
+
+        color: #7A6A00;
+
+        font-size: 0.54rem;
+
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.5px;
+    }
+
+
+    .ppe-reseau-header-text span {
+
+        color: var(--muted);
+
+        font-size: 0.66rem;
+
+        font-weight: 500;
+    }
+
+
+    .ppe-reseau-compteur {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding: 6px 12px;
+
+        border-radius: 999px;
+
+        background: var(--yellow-soft);
+
+        border: 1px solid rgba(240, 229, 53, 0.35);
+
+        color: #8A7C00;
+
+        font-size: 0.62rem;
+
+        font-weight: 800;
+
+        white-space: nowrap;
+    }
+
+
+    .ppe-reseau-compteur i {
+
+        font-size: 0.62rem;
+    }
+
+
+    /* =========================================================
+       TABLEAU PPE
+    ========================================================= */
+
+    .ppe-table {
+
+        width: 100%;
+
+        border-collapse: collapse;
+
+        font-size: 0.78rem;
+    }
+
+
+    .ppe-table thead {
+
+        background: #FFFFFF;
+
+        border-bottom: 1px solid var(--border);
+    }
+
+
+    .ppe-table th {
+
+        padding: 13px 16px;
+
+        text-align: left;
+
+        font-size: 0.58rem;
+
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.6px;
+
+        color: var(--muted);
+
+        white-space: nowrap;
+    }
+
+
+    .ppe-table td {
+
+        padding: 14px 16px;
+
+        border-bottom: 1px solid var(--border);
+
+        color: var(--dark);
+
+        vertical-align: middle;
+    }
+
+
+    .ppe-table tbody tr {
+
+        transition: background 0.2s ease;
+    }
+
+
+    .ppe-table tbody tr:hover {
+
+        background: var(--yellow-light);
+    }
+
+
+    .ppe-table tbody tr:last-child td {
+
+        border-bottom: none;
+    }
+
+
+    /* =========================================================
+       CELLULE CLIENT PPE
+    ========================================================= */
+
+    .ppe-client {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 11px;
+
+        min-width: 0;
+    }
+
+
+    .ppe-client-avatar {
+
+        width: 36px;
+
+        height: 36px;
+
+        flex-shrink: 0;
+
+        border-radius: 10px;
+
+        background: var(--yellow-soft);
+
+        border: 1px solid rgba(240, 229, 53, 0.35);
+
+        color: #A08F00;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 0.82rem;
+    }
+
+
+    .ppe-client-nom {
+
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+
+        font-size: 0.72rem;
+
+        font-weight: 700;
+
+        color: var(--dark);
+
+        background: var(--background);
+
+        border: 1px solid var(--border);
+
+        padding: 4px 10px;
+
+        border-radius: 8px;
+
+        display: inline-block;
+
+        letter-spacing: 0.4px;
+    }
+
+
+    /* =========================================================
+       BADGE STATUT PPE
+    ========================================================= */
+
+    .ppe-badge {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding: 5px 11px;
+
+        border-radius: 999px;
+
+        font-size: 0.6rem;
+
+        font-weight: 800;
+
+        white-space: nowrap;
+
+        border: 1px solid transparent;
+    }
+
+
+    .ppe-badge i {
+
+        font-size: 0.6rem;
+    }
+
+
+    .ppe-badge.confirme {
+
+        background: var(--green-soft);
+
+        border-color: rgba(48, 195, 26, 0.28);
+
+        color: #249C13;
+    }
+
+
+    .ppe-badge.verifier {
+
+        background: var(--yellow-soft);
+
+        border-color: rgba(240, 229, 53, 0.35);
+
+        color: #8A7C00;
+    }
+
+
+    .ppe-badge.neutre {
+
+        background: var(--background);
+
+        border-color: var(--border);
+
+        color: var(--muted);
+    }
+
+
+    /* =========================================================
+       BADGE DOCUMENTS
+    ========================================================= */
+
+    .ppe-doc-badge {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding: 4px 10px;
+
+        border-radius: 8px;
+
+        background: var(--background);
+
+        border: 1px solid var(--border);
+
+        color: var(--muted);
+
+        font-size: 0.62rem;
+
+        font-weight: 800;
+
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+
+    .ppe-doc-badge i {
+
+        font-size: 0.6rem;
+
+        color: var(--muted-light);
+    }
+
+
+    .ppe-doc-badge.avec {
+
+        background: rgba(37, 99, 235, 0.08);
+
+        border-color: rgba(37, 99, 235, 0.22);
+
+        color: #1D4ED8;
+    }
+
+
+    .ppe-doc-badge.avec i {
+
+        color: #2563EB;
+    }
+
+
+    /* =========================================================
+       TEXTE MUTED DANS TABLEAU
+    ========================================================= */
+
+    .ppe-muted {
+
+        color: var(--muted);
+
+        font-size: 0.72rem;
+
+        font-weight: 600;
+    }
+
+
+    .ppe-muted-light {
+
+        color: var(--muted-light);
+
+        font-size: 0.68rem;
+
+        font-weight: 600;
+    }
+
+
+    /* =========================================================
+       EMPTY STATE PPE
+    ========================================================= */
+
+    .ppe-empty {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 10px;
+
+        padding: 45px 25px;
+
+        text-align: center;
+
+        color: var(--muted);
+    }
+
+
+    .ppe-empty-icon {
+
+        width: 52px;
+
+        height: 52px;
+
+        border-radius: 50%;
+
+        background: var(--yellow-soft);
+
+        border: 1px solid rgba(240, 229, 53, 0.35);
+
+        color: #A08F00;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 1.2rem;
+    }
+
+
+    .ppe-empty strong {
+
+        color: var(--dark);
+
+        font-size: 0.82rem;
+
+        font-weight: 800;
+    }
+
+
+    .ppe-empty span {
+
+        font-size: 0.66rem;
+
+        color: var(--muted-light);
+
+        max-width: 340px;
+
+        line-height: 1.5;
+    }
+
+
+    /* =========================================================
        PAGINATION
     ========================================================= */
 
@@ -1042,9 +1589,19 @@
 
 
         .listes-table th,
-        .listes-table td {
+        .listes-table td,
+        .ppe-table th,
+        .ppe-table td {
 
             padding: 10px 12px;
+        }
+
+
+        .ppe-reseau-header {
+
+            flex-direction: column;
+
+            align-items: flex-start;
         }
     }
 
@@ -1515,6 +2072,243 @@
         </div>
 
     @endif
+
+
+
+    {{-- =====================================================
+         PPE ENREGISTRÉES DANS LE RÉSEAU
+    ====================================================== --}}
+
+    <div class="ppe-reseau-card">
+
+        <div class="ppe-reseau-header">
+
+            <div class="ppe-reseau-header-left">
+
+                <div class="ppe-reseau-header-icon">
+
+                    <i class="fa-solid fa-landmark"></i>
+
+                </div>
+
+
+                <div class="ppe-reseau-header-text">
+
+                    <strong>
+
+                        PPE enregistrées dans le réseau
+
+                        <span class="ppe-reseau-tag">
+                            Déclarées
+                        </span>
+
+                    </strong>
+
+                    <span>
+                        Clients déclarés PPE à l'adhésion ou détectés par le filtrage.
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <span class="ppe-reseau-compteur">
+
+                <i class="fa-solid fa-user-shield"></i>
+
+                {{ $clientsPpe->count() }} client(s)
+
+            </span>
+
+        </div>
+
+
+
+        @if ($clientsPpe->count())
+
+
+            <table class="ppe-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Client</th>
+
+                        <th>Agence</th>
+
+                        <th>Statut</th>
+
+                        <th>Déclarée</th>
+
+                        <th>Pièces</th>
+
+                        <th>Créée le</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    @foreach ($clientsPpe as $c)
+
+                        @php
+
+                            $nom = $c->nomAffichage();
+                            $nomMasque = mb_substr($nom, 0, 1).str_repeat('*', max(mb_strlen($nom) - 1, 0));
+
+                            $statutValue = $c->statut_ppe->value ?? '';
+                            $statutClass = str_contains($statutValue, 'confirme')
+                                ? 'confirme'
+                                : (str_contains($statutValue, 'verifier') ? 'verifier' : 'neutre');
+
+                            $statutIcon = $statutClass === 'confirme'
+                                ? 'fa-circle-check'
+                                : ($statutClass === 'verifier' ? 'fa-hourglass-half' : 'fa-circle-info');
+
+                            $docCount = $c->documents_ppe_count ?? 0;
+
+                        @endphp
+
+
+                        <tr>
+
+                            <td data-label="Client">
+
+                                <div class="ppe-client">
+
+                                    <div class="ppe-client-avatar">
+
+                                        <i class="fa-solid fa-user-shield"></i>
+
+                                    </div>
+
+
+                                    <span class="ppe-client-nom">
+
+                                        {{ $nomMasque }}
+
+                                    </span>
+
+                                </div>
+
+                            </td>
+
+
+                            <td data-label="Agence">
+
+                                <span class="ppe-muted">
+
+                                    {{ $c->agenceCreation?->nom ?? '—' }}
+
+                                </span>
+
+                            </td>
+
+
+                            <td data-label="Statut">
+
+                                <span class="ppe-badge {{ $statutClass }}">
+
+                                    <i class="fa-solid {{ $statutIcon }}"></i>
+
+                                    {{ $c->statut_ppe->libelle() }}
+
+                                </span>
+
+                            </td>
+
+
+                            <td data-label="Déclarée">
+
+                                @if ($c->ppe_declare)
+
+                                    <span class="ppe-badge confirme">
+
+                                        <i class="fa-solid fa-circle-check"></i>
+
+                                        Oui
+
+                                    </span>
+
+                                @else
+
+                                    <span class="ppe-badge neutre">
+
+                                        <i class="fa-solid fa-circle-minus"></i>
+
+                                        Non
+
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+
+                            <td data-label="Pièces">
+
+                                <span class="ppe-doc-badge {{ $docCount > 0 ? 'avec' : '' }}">
+
+                                    <i class="fa-solid fa-paperclip"></i>
+
+                                    {{ $docCount }}
+
+                                </span>
+
+                            </td>
+
+
+                            <td data-label="Créée le">
+
+                                <span class="ppe-muted-light">
+
+                                    {{ $c->created_at->format('d/m/Y') }}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    @endforeach
+
+                </tbody>
+
+            </table>
+
+
+        @else
+
+
+            <div class="ppe-empty">
+
+                <div class="ppe-empty-icon">
+
+                    <i class="fa-solid fa-user-shield"></i>
+
+                </div>
+
+
+                <strong>
+                    Aucune PPE enregistrée
+                </strong>
+
+
+                <span>
+                    Les personnes politiquement exposées déclarées à l'adhésion
+                    ou détectées par le filtrage apparaîtront ici.
+                </span>
+
+            </div>
+
+        @endif
+
+
+    </div>
 
 
 </div>

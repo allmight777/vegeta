@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\Authentification\ConnexionController as AdminConnexionController;
 use App\Http\Controllers\Agent\Authentification\ConnexionController as AgentConnexionController;
 use App\Http\Controllers\DocumentIaVisualisationController;
+use App\Http\Controllers\Rapports\AccesListePpePartageController;
 use App\Http\Controllers\Rapports\AccesRapportPartageController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,13 @@ Route::get('/rapports/partages/{jeton}', [AccesRapportPartageController::class, 
 Route::post('/rapports/partages/{jeton}/telecharger', [AccesRapportPartageController::class, 'telecharger'])
     ->middleware('throttle:6,1')
     ->name('rapports.partages.telecharger');
+
+Route::get('/ppe/partages/{jeton}', [AccesListePpePartageController::class, 'afficher'])
+    ->middleware('throttle:12,1')
+    ->name('ppe.partages.afficher');
+Route::post('/ppe/partages/{jeton}/telecharger', [AccesListePpePartageController::class, 'telecharger'])
+    ->middleware('throttle:6,1')
+    ->name('ppe.partages.telecharger');
 
 Route::middleware('guest:admin')->group(function () {
     Route::get('/admin/connexion', [AdminConnexionController::class, 'creer'])->name('admin.connexion.creer');

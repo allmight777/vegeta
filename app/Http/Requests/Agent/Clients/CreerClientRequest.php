@@ -18,6 +18,14 @@ class CreerClientRequest extends FormRequest
         return true;
     }
 
+    public function messages(): array
+    {
+        return [
+            'documents_ppe.required' => 'Joignez au moins une pièce justificative pour une personne politiquement exposée.',
+            'documents_ppe.min' => 'Joignez au moins une pièce justificative pour une personne politiquement exposée.',
+        ];
+    }
+
     public function rules(): array
     {
         $type = $this->input('type');
@@ -26,6 +34,10 @@ class CreerClientRequest extends FormRequest
         $regles = [
             'type' => ['required', 'in:personne_physique,personne_morale'],
             'nature_relation' => ['required', 'in:titulaire_compte,occasionnel'],
+            'ppe_declare' => ['nullable', 'boolean'],
+            // Loi art. 29 : une PPE déclarée doit être justifiée par au moins une pièce.
+            'documents_ppe' => ['exclude_unless:ppe_declare,1', 'required', 'array', 'min:1', 'max:5'],
+            'documents_ppe.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
 
         if ($type === 'personne_physique') {

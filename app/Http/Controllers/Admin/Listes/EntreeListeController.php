@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin\Listes;
 
 use App\Enums\SourceListeType;
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\EntreeListe;
 use App\Services\Audit\Consignateur;
 use App\Services\Listes\ImportateurListes;
@@ -22,6 +23,11 @@ class EntreeListeController extends Controller
                 ->orderByDesc('importee_le')
                 ->paginate(30),
             'sources' => SourceListeType::cases(),
+            'clientsPpe' => Client::where(fn ($q) => $q->where('ppe_declare', true)->orWhere('statut_ppe', '!=', 'non_ppe'))
+                ->with(['personnePhysique', 'personneMorale', 'agenceCreation'])
+                ->withCount('documentsPpe')
+                ->latest()
+                ->get(),
         ]);
     }
 

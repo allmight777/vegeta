@@ -25,7 +25,7 @@ class Client extends Model
     protected $table = 'clients';
 
     protected $fillable = [
-        'reseau_id', 'agence_creation_id', 'identite_id', 'type', 'nature_relation', 'statut_ppe',
+        'reseau_id', 'agence_creation_id', 'identite_id', 'type', 'nature_relation', 'statut_ppe', 'ppe_declare',
         'score_completude_kyc', 'source_creation',
         'statut_verification_npi', 'npi_verifie_le', 'npi_tentatives',
     ];
@@ -36,6 +36,7 @@ class Client extends Model
             'type' => TypeClient::class,
             'nature_relation' => NatureRelation::class,
             'statut_ppe' => StatutPpe::class,
+            'ppe_declare' => 'boolean',
             'source_creation' => SourceCreation::class,
             'score_completude_kyc' => 'integer',
             'statut_verification_npi' => StatutVerificationNpi::class,
@@ -110,6 +111,17 @@ class Client extends Model
     public function resultatsFiltrage(): MorphMany
     {
         return $this->morphMany(ResultatFiltrage::class, 'filtrable');
+    }
+
+    public function documentsPpe(): HasMany
+    {
+        return $this->hasMany(DocumentPpe::class);
+    }
+
+    /** PPE déclarée à l'adhésion, détectée par le filtrage ou confirmée par le responsable. */
+    public function estPpe(): bool
+    {
+        return $this->ppe_declare || $this->statut_ppe !== StatutPpe::NonPpe;
     }
 
     /**
