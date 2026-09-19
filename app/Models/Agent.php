@@ -19,7 +19,7 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
 
     protected $table = 'agents';
 
-    protected $fillable = ['agence_id', 'nom', 'matricule', 'email', 'mot_de_passe', 'role', 'actif', 'civilite'];
+    protected $fillable = ['agence_id', 'reseau_id', 'nom', 'matricule', 'email', 'mot_de_passe', 'role', 'actif', 'civilite'];
 
     protected $hidden = ['mot_de_passe', 'remember_token'];
 
@@ -41,6 +41,22 @@ class Agent extends Model implements AuthenticatableContract, AuthorizableContra
     public function agence(): BelongsTo
     {
         return $this->belongsTo(Agence::class);
+    }
+
+    public function reseau(): BelongsTo
+    {
+        return $this->belongsTo(Reseau::class);
+    }
+
+    /** Réseau de l'agent : le sien pour un contrôleur permanent, celui de son agence sinon. */
+    public function reseauId(): ?int
+    {
+        return $this->reseau_id ?? $this->agence?->reseau_id;
+    }
+
+    public function estControleurPermanent(): bool
+    {
+        return $this->role === RoleAgent::ControleurPermanent;
     }
 
     public function operations(): HasMany

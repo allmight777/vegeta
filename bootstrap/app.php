@@ -20,9 +20,17 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             foreach (glob(__DIR__.'/../routes/agent/*.php') as $fichier) {
-                Route::middleware(['web', 'auth:agent'])
+                // Le contrôleur permanent (rôle sans agence) n'entre jamais dans l'espace agence.
+                Route::middleware(['web', 'auth:agent', 'role.agent:caissier,responsable_agence,guichet,responsable_lbcft,direction'])
                     ->prefix('espace')
                     ->name('agent.')
+                    ->group($fichier);
+            }
+
+            foreach (glob(__DIR__.'/../routes/controleur/*.php') as $fichier) {
+                Route::middleware(['web', 'auth:agent', 'role.agent:controleur_permanent'])
+                    ->prefix('espace/controleur')
+                    ->name('controleur.')
                     ->group($fichier);
             }
 

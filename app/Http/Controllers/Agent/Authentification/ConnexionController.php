@@ -40,9 +40,11 @@ class ConnexionController extends Controller
         $request->session()->regenerate();
         Consignateur::enregistrer('agent', $agent->id, 'connexion');
 
-        $accueil = $agent->role === RoleAgent::ResponsableAgence
-            ? route('responsable.tableau-de-bord.index')
-            : route('agent.tableau-de-bord.index');
+        $accueil = match ($agent->role) {
+            RoleAgent::ResponsableAgence => route('responsable.tableau-de-bord.index'),
+            RoleAgent::ControleurPermanent => route('controleur.tableau-de-bord.index'),
+            default => route('agent.tableau-de-bord.index'),
+        };
 
         return redirect()->intended($accueil);
     }

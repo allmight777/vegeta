@@ -17,6 +17,7 @@
             'couleur_espace_caissier' => 'Espace caissier',
             'couleur_espace_responsable' => "Espace responsable d'agence",
             'couleur_espace_admin' => 'Espace administrateur',
+            'couleur_espace_controleur' => 'Espace contrôleur permanent',
         ],
         'Page de connexion' => [
             'couleur_page_connexion' => 'Fond de la page de connexion',

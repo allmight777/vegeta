@@ -83,6 +83,57 @@ class GenerateurExplication
             "Vérifiez l'identité avant de poursuivre.";
     }
 
+    /**
+     * Pourquoi le système a suspecté ce profil (18_PROMPT §5.3) : reformulation en langage clair des
+     * indicateurs déjà détectés, à partir de caractéristiques DÉRIVÉES seulement — jamais un nom, un
+     * NPI, une adresse ni un texte rédigé. Une suggestion, pas une accusation.
+     *
+     * @param  array{score: float, indicateurs: array<int, string>, age: ?int, ratio_depot_revenu: ?float, nombre_agences: int, nombre_operations: int, type_client: string, niveau_risque: string, montant_total: float}  $d
+     */
+    public function pourSuggestionSoupcon(array $d): string
+    {
+        $indicateurs = $d['indicateurs'] === [] ? 'aucun indicateur précis' : implode(' ; ', array_map('mb_strtolower', $d['indicateurs']));
+        $constats = [];
+
+        if ($d['nombre_operations'] > 0) {
+            $constats[] = $d['nombre_operations'].' opération'.($d['nombre_operations'] > 1 ? 's' : '').' totalisant '
+                .number_format($d['montant_total'], 0, ',', ' ').' XOF récemment, réparties dans '
+                .$d['nombre_agences'].' agence'.($d['nombre_agences'] > 1 ? 's' : '');
+        }
+        if ($d['ratio_depot_revenu'] !== null) {
+            $constats[] = 'un dépôt initial déclaré égal à '.$d['ratio_depot_revenu'].' fois le revenu mensuel estimé';
+        }
+        if ($d['age'] !== null) {
+            $constats[] = 'un client de '.$d['age'].' ans';
+        }
+
+        return "Le système a relevé {$indicateurs} (score ".round($d['score'])." sur 100, niveau de risque {$d['niveau_risque']}). "
+            .($constats === [] ? '' : 'Faits observés : '.implode(', ', $constats).'. ')
+            .'Il s\'agit d\'une suggestion à vérifier, pas d\'une accusation : à vous d\'établir si ces éléments sont justifiés.';
+    }
+
+    /**
+     * Résumé d'un dossier pour le responsable d'agence (18_PROMPT §6.3) : extraction des champs
+     * STRUCTURÉS de la fiche (indicateurs, canal, montants, avis technique) — jamais le résumé des
+     * faits ni l'analyse rédigés, qui peuvent contenir de l'identité. L'analyse complète reste à lire
+     * dans la fiche.
+     *
+     * @param  array{reference: string, type_client: string, niveau_risque: string, indicateurs: array<int, string>, canal: ?string, nombre_operations: int, montant_total: float, avis_controleur: ?string}  $d
+     */
+    public function pourResumeDossierSoupcon(array $d): string
+    {
+        $indicateurs = $d['indicateurs'] === [] ? 'aucun indicateur coché' : implode(' ; ', array_map('mb_strtolower', $d['indicateurs']));
+
+        return "Dossier {$d['reference']} : client de type {$d['type_client']}, niveau de risque {$d['niveau_risque']}. "
+            ."Indicateurs retenus par le contrôleur : {$indicateurs}. "
+            .($d['nombre_operations'] > 0
+                ? $d['nombre_operations'].' opération'.($d['nombre_operations'] > 1 ? 's' : '').' concernée'.($d['nombre_operations'] > 1 ? 's' : '')
+                    .' pour '.number_format($d['montant_total'], 0, ',', ' ').' XOF'.($d['canal'] ? ", canal {$d['canal']}" : '').'. '
+                : '')
+            .($d['avis_controleur'] ? "Avis technique du contrôleur : {$d['avis_controleur']}. " : '')
+            .'Le détail de son analyse est dans la fiche ci-dessous.';
+    }
+
     private function nomCible(Client|Signataire $cible): string
     {
         return $cible instanceof Signataire ? (string) $cible->nom : $cible->nomAffichage();

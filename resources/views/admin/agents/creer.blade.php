@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 
-@section('sous-titre', 'Créez un compte caissier ou responsable d\'agence avec identifiants générés automatiquement.')
+@section('sous-titre', 'Créez un compte caissier, responsable d\'agence ou contrôleur permanent avec identifiants générés automatiquement.')
 
 
 @section('contenu')
@@ -930,9 +930,9 @@
             <div class="agent-create-section-corps">
 
 
-                {{-- AGENCE --}}
+                {{-- AGENCE (tous les rôles sauf contrôleur permanent) --}}
 
-                <div class="champ-agent">
+                <div class="champ-agent" id="bloc-agence">
 
                     <label
                         class="champ-agent-label"
@@ -951,7 +951,6 @@
                     <select
                         name="agence_id"
                         id="agence_id"
-                        required
                         class="champ-agent-input"
                     >
 
@@ -966,6 +965,29 @@
 
                         @endforeach
 
+                    </select>
+
+                </div>
+
+
+                {{-- RÉSEAU (contrôleur permanent : supervise un réseau, pas une agence) --}}
+
+                <div class="champ-agent" id="bloc-reseau" hidden>
+
+                    <label class="champ-agent-label" for="reseau_id">
+
+                        <i class="fa-solid fa-network-wired"></i>
+
+                        Réseau supervisé
+
+                        <span class="obligatoire">*</span>
+
+                    </label>
+
+                    <select name="reseau_id" id="reseau_id" class="champ-agent-input">
+                        @foreach ($reseaux as $reseau)
+                            <option value="{{ $reseau->id }}" @selected(old('reseau_id') == $reseau->id)>{{ $reseau->nom }}</option>
+                        @endforeach
                     </select>
 
                 </div>
@@ -1010,7 +1032,29 @@
                             Responsable d'agence
                         </option>
 
+                        <option
+                            value="controleur_permanent"
+                            @selected(old('role') === 'controleur_permanent')
+                        >
+                            Contrôleur permanent
+                        </option>
+
                     </select>
+
+                    <script>
+                        (function () {
+                            const role = document.getElementById('role');
+                            const basculer = () => {
+                                const controleur = role.value === 'controleur_permanent';
+                                document.getElementById('bloc-reseau').hidden = !controleur;
+                                document.getElementById('bloc-agence').hidden = controleur;
+                                document.getElementById('agence_id').disabled = controleur;
+                                document.getElementById('reseau_id').disabled = !controleur;
+                            };
+                            role.addEventListener('change', basculer);
+                            basculer();
+                        })();
+                    </script>
 
                 </div>
 

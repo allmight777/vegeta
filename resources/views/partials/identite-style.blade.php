@@ -10,6 +10,7 @@
         'admin' => $couleurs['couleur_espace_admin'],
         'caissier' => $couleurs['couleur_espace_caissier'],
         'responsable' => $couleurs['couleur_espace_responsable'],
+        'controleur' => $couleurs['couleur_espace_controleur'],
         default => $couleurs['couleur_primaire'],
     };
     $rgba = fn (string $hex, float $a) => \App\Services\Configuration\IdentiteSysteme::rgba($hex, $a);
@@ -22,8 +23,8 @@
         --cif-green: {{ $couleurs['couleur_secondaire'] }};
         --cif-green-soft: {{ $rgba($couleurs['couleur_secondaire'], 0.09) }};
         --cif-dark: {{ $couleurs['couleur_sombre'] }};
-        --cif-accent: {{ $espace === 'responsable' ? $espaceCouleur : $couleurs['couleur_accent'] }};
-        --cif-accent-soft: {{ $rgba($espace === 'responsable' ? $espaceCouleur : $couleurs['couleur_accent'], 0.10) }};
+        --cif-accent: {{ in_array($espace, ['responsable', 'controleur'], true) ? $espaceCouleur : $couleurs['couleur_accent'] }};
+        --cif-accent-soft: {{ $rgba(in_array($espace, ['responsable', 'controleur'], true) ? $espaceCouleur : $couleurs['couleur_accent'], 0.10) }};
         --cif-espace: {{ $espaceCouleur }};
         @if ($espace === 'connexion')
         --brand-yellow: {{ $couleurs['couleur_primaire'] }};

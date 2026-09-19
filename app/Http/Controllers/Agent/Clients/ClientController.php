@@ -161,6 +161,9 @@ class ClientController extends Controller
 
         Consignateur::enregistrer('agent', auth('agent')->id(), 'mise_a_jour_kyc', 'client', $client->id);
 
+        // Suggestion éventuelle pour le contrôleur permanent (silencieuse : le caissier n'en sait rien).
+        app(\App\Services\Conformite\AnalyseurComportementalContinu::class)->analyserSansEchec($client, 'completion_client');
+
         return redirect()->route('agent.clients.completer', $client)
             ->with('statut', "Fiche mise à jour — complétude {$resultat['score']} %.");
     }

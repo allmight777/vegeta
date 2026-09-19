@@ -52,6 +52,28 @@ class ReglesDetectionSeeder extends Seeder
                 'reference_texte' => "Loi art. 17 i) — opérations en espèces multiples d'une même personne dans la journée "
                     .'considérées comme une opération unique ; plafond calculé sur le profil (config/identite.php)',
             ],
+            [
+                // 18_PROMPT §4 : seuils de l'analyseur comportemental continu (suggestions au contrôleur
+                // permanent). Paramètres scalaires uniquement (l'écran admin les édite tels quels).
+                'code' => 'ANALYSE_COMPORTEMENTALE_SOUPCON',
+                'libelle' => 'Analyse comportementale continue (suggestions de soupçon)',
+                'parametres' => [
+                    'seuil_creation' => 40,
+                    'poids_incoherence_profil' => 30,
+                    'poids_depots_fractionnes' => 40,
+                    'poids_refus_documents' => 15,
+                    'poids_refus_revenus' => 15,
+                    'fenetre_jours' => 30,
+                    'min_agences_dispersion' => 3,
+                    'completude_tres_basse' => 30,
+                    'anciennete_dossier_jours' => 21,
+                    'depot_sans_revenu_min' => 500000,
+                    'ratio_depot_revenu_min' => 20,
+                    'professions_sedentaires' => 'enseignant, retrait, etudiant, fonctionnaire, ménagère',
+                ],
+                'source' => 'demo',
+                'reference_texte' => 'Indicateurs de la fiche d\'analyse de soupçon FECECAM ; seuils et pondérations à calibrer avec les mentors',
+            ],
         ];
 
         foreach ($regles as $regle) {

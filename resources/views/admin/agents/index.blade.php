@@ -1982,6 +1982,13 @@
                 </option>
 
                 <option
+                    value="controleur_permanent"
+                    @selected(request('role') === 'controleur_permanent')
+                >
+                    Contrôleur permanent
+                </option>
+
+                <option
                     value="responsable_agence"
                     @selected(request('role') === 'responsable_agence')
                 >
@@ -2114,11 +2121,19 @@
 
                                     <span>
 
-                                        <span class="agent-agence-reseau">
-                                            {{ $agent->agence->reseau->nom }}
-                                        </span>
+                                        @if ($agent->agence)
+                                            <span class="agent-agence-reseau">
+                                                {{ $agent->agence->reseau->nom }}
+                                            </span>
 
-                                        — {{ $agent->agence->nom }}
+                                            — {{ $agent->agence->nom }}
+                                        @else
+                                            <span class="agent-agence-reseau">
+                                                {{ $agent->reseau?->nom }}
+                                            </span>
+
+                                            — tout le réseau
+                                        @endif
 
                                     </span>
 
@@ -2135,9 +2150,11 @@
 
                                     $role = $agent->role->value ?? null;
                                     $roleClass = $role === 'caissier' ? 'caissier' : 'responsable';
-                                    $roleIcon = $role === 'caissier'
-                                        ? 'fa-cash-register'
-                                        : 'fa-user-tie';
+                                    $roleIcon = match ($role) {
+                                        'caissier' => 'fa-cash-register',
+                                        'controleur_permanent' => 'fa-user-secret',
+                                        default => 'fa-user-tie',
+                                    };
 
                                 @endphp
 

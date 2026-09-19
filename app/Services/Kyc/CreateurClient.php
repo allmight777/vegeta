@@ -14,6 +14,7 @@ use App\Models\PersonnePhysique;
 use App\Models\Signataire;
 use App\Models\VerificationNpiEnAttente;
 use App\Services\Audit\Consignateur;
+use App\Services\Conformite\AnalyseurComportementalContinu;
 use App\Services\Filtrage\AlertesPpeTempsReel;
 use App\Services\Filtrage\MoteurFiltrage;
 use App\Services\Identite\ResolveurIdentite;
@@ -33,6 +34,7 @@ class CreateurClient
         private readonly ResolveurIdentite $resolveurIdentite,
         private readonly DetecteurIncoherenceDepotSimule $detecteurIncoherenceDepotSimule,
         private readonly AlertesPpeTempsReel $alertesPpeTempsReel,
+        private readonly AnalyseurComportementalContinu $analyseurComportemental,
     ) {}
 
     /**
@@ -78,6 +80,9 @@ class CreateurClient
         ]));
 
         Consignateur::enregistrer('agent', $agent?->id, 'creation_client', 'client', $client->id);
+
+        // Suggestion éventuelle pour le contrôleur permanent (silencieuse, jamais visible ici).
+        $this->analyseurComportemental->analyserSansEchec($client, 'creation_client');
 
         return $client->fresh(['personnePhysique.mandataires', 'personneMorale.signataires']);
     }

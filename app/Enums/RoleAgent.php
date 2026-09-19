@@ -6,6 +6,7 @@ enum RoleAgent: string
 {
     case Caissier = 'caissier';
     case ResponsableAgence = 'responsable_agence';
+    case ControleurPermanent = 'controleur_permanent';
 
     /** @deprecated Migré vers Caissier par `agents:migrer-roles`. Conservé pour compatibilité descendante le temps de vérifier la migration de données. */
     case Guichet = 'guichet';
@@ -25,6 +26,7 @@ enum RoleAgent: string
                 default => 'Caissier / Caissière',
             },
             self::ResponsableAgence => "Responsable d'agence",
+            self::ControleurPermanent => 'Contrôleur permanent',
             self::Guichet => 'Agent guichet',
             self::ResponsableLbcft => 'Responsable LBC/FT',
             self::Direction => 'Direction',

@@ -14,7 +14,7 @@
 
     <title>
         {{ $identite['nom_systeme'] }}
-        — @yield('titre', "Espace responsable d'agence")
+        — @yield('titre', "Espace contrôleur permanent")
     </title>
 
     @vite([
@@ -697,7 +697,7 @@
 
     </style>
 
-    @include('partials.identite-style', ['espace' => 'responsable'])
+    @include('partials.identite-style', ['espace' => 'controleur'])
 
 </head>
 
@@ -709,8 +709,8 @@
         <div class="agent-header-inner">
 
             <a
-                href="{{ Route::has('responsable.tableau-de-bord.index')
-                    ? route('responsable.tableau-de-bord.index')
+                href="{{ Route::has('controleur.tableau-de-bord.index')
+                    ? route('controleur.tableau-de-bord.index')
                     : url()->current() }}"
                 class="agent-brand"
             >
@@ -739,13 +739,13 @@
 
                     <div
                         class="guichet-status"
-                        title="Conformité active"
+                        title="Surveillance active"
                     >
 
                         <span class="guichet-status-dot"></span>
 
                         <span>
-                            Conformité active
+                            Surveillance active
                         </span>
 
                     </div>
@@ -766,7 +766,7 @@
 
                             <span class="agent-profile-role">
                                 {{ auth('agent')->user()->role->libelle(auth('agent')->user()->civilite) }}
-                                — {{ auth('agent')->user()->agence->nom }}
+                                — {{ auth('agent')->user()->reseau?->nom }}
                             </span>
 
                         </div>
@@ -818,7 +818,7 @@
 
                 <div class="sidebar-logo-text">
                     <strong>CIF-EMPREINTE</strong>
-                    <span>Espace responsable</span>
+                    <span>Espace contrôleur</span>
                 </div>
 
             </div>
@@ -826,55 +826,17 @@
             <nav class="sidebar-nav">
 
                 <div class="sidebar-section-title">
-                    Conformité
+                    Surveillance
                 </div>
 
                 <a
-                    href="{{ route('responsable.tableau-de-bord.index') }}"
-                    class="sidebar-link {{ request()->routeIs('responsable.tableau-de-bord.*') ? 'active' : '' }}"
-                >
-                    <i class="fa-solid fa-house"></i>
-                    <span>Tableau de bord</span>
-                </a>
-
-                <a
-                    href="{{ route('responsable.filtrage.index') }}"
-                    class="sidebar-link {{ request()->routeIs('responsable.filtrage.*') ? 'active' : '' }}"
-                >
-                    <i class="fa-solid fa-magnifying-glass-chart"></i>
-                    <span>Filtrage PPE / sanctions</span>
-                </a>
-
-                
-
-                <a
-                    href="{{ route('responsable.assistance.escalades.index') }}"
-                    class="sidebar-link {{ request()->routeIs('responsable.assistance.*') ? 'active' : '' }}"
-                >
-                    <i class="fa-solid fa-comments"></i>
-                    <span>Questions escaladées</span>
-                </a>
-
-                <a
-                    href="{{ route('responsable.soupcons.index') }}"
-                    class="sidebar-link {{ request()->routeIs('responsable.soupcons.*') ? 'active' : '' }}"
+                    href="{{ route('controleur.tableau-de-bord.index') }}"
+                    class="sidebar-link {{ request()->routeIs('controleur.*') ? 'active' : '' }}"
                 >
                     <i class="fa-solid fa-user-secret"></i>
-                    <span>Clients suspectés — dossiers reçus</span>
+                    <span>Clients suspectés</span>
                 </a>
 
-            {{--     <div class="sidebar-section-title">
-                    Supervision
-                </div>
-
-                <a
-                    href="{{ route('responsable.clients.index') }}"
-                    class="sidebar-link {{ request()->routeIs('responsable.clients.*') ? 'active' : '' }}"
-                >
-                    <i class="fa-solid fa-users"></i>
-                    <span>Clients (lecture seule)</span>
-                </a>
- --}}
             </nav>
 
             <div class="sidebar-bottom">
@@ -886,11 +848,11 @@
                     </div>
 
                     <strong>
-                        L'outil recommande, vous décidez
+                        Le contrôleur documente, le responsable décide
                     </strong>
 
                     <span>
-                        Aucune clôture d'alerte automatique
+                        Aucune suggestion n'est une accusation
                     </span>
 
                 </div>
@@ -908,7 +870,7 @@
                     <div class="agent-page-heading-left">
 
                         <div class="agent-page-eyebrow">
-                            Espace responsable d'agence
+                            Espace contrôleur permanent
                         </div>
 
                         <h1 class="agent-page-title">
@@ -916,7 +878,7 @@
                         </h1>
 
                         <div class="agent-page-subtitle">
-                            @yield('sous-titre', "Conformité LBC/FT — agence de " . (auth('agent')->user()->agence->nom ?? ''))
+                            @yield('sous-titre', "Conformité LBC/FT — réseau " . (auth('agent')->user()->reseau?->nom ?? ''))
                         </div>
 
                     </div>
@@ -930,10 +892,6 @@
         </main>
 
     </div>
-
-    @auth('agent')
-        @include('partials.assistant-ia')
-    @endauth
 
 </body>
 

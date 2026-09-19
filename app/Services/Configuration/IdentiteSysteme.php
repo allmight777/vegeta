@@ -18,7 +18,7 @@ class IdentiteSysteme
 
     public const CHAMPS_COULEUR = [
         'couleur_primaire', 'couleur_secondaire', 'couleur_accent', 'couleur_sombre',
-        'couleur_espace_caissier', 'couleur_espace_responsable', 'couleur_espace_admin',
+        'couleur_espace_caissier', 'couleur_espace_responsable', 'couleur_espace_admin', 'couleur_espace_controleur',
         'couleur_page_connexion',
     ];
 
@@ -47,6 +47,7 @@ class IdentiteSysteme
             'couleur_espace_caissier' => '#F0E535',
             'couleur_espace_responsable' => '#2563EB',
             'couleur_espace_admin' => '#F0E535',
+            'couleur_espace_controleur' => '#7C3AED',
             'couleur_page_connexion' => '#F8FAFC',
         ];
     }

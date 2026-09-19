@@ -16,7 +16,7 @@ class ContexteReseau
     public function reseauId(): ?int
     {
         if (Auth::guard('agent')->check()) {
-            return Auth::guard('agent')->user()->agence->reseau_id;
+            return Auth::guard('agent')->user()->reseauId();
         }
 
         if (Auth::guard('admin')->check()) {

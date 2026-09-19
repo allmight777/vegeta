@@ -16,9 +16,11 @@ class CreerAgentRequest extends FormRequest
         return [
             'nom' => ['required', 'string', 'max:255'],
             'matricule' => ['required', 'string', 'max:50'],
-            'role' => ['required', 'in:caissier,responsable_agence'],
+            'role' => ['required', 'in:caissier,responsable_agence,controleur_permanent'],
             'civilite' => ['nullable', 'in:m,f,non_precise'],
-            'agence_id' => ['required', 'exists:agences,id'],
+            // Contrôleur permanent : un réseau, pas d'agence (18_PROMPT §2). Autres rôles : une agence.
+            'agence_id' => ['required_unless:role,controleur_permanent', 'nullable', 'exists:agences,id'],
+            'reseau_id' => ['required_if:role,controleur_permanent', 'nullable', 'exists:reseaux,id'],
         ];
     }
 }

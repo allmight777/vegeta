@@ -19,7 +19,7 @@ class ConfigurationSysteme extends Model
         'nom_systeme', 'sous_titre',
         'logo_principal_path', 'logo_connexion_path', 'favicon_path',
         'couleur_primaire', 'couleur_secondaire', 'couleur_accent', 'couleur_sombre',
-        'couleur_espace_caissier', 'couleur_espace_responsable', 'couleur_espace_admin',
+        'couleur_espace_caissier', 'couleur_espace_responsable', 'couleur_espace_admin', 'couleur_espace_controleur',
         'couleur_page_connexion',
         'modifie_par_admin_id', 'modifie_le',
     ];

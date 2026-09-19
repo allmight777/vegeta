@@ -130,6 +130,9 @@ class OperationController extends Controller
 
         Consignateur::enregistrer('agent', $agent->id, 'saisie_operation', 'operation', $operation->id);
 
+        // Analyse comportementale continue (18_PROMPT §4) : silencieuse, le caissier n'en sait rien.
+        app(\App\Services\Conformite\AnalyseurComportementalContinu::class)->analyserSansEchec($client, 'operation');
+
         return redirect()->route('agent.operations.creer')
             ->with('statut', 'Opération enregistrée. Référence : OP-'.Str::upper(substr($operation->id, 0, 8)));
     }

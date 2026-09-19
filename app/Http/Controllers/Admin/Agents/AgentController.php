@@ -37,8 +37,9 @@ class AgentController extends Controller
 
         $recherche = trim((string) $request->string('q'));
 
-        $agents = Agent::with('agence.reseau')
-            ->whereIn('agence_id', $agences->pluck('id'))
+        $agents = Agent::with(['agence.reseau', 'reseau'])
+            ->where(fn ($q) => $q->whereIn('agence_id', $agences->pluck('id'))
+                ->orWhereIn('reseau_id', $agences->pluck('reseau_id')->unique()))
             ->when($request->filled('agence_id'), fn ($q) => $q->where('agence_id', $request->integer('agence_id')))
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->string('role')))
             ->when($recherche !== '', function ($query) use ($recherche) {
@@ -65,14 +66,26 @@ class AgentController extends Controller
 
     public function creer(): View
     {
-        return view('admin.agents.creer', ['agences' => $this->agencesVisibles()]);
+        $agences = $this->agencesVisibles();
+
+        return view('admin.agents.creer', [
+            'agences' => $agences,
+            'reseaux' => $agences->pluck('reseau')->unique('id')->values(),
+        ]);
     }
 
     public function stocker(CreerAgentRequest $request, IndexAveugle $indexAveugle): RedirectResponse
     {
         $donnees = $request->validated();
 
-        abort_unless($this->agencesVisibles()->pluck('id')->contains((int) $donnees['agence_id']), 403);
+        $estControleur = $donnees['role'] === 'controleur_permanent';
+        $agences = $this->agencesVisibles();
+
+        if ($estControleur) {
+            abort_unless($agences->pluck('reseau_id')->contains((int) $donnees['reseau_id']), 403);
+        } else {
+            abort_unless($agences->pluck('id')->contains((int) $donnees['agence_id']), 403);
+        }
 
         $idx = $indexAveugle->calculer($donnees['matricule'], 'matricule');
 
@@ -83,7 +96,8 @@ class AgentController extends Controller
         $motDePasse = Str::password(16);
 
         $agent = Agent::create([
-            'agence_id' => $donnees['agence_id'],
+            'agence_id' => $estControleur ? null : $donnees['agence_id'],
+            'reseau_id' => $estControleur ? $donnees['reseau_id'] : null,
             'nom' => $donnees['nom'],
             'matricule' => $donnees['matricule'],
             'mot_de_passe' => Hash::make($motDePasse),
@@ -110,7 +124,7 @@ class AgentController extends Controller
 
     public function activerOuDesactiver(Agent $agent): RedirectResponse
     {
-        abort_unless($this->agencesVisibles()->pluck('id')->contains($agent->agence_id), 403);
+        abort_unless($this->peutGerer($agent), 403);
 
         $agent->update(['actif' => ! $agent->actif]);
 
@@ -129,7 +143,7 @@ class AgentController extends Controller
 
     public function reinitialiserMotDePasse(Agent $agent): RedirectResponse
     {
-        abort_unless($this->agencesVisibles()->pluck('id')->contains($agent->agence_id), 403);
+        abort_unless($this->peutGerer($agent), 403);
 
         $motDePasse = Str::password(16);
         $agent->update(['mot_de_passe' => Hash::make($motDePasse)]);
@@ -164,13 +178,14 @@ class AgentController extends Controller
             'email' => 'required|email',
             'mot_de_passe_pdf' => 'required|string|min:4',
             'agence_id' => 'nullable|exists:agences,id',
-            'role' => 'nullable|in:caissier,responsable_agence',
+            'role' => 'nullable|in:caissier,responsable_agence,controleur_permanent',
         ]);
 
         $agencesVisibles = $this->agencesVisibles()->pluck('id');
+        $reseauxVisibles = $this->agencesVisibles()->pluck('reseau_id')->unique();
 
         $agents = Agent::with(['agence.reseau', 'motDePasse'])
-            ->whereIn('agence_id', $agencesVisibles)
+            ->where(fn ($q) => $q->whereIn('agence_id', $agencesVisibles)->orWhereIn('reseau_id', $reseauxVisibles))
             ->when($donnees['agence_id'] ?? null, fn ($q, $v) => $q->where('agence_id', $v))
             ->when($donnees['role'] ?? null, fn ($q, $v) => $q->where('role', $v))
             ->orderBy('nom')
@@ -239,6 +254,16 @@ class AgentController extends Controller
         $mpdf->Output($chemin, Destination::FILE);
 
         return $chemin;
+    }
+
+    /** Un compte est gérable si son agence, ou (contrôleur permanent) son réseau, est dans le périmètre de l'admin. */
+    private function peutGerer(Agent $agent): bool
+    {
+        $agences = $this->agencesVisibles();
+
+        return $agent->agence_id !== null
+            ? $agences->pluck('id')->contains($agent->agence_id)
+            : $agences->pluck('reseau_id')->contains($agent->reseau_id);
     }
 
     /**
