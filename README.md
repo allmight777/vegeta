@@ -65,16 +65,33 @@ les variables `DB_*` correspondantes dans `.env.example`.
 composer install
 npm install
 cp .env.example .env
-php artisan key:generate
+php artisan key:generate          # APP_KEY (sessions, cookies) — obligatoire avant les tests
 touch database/database.sqlite     # Windows PowerShell : New-Item database/database.sqlite
 php artisan migrate:fresh --seed   # crée les référentiels + comptes et données de démonstration
 npm run build                      # ou `npm run dev` en développement
 php artisan serve
 ```
 
-Le seeder `CLE_CIF_DEMO` (clé de chiffrement de démonstration) est déjà présente dans
-`.env.example` — **à régénérer avant toute mise en production** (`openssl rand -base64 32`),
-jamais commitée en clair ailleurs qu'en local.
+Vérifier que tout est en place avant de démarrer (aucun effet de bord, lecture seule) :
+
+```bash
+php artisan installation:verifier
+```
+
+La commande contrôle `APP_KEY`, `CLE_CIF_DEMO`, les extensions PHP requises, la base
+SQLite et les données de démonstration, puis affiche un tableau vert/rouge avec la
+commande exacte à lancer pour chaque point manquant.
+
+**Deux clés distinctes, ne pas les confondre :**
+
+- `APP_KEY` — clé Laravel standard, générée par `php artisan key:generate`. Sans elle,
+  la suite de tests échoue en bloc (`MissingAppKeyException`).
+- `CLE_CIF_DEMO` — clé métier de CIF-Empreinte, dont sont dérivées par HMAC les sous-clés
+  de chiffrement AES-256-GCM, d'index aveugle et d'empreinte. Une valeur de démonstration
+  est fournie dans `.env.example` pour que l'installation fonctionne immédiatement ;
+  elle est publique et **doit être régénérée avant toute mise en production**
+  (`openssl rand -base64 32`). Changer cette clé invalide les empreintes et les index
+  aveugles déjà calculés : rejouer `migrate:fresh --seed` après changement.
 
 ## Fonctionnement hors connexion (aucun CDN)
 
@@ -126,6 +143,7 @@ php artisan demo:scenario 3   # problème 3 — fractionnement entre deux agence
 php artisan demo:scenario 4   # problème 4 — signataire de personne morale filtré individuellement
 php artisan demo:scenario 5   # problème 5 — tableau de bord conformité
 php artisan demo:scenario 6   # problème 6 — non-divulgation au guichet (art. 63)
+php artisan demo:scenario 8   # problème 7 — incohérence profil déclaré / opérations observées
 php artisan demo:publier-signal   # simulation du signal inter-réseaux (niveau 2, voir ci-dessus)
 ```
 
@@ -241,9 +259,109 @@ routes/admin/, routes/agent/   un fichier par domaine, autoloadés
 tests/                 Feature + Unit, php artisan test
 ```
 
+## Vigilance constante — cohérence profil déclaré / opérations observées
+
+Le filtrage sanctions/PPE protège l'entrée en relation ; il ne dit rien de ce qui se
+passe ensuite. La Loi uniforme (art. 18) et l'Instruction BCEAO 001-03-2025 (art. 6)
+imposent de vérifier que les opérations restent cohérentes avec la connaissance qu'on a
+du client. Un seuil absolu ne sait pas qu'un dépôt de 400 000 XOF est banal pour un
+grossiste et aberrant pour un apprenti tailleur : seul l'écart au profil le dit.
+
+```bash
+php artisan coherence:analyser                  # campagne sur tout le parc
+php artisan coherence:analyser --reseau=ALPHA   # un seul réseau
+php artisan coherence:analyser --simulation     # analyse sans rien écrire
+php artisan demo:scenario 8                     # le cas de démonstration
+```
+
+**Trois indicateurs déterministes** (`app/Services/Coherence/Indicateurs/`) :
+
+| Indicateur | Ce qu'il observe | Poids |
+|---|---|---|
+| `EcartFluxRevenus` | cumul des dépôts sur 30 j rapporté au revenu déclaré au KYC | 2 ou 4 |
+| `CompteDePassage` | dépôt retiré à ≥ 80 % en moins de 48 h, répété ≥ 3 fois (typologie GIABA) | 3 |
+| `IncoherenceActiviteCanal` | activité déclarée incompatible avec les canaux réellement utilisés | 2 |
+
+**Règle cardinale : un indice isolé ne signale rien.** Un agriculteur qui dépose après
+la récolte, un commerçant qui encaisse du mobile money : pris séparément, chacun a une
+explication banale. Le signalement n'est ouvert qu'à partir de 2 constats concordants
+ET d'un poids cumulé de 3 (`config/coherence.php`). Alerter sur chaque indice noierait
+la file du responsable en quelques jours, et il cesserait de la lire.
+
+Destinataire : **le responsable d'agence**, jamais le caissier (Loi art. 63,
+non-divulgation), comme pour le filtrage.
+
+### L'IA ne note rien
+
+Le score, les seuils et la décision d'alerter sont produits par des règles
+déterministes, reproductibles, sans appel réseau. À la question « pourquoi ce membre
+a-t-il été signalé ? », la réponse est « parce que ses dépôts valent 50,7 fois son
+revenu déclaré et qu'il a fait 12 allers-retours en moins de 20 h » — jamais « parce
+que le modèle l'a jugé suspect ». Un signalement LBC/FT non explicable est inopposable
+en contrôle.
+
+L'IA n'intervient qu'en surcouche (`NarrateurFaisceau`) : raconter le faisceau, et
+proposer les **actions de remédiation KYC** — les questions à poser, les pièces à
+réclamer. C'est ce qui distingue un outil qui accuse d'un outil qui fait avancer le
+dossier : la mise à jour de fiche qui en découle *est* la vigilance constante attendue
+par le régulateur. Sans connexion, le gabarit local produit le même texte.
+
+Tous les seuils sont dans `config/coherence.php`, affichés `source = demo` : ce sont des
+hypothèses de démonstration, à calibrer par chaque réseau sur son propre historique.
+Ne jamais les présenter comme des seuils réglementaires.
+
+## Refiltrage du parc après publication d'une liste
+
+Le filtrage à la création du dossier ne suffit pas : un membre inscrit sur une liste
+*après* son entrée en relation ne repasserait jamais par le moteur. La Loi uniforme
+(art. 2 §58) et l'Instruction BCEAO 001-03-2025 (art. 2 §23, art. 6) imposent d'agir
+« sans délai », soit 24 heures au maximum après publication.
+
+`listes:importer` enchaîne donc automatiquement le recontrôle de tout le parc :
+
+```bash
+php artisan listes:importer onu --fichier=liste.csv --publiee-le="2026-09-19 08:00"
+```
+
+```
+Import terminé : 2 nouvelle(s) entrée(s) — version IMPORT-20260919044953.
+
+Recontrôle du parc existant contre la liste mise à jour…
+12 dossier(s) recontrôlé(s) en 0,02 s (600,0 dossiers/s) — 2 correspondance(s) sur
+2 dossier(s). Délai depuis publication de la liste : 3,01 h sur 24 h réglementaires
+— échéance respectée.
+```
+
+Campagne de rattrapage manuelle :
+
+```bash
+php artisan listes:refiltrer                          # tout le parc
+php artisan listes:refiltrer --reseau=ALPHA           # un seul réseau
+php artisan listes:refiltrer --publiee-le="2026-09-19 08:00"   # mesure du délai
+php artisan listes:refiltrer --recalculer-empreintes  # filet de sécurité
+```
+
+Chaque campagne est inscrite au journal d'audit chaîné (`refiltrage_parc_execute`)
+sans aucune donnée d'identité : c'est la preuve de diligence opposable en contrôle.
+
+### Débit mesuré
+
+Mesures réelles sur SQLite, PHP 8.3 mono-processus, parc synthétique de 2 012 dossiers
+contre 507 entrées de liste :
+
+| Régime | Débit | Extrapolation 40 000 membres × 507 entrées |
+|---|---|---|
+| Nominal (peu de correspondances) | **137 dossiers/s** (~69 500 comparaisons/s) | ~5 minutes |
+
+Extrapolé à la liste consolidée ONU réelle (~25 000 entrées) sur 40 000 membres, soit
+1 milliard de comparaisons : **environ 4 heures**, largement sous l'échéance de 24 h —
+et sans le blocage MinHash (`IndexBlocageMinHash`, implémenté et testé mais non branché
+dans ce MVP), qui réduirait encore l'espace de recherche d'un ordre de grandeur.
+
 ## Commandes utiles
 
 ```bash
+php artisan installation:verifier   # contrôle de pré-vol (à lancer avant toute démo)
 php artisan test              # suite complète
 vendor/bin/pint                # formatage (obligatoire avant commit)
 php artisan route:list         # vérifier les routes des deux espaces

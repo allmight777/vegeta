@@ -21,4 +21,17 @@ return [
 
     'duree_cache_secondes' => 10,
 
+    /*
+    | Forçage de l'état de connectivité — pour la démonstration et les tests.
+    |
+    | Sans ce réglage, l'état dépend du wifi de la salle : la démonstration du refus
+    | d'un NPI invalide ne bloque pas si la machine est hors ligne (branche dégradée),
+    | et chaque création de dossier coûte 2 s de timeout HTTP.
+    |
+    | 'en_ligne'   : se comporte comme si internet était disponible (vérification NPI réelle)
+    | 'hors_ligne' : se comporte comme si internet était coupé (démonstration du mode dégradé)
+    | 'auto'       : comportement de production, test HTTP réel (défaut)
+    */
+    'mode_connectivite' => env('RESEAU_MODE_CONNECTIVITE', 'auto'),
+
 ];

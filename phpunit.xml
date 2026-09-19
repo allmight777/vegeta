@@ -24,7 +24,11 @@
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
+        <env name="APP_KEY" value="base64:kR3vQ8xZm2pL9dT4wYnC7aJfH1sE6bU0oI5gX2yN8tM="/>
         <env name="CLE_CIF_DEMO" value="l+p3SgwUHMrKPSeqj69s0m2qZjAmY4P41jEghGdx9LM="/>
+        <!-- Aucun test ne doit dépendre du wifi de la machine : état de connectivité figé.
+             Les tests qui portent sur la détection elle-même repassent explicitement en "auto". -->
+        <env name="RESEAU_MODE_CONNECTIVITE" value="en_ligne"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

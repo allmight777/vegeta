@@ -19,6 +19,8 @@ use App\Models\PersonneMorale;
 use App\Models\PersonnePhysique;
 use App\Models\Reseau;
 use App\Models\Signataire;
+use App\Services\Coherence\AnalyseurCoherenceProfil;
+use App\Services\Coherence\NarrateurFaisceau;
 use App\Services\Detection\DetecteurFractionnement;
 use App\Services\Filtrage\MoteurFiltrage;
 use App\Services\Identite\ResolveurIdentite;
@@ -33,9 +35,9 @@ use Illuminate\Support\Carbon;
  */
 class RejouerScenario extends Command
 {
-    protected $signature = 'demo:scenario {code : 1 a 7}';
+    protected $signature = 'demo:scenario {code : 1 a 8}';
 
-    protected $description = 'Rejoue un des 7 scénarios de démonstration du MVP CIF-Empreinte.';
+    protected $description = 'Rejoue un des 8 scénarios de démonstration du MVP CIF-Empreinte.';
 
     public function handle(): int
     {
@@ -296,5 +298,92 @@ class RejouerScenario extends Command
         $this->line($alerte !== null
             ? '  Alerte '.$alerte->gravite->value.' : '.$alerte->explication_texte
             : '  Aucune alerte (alerte déjà levée aujourd\'hui — relancez `migrate:fresh --seed` pour un état propre).');
+    }
+
+    /**
+     * Problème 7 — vigilance constante : le profil déclaré au KYC ne colle plus
+     * au comportement observé. Le filtrage protège l'entrée en relation ; il ne
+     * dit rien de ce qui se passe ensuite (Loi uniforme art. 18 ; Instruction
+     * BCEAO 001-03-2025 art. 6).
+     *
+     * AGOSSOU Rémi se déclare cultivateur, 45 000 XOF de revenus mensuels. Aucun
+     * de ses versements ne franchit un seuil de déclaration : pris un par un,
+     * ils sont invisibles. C'est l'écart au profil qui les révèle.
+     */
+    private function scenario8(): void
+    {
+        $this->info('Scénario 8 — Incohérence profil déclaré / opérations observées');
+
+        $reseau = Reseau::firstOrCreate(['code' => 'ALPHA'], ['nom' => 'Réseau Alpha']);
+        $dassa = Agence::firstOrCreate(['reseau_id' => $reseau->id, 'code' => 'DASSA'], ['nom' => 'Agence de Dassa']);
+
+        $compte = $this->clientEtCompte($dassa, 'AGOSSOU', 'Rémi', '1990-06-12', 'CPT-DEMO-COHERENCE', '1990061298765', 45000);
+        $client = $compte->client->fresh(['personnePhysique', 'comptes']);
+
+        if (blank($client->personnePhysique?->profession)) {
+            $client->personnePhysique->profession = 'Cultivateur';
+            $client->personnePhysique->saveQuietly();
+        }
+
+        $this->line('  Profil déclaré au KYC : Cultivateur — 45 000 XOF/mois');
+
+        // Douze allers-retours en quatre semaines. Chaque montant reste modeste :
+        // aucun seuil absolu ne se déclenche.
+        if (Operation::where('compte_id', $compte->id)->count() === 0) {
+            for ($i = 0; $i < 12; $i++) {
+                $arrivee = now()->subDays(26 - ($i * 2))->setTime(21, 30);
+
+                Operation::create([
+                    'compte_id' => $compte->id, 'agence_id' => $compte->agence_id,
+                    'type' => TypeOperation::Depot, 'montant' => 190000,
+                    'mode_paiement' => ModePaiement::MobileMoney, 'devise_code' => 'XOF',
+                    'effectuee_le' => $arrivee, 'canal' => 'guichet',
+                ]);
+
+                Operation::create([
+                    'compte_id' => $compte->id, 'agence_id' => $compte->agence_id,
+                    'type' => TypeOperation::Retrait, 'montant' => 175000,
+                    'mode_paiement' => ModePaiement::MobileMoney, 'devise_code' => 'XOF',
+                    'effectuee_le' => $arrivee->copy()->addHours(19), 'canal' => 'guichet',
+                ]);
+            }
+        }
+
+        $this->line('  Observé : 12 versements de 190 000 XOF, chacun reparti à 92 % moins de 20 h plus tard.');
+        $this->newLine();
+
+        $analyseur = app(AnalyseurCoherenceProfil::class);
+        $faisceau = $analyseur->analyser($client);
+
+        foreach ($faisceau->constats() as $constat) {
+            $this->line('  • '.$constat->libelle.' <fg=gray>(poids '.$constat->poids.')</>');
+        }
+
+        $this->newLine();
+        $this->line(sprintf(
+            '  Faisceau : %d constats concordants, poids %d — gravité %s',
+            $faisceau->nombreConstats(),
+            $faisceau->poidsTotal(),
+            $faisceau->gravite()->value,
+        ));
+
+        if (! $faisceau->estConstitue()) {
+            $this->warn('  Faisceau non constitué : aucun signalement (comportement attendu).');
+
+            return;
+        }
+
+        $alerte = $analyseur->signaler($client);
+
+        $this->newLine();
+        $this->line('  Signalé au RESPONSABLE D\'AGENCE (jamais au caissier — Loi art. 63) :');
+        $this->line('  '.($alerte?->explication_texte ?? 'faisceau déjà signalé et non encore traité'));
+
+        $this->newLine();
+        $this->line('  Remédiation KYC proposée :');
+
+        foreach (app(NarrateurFaisceau::class)->actionsRemediation($faisceau) as $action) {
+            $this->line('   → '.$action);
+        }
     }
 }

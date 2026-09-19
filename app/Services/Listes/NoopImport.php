@@ -10,6 +10,4 @@ use Maatwebsite\Excel\Concerns\Import;
  * d'import (on lit le tableau brut et on gère l'insertion manuellement pour
  * contrôler précisément les colonnes et les valeurs vides).
  */
-class NoopImport implements Import
-{
-}
+class NoopImport implements Import {}

@@ -822,55 +822,121 @@ le temps le permet.
   démonstration à traiter (télécharger les assets en local) ; (2) les tuiles de statistiques du
   tableau de bord admin comptent tous les réseaux, même pour un admin de réseau.
 
+## 30. Revue finale avant soutenance — corrections appliquées
 
-## 2026-09-19 — Assets locaux : fin des CDN (correctif prioritaire, CLAUDE.md §2)
+Revue complète du dépôt le 19/09/2026, avec exécution réelle de la suite de tests,
+rejeu des six scénarios et mesures de débit. Décisions et corrections :
 
-- **Constat** : les trois layouts, les deux pages de connexion et la page 419 chargeaient Font Awesome
-  (cdnjs) et Plus Jakarta Sans (Google Fonts). Sans réseau : police système et carrés vides à la
-  place des icônes — contraire à « zéro CDN » (CLAUDE.md §2) et au mode dégradé de la charte.
-- **Correction** : Font Awesome Free 6.5.2 (`fa-solid-900`, `fa-regular-400` en woff2 ; les seules
-  classes utilisées dans le code sont `fa-solid` et `fa-regular`) et Plus Jakarta Sans (variable,
-  latin + latin-ext, `font-display: swap`) déposés dans `public/vendor/`, versionnés ; les 6 gabarits
-  pointent vers `asset('vendor/…')`. Versions alignées sur 6.5.2 (les pages de connexion utilisaient 6.4.0).
-  Toute dépendance ajoutée → composants déclarés dans `docs/COMPOSANTS_TIERS.md`.
-- **Limites assumées** : pas de polices de repli `.ttf`, pas de `fa-brands`/`fa-v4compatibility`
-  (inutilisés) ; les alphabets cyrillique et vietnamien de Plus Jakarta Sans ne sont pas embarqués
-  (retombent sur la police sans-serif du système — sans effet pour le français et les langues
-  d'Afrique de l'Ouest en écriture latine).
-- **Vérification** : Chrome 144 lancé avec la résolution DNS coupée pour tout hôte non local
-  (`--host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE localhost"`, contrôle : un `fetch` vers cdnjs échoue),
-  connecté successivement en admin, caissier et responsable : 9 pages parcourues (dont formulaire client
-  et file de filtrage), **0 requête externe**, `document.fonts` confirme le chargement de Plus Jakarta Sans
-  et Font Awesome, toutes les icônes visibles ont une largeur non nulle, Alpine chargé, 0 erreur JS.
-  Garde-fou : `tests/Feature/Securite/AssetsLocauxTest.php` (aucun hôte CDN dans `resources/views`,
-  fichiers présents, pages de connexion pointent vers `vendor/`).
-- **Restent des appels sortants côté serveur, sans effet sur l'affichage** : sonde de connectivité
-  (`RESEAU_URL_TEST_CONNECTIVITE`, timeout 2 s, cache 10 s) et, uniquement hors simulateur, l'API IA /
-  la recherche web (neutralisées par les deux `FORCER_SIMULATEUR=true` en démonstration).
+- **`.env.example` livrait `CLE_CIF_DEMO` vide** alors que le README affirmait le
+  contraire : l'installation documentée échouait au premier seeder
+  (`RuntimeException`). Une clé de démonstration publique est désormais fournie, avec
+  la consigne explicite de la régénérer en production. Le message d'erreur de
+  `GestionnaireCles` donne maintenant la commande de réparation.
 
+- **`APP_KEY` ajoutée à `phpunit.xml`** : sans elle, 113 tests échouaient en
+  `MissingAppKeyException` sur toute machine n'ayant pas lancé `key:generate`. La
+  suite ne dépend plus d'une étape manuelle.
 
-## 2026-09-19 — Propositions pendant la frappe et libellés épurés (17_PROMPT)
+- **`vendor/` désynchronisé de `composer.lock`** : 14 paquets déclarés étaient absents
+  (`maatwebsite/excel`, `phpoffice/phpspreadsheet`, `mpdf/*`, `thiagoalessio/tesseract_ocr`,
+  `spatie/pdf-to-image`…). L'application démarrait normalement et n'échouait qu'à
+  l'exécution du chemin concerné — import de listes par l'interface, extraction de
+  tableurs, PDF protégé des identifiants, OCR. Non corrigeable par le code :
+  `composer install` est requis. Un contrôle de cohérence a été ajouté au pré-vol
+  pour que ce mode de défaillance ne puisse plus être silencieux.
 
-- **Propositions** : `POST agent.clients.copilote.propositions` → `SuggesteurNormalisationActivite::proposer()`.
-  Comparaison **en PHP** sur des textes normalisés des deux côtés (`Str::ascii` + minuscules), donc
-  « etu » → « Étudiant » et « commercant » → « Commerçante » quel que soit le moteur (SQLite/PostgreSQL
-  sensibles à la casse, MySQL non). Un mot de la valeur doit commencer par la saisie (≥ 2 caractères) ;
-  variantes de casse/accent regroupées sous l'orthographe la plus fréquente ; 5 propositions au plus,
-  les plus utilisées d'abord ; rien (liste vide, jamais d'erreur) sinon. Champs : `profession`,
-  `activite_1`, `activite_2` + `employeur`, `nationalite` (colonnes en clair, branchement immédiat).
-  `lieu_naissance` est chiffré : exclu. Le blur garde la suggestion d'orthographe existante (complément).
-- **Client** : anti-rebond 280 ms, réponses périmées ignorées (jeton), liste construite en `textContent`,
-  `mousedown` neutralisé pour ne pas provoquer de blur avant le clic, flèches/Entrée/Échap, fermeture au
-  clic extérieur, `autocomplete=off` pour éviter la liste native du navigateur.
-- **Libellés** : `<x-source-info>` remplace `<x-badge-source>` dans le formulaire de saisie (icône ⓘ, bulle
-  au survol/clic/focus recalée dans sa carte, `title` en secours). `SourceValeur::libelleCourt()` retire
-  « — à confirmer » ; le texte de bulle est aussi nettoyé des « à confirmer » présents dans les
-  références. `<x-badge-source>` et `libelle()` restent inchangés sur l'écran admin des règles.
-- **Données de démonstration** : `CopiloteSaisieDemoSeeder` passe à 16 dossiers synthétiques (Étudiant,
-  Agriculteur, Couturière, Menuisier, Mécanicien, Chauffeur, Coiffeuse, Éleveur…). Effet de bord assumé :
-  la liste « profils incomplets » du caissier/responsable et les totaux du résumé admin grossissent.
-- **Vérifié** (Chrome 144, focus émulé, vraies frappes/clics/touches, DNS externe coupé) : « etu » → liste
-  après ~280 ms sans perdre le focus ; clic → champ rempli ; ↓ + Entrée ; Échap ; clic extérieur ;
-  « zzz » → aucune liste ni note ; activité 1 « cou » → « Couture » ; blur complémentaire ; infobulles
-  (colonnes gauche et droite, contenues dans la carte, ouverture au clic, fermeture à Échap) ; 0 requête
-  externe ; 0 erreur JS. Tests : `PropositionsPendantLaFrappeTest` (10 tests).
+- **`installation:verifier`** (nouvelle commande, lecture seule) : PHP, extensions,
+  cohérence des dépendances, les deux clés, base, migrations, données de démonstration,
+  empreintes manquantes, puis l'état de la configuration de démonstration. Chaque
+  échec affiche la commande exacte qui le répare.
+
+- **Refiltrage du parc — trou réglementaire comblé.** `ImportateurListes` créait les
+  entrées sans jamais reconfronter le parc existant : un membre listé après son entrée
+  en relation n'était jamais détecté, alors que `CLAUDE.md` §41 exige la mesure du
+  délai publication → fin de refiltrage. Ajout de `RefiltrageParc`, `RapportRefiltrage`,
+  `listes:refiltrer`, enchaînement automatique après `listes:importer`, mesure du délai
+  contre l'échéance de 24 h et journalisation de la campagne. Six tests de
+  non-régression (`tests/Feature/Filtrage/RefiltrageParcTest.php`).
+
+- **`RESEAU_MODE_CONNECTIVITE`** (`auto` | `en_ligne` | `hors_ligne`) : l'état de
+  connectivité était déduit d'un appel HTTP réel, donc la démonstration dépendait du
+  wifi de la salle — hors ligne, le refus d'un NPI invalide ne se déclenchait pas
+  (branche dégradée) et chaque création de dossier coûtait 2 s de timeout. La suite de
+  tests est figée en `en_ligne` ; `DetecteurConnectiviteTest` repasse en `auto` pour
+  exercer la vraie branche.
+
+- **Performance du chemin chaud.** `MoteurFiltrage` rechargeait et déchiffrait toute la
+  table `entrees_liste` une fois par dossier : mémorisation par instance, avec
+  `rafraichirListes()` avant chaque campagne. `Bitset::et()` utilise l'opérateur `&`
+  natif de PHP sur chaînes binaires au lieu d'une boucle `ord()`/`chr()`, et
+  `nbBitsActifs()` une table de popcount de 256 entrées au lieu d'un `decbin()` +
+  `substr_count()` par octet. Gain mesuré sur la comparaison Dice : **×2,3**
+  (38 800 → 87 500 comparaisons/s). Débit de refiltrage mesuré : **137 dossiers/s**
+  contre 507 entrées de liste.
+
+- **Scénario 2 — donnée de démonstration corrigée.** L'entrée de liste reprenait
+  l'orthographe *exacte* du client (score 100 %), ce qui ne démontrait rien qu'une
+  égalité de chaînes n'aurait fait. Elle est désormais inscrite sous une
+  translittération différente (« AWOUANDJINOU » contre « AHOUANDJINOU »), rapprochée à
+  ~92 % par l'empreinte. Commentaire explicite dans `ListesDemoSeeder` pour éviter une
+  « correction » ultérieure.
+
+- **Ménage du dépôt** : suppression de cinq fichiers commités par accident (un dump
+  Tinker de 73 Ko, deux copies de la page d'aide de `less`, `routes.txt`, un
+  `.php.backup`) et durcissement du `.gitignore`.
+
+- **Fausse piste écartée** : `MoteurFiltrage::mettreAJourStatutCible()` ne traite que
+  les `Signataire`. Ce n'est pas un oubli — un `Client` n'a pas de colonne
+  `statut_filtrage`, son statut est dérivé de ses `resultats_filtrage`
+  (`Client::statutConformiteAffichable()`). Commentaire ajouté pour éviter une
+  « correction » qui introduirait une incohérence.
+
+## 31. Vigilance constante — cohérence profil / opérations (problème 7)
+
+Ajout d'un septième problème traité : la confrontation du profil déclaré au KYC au
+comportement transactionnel réellement observé.
+
+- **Pourquoi** : le dispositif ne couvrait que la vigilance à l'entrée en relation
+  (filtrage listes, complétude KYC) et des seuils absolus (fractionnement, plafond
+  quotidien). La vigilance constante — Loi uniforme art. 18, Instruction BCEAO
+  001-03-2025 art. 6 — n'était pas traitée. Or un seuil absolu ne sait pas qu'un dépôt
+  de 400 000 XOF est banal pour un grossiste et aberrant pour un apprenti tailleur.
+
+- **Un indice isolé ne signale rien.** Le faisceau exige au moins 2 constats
+  concordants et un poids cumulé de 3. C'est la décision de conception la plus
+  importante : alerter sur chaque indicateur aurait noyé la file du responsable
+  d'agence, qui aurait cessé de la lire — moins de conformité, pas plus. Même logique
+  que la mémoire de décisions côté filtrage.
+
+- **L'IA ne produit aucun score.** Indicateurs déterministes, sans appel réseau, dont
+  chaque constat porte les chiffres qui le fondent (`Constat::$fait`) pour être
+  refaisable à la main par un contrôleur. Un signalement LBC/FT non explicable est
+  inopposable. `NarrateurFaisceau` n'intervient qu'en surcouche : narration et actions
+  de remédiation KYC, avec gabarit local hors connexion.
+
+- **Trois indicateurs livrés**, choisis pour leur rapport valeur/effort :
+  `EcartFluxRevenus` (cumul des dépôts rapporté au revenu déclaré),
+  `CompteDePassage` (dépôt retiré à ≥ 80 % sous 48 h, répété — typologie GIABA),
+  `IncoherenceActiviteCanal` (activité déclarée contre canaux réellement utilisés).
+  En ajouter un est une classe de 30 lignes plus une ligne dans `AppServiceProvider` :
+  aucune modification du moteur.
+
+- **Non livrés, assumés** : incohérence géographique, dormance puis afflux, et
+  saisonnalité contredite (celle-ci demande une année d'historique). Le pont vers la
+  déclaration CENTIF et la boucle de mémoire des décisions sur les motifs d'écart
+  justifié sont identifiés mais hors périmètre du MVP.
+
+- **Destinataire** : le responsable d'agence (`RoleAgent::ResponsableAgence`), jamais
+  le caissier — même règle de non-divulgation que le filtrage (Loi art. 63). Aucun
+  nouveau rôle n'a été créé : `ResponsableLbcft` avait déjà été fusionné dans
+  `ResponsableAgence` par `agents:migrer-roles`.
+
+- **Seuils** : tous dans `config/coherence.php`, `source = demo`. Ce sont des
+  hypothèses, pas des valeurs réglementaires, et chaque réseau doit les calibrer sur
+  son propre historique. La table de correspondance activité → canaux attendus est
+  particulièrement dépendante du terrain.
+
+- Scénario de démonstration `demo:scenario 8` et 7 tests de non-régression
+  (`tests/Feature/Coherence/AnalyseCoherenceProfilTest.php`), dont deux tests de
+  faux positif : un membre cohérent et un membre à indice unique ne doivent jamais
+  être signalés.
