@@ -40,7 +40,7 @@ class TableauBordController extends Controller
         $clientIdsSurveilles = array_values(array_unique(array_merge(
             $clientIdsDeLAgence,
             Client::whereIn('identite_id', $identiteIds)->pluck('id')->all(),
-        )));        
+        )));
 
         // Tout ce qui relève d'un seuil ou d'un cumul va dans le bloc dédié,
         // le reste (filtrage, NPI) reste dans les alertes du jour.
@@ -51,7 +51,7 @@ class TableauBordController extends Controller
             'plafond_quotidien_depasse',
         ];
 
-        $alertesOuvertes = Alerte::whereIn('client_id', $clientIdsSurveilles)        
+        $alertesOuvertes = Alerte::whereIn('client_id', $clientIdsSurveilles)
             ->where('statut', '!=', StatutAlerte::Traitee)
             ->orderByRaw("CASE gravite WHEN 'critique' THEN 0 WHEN 'attention' THEN 1 ELSE 2 END")
             ->get();
@@ -66,7 +66,7 @@ class TableauBordController extends Controller
             // directe avec une chaîne échoue silencieusement et vide le bloc.
             'alertesDuJour' => $alertesOuvertes->reject(fn ($alerte) => in_array($alerte->type->value, $typesFractionnement, true))->take(15),
             'seuilsEtFractionnements' => $alertesOuvertes->filter(fn ($alerte) => in_array($alerte->type->value, $typesFractionnement, true))->values(),
-            'declarationsAVenir' => DeclarationCentif::whereIn('client_id', $clientIdsSurveilles)            
+            'declarationsAVenir' => DeclarationCentif::whereIn('client_id', $clientIdsSurveilles)
                 ->where('statut', StatutDeclarationCentif::APreparer)
                 ->get(),
             'npiEnAttente' => (clone $clientsDeLAgence)->with(['personnePhysique', 'personneMorale'])

@@ -63,6 +63,7 @@ class MemoireDecisions
             ['cle_decision' => $this->cle($cible, $entree)],
             [
                 'identite_id' => $identiteId,
+                'entree_liste_id' => $entree->id,
                 // Une décision prise sur une personne identifiée vaut pour tous ses
                 // dossiers ; sans identité rattachée, elle ne vaut que pour cette fiche.
                 'portee' => $identiteId !== null ? 'identite' : 'fiche',
@@ -95,6 +96,42 @@ class MemoireDecisions
         $decision->update(['derniere_application_le' => now()]);
 
         Consignateur::enregistrer('systeme', null, 'filtrage_decision_connue_appliquee', 'resultat_filtrage', $resultat->id);
+    }
+
+    /**
+     * Décisions déjà prises sur cette même entrée de liste, ailleurs (autre personne,
+     * autre dossier) — pas la décision exacte qui supprimerait l'alerte (`pour()`),
+     * mais un signal pour le responsable qui voit cette correspondance pour la
+     * première fois (12_PROMPT_IA_INTEGREE_PROFONDE §6). Comptage SQL simple sur
+     * `motif_code`, aucun appel IA : la fonctionnalité doit rester utilisable hors
+     * connexion et sans quota fournisseur.
+     *
+     * Scope réseau appliqué quand connu (`identite.reseau_id`) ; les décisions sans
+     * identité rattachée (portée "fiche") sont incluses malgré tout — elles ne
+     * révèlent qu'un motif codé agrégé, jamais une identité, donc rien à cloisonner.
+     *
+     * @return array{total: int, parMotif: array<int, array{motif: MotifDecisionFiltrage, nombre: int}>}
+     */
+    public function casSimilaires(EntreeListe $entree, ?int $reseauId): array
+    {
+        $decisions = DecisionFiltrage::where('entree_liste_id', $entree->id)
+            ->when($reseauId !== null, fn ($q) => $q->where(function ($q) use ($reseauId) {
+                $q->whereNull('identite_id')
+                    ->orWhereHas('identite', fn ($q2) => $q2->where('reseau_id', $reseauId));
+            }))
+            ->get();
+
+        if ($decisions->isEmpty()) {
+            return ['total' => 0, 'parMotif' => []];
+        }
+
+        $parMotif = $decisions->groupBy(fn (DecisionFiltrage $d) => $d->motif_code->value)
+            ->map(fn ($groupe) => ['motif' => $groupe->first()->motif_code, 'nombre' => $groupe->count()])
+            ->sortByDesc('nombre')
+            ->values()
+            ->all();
+
+        return ['total' => $decisions->count(), 'parMotif' => $parMotif];
     }
 
     /**

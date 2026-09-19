@@ -7,6 +7,7 @@ use App\Enums\StatutAlerte;
 use App\Enums\StatutFiltrage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Agent\Filtrage\DeciderRequest;
+use App\Http\Requests\Responsable\Filtrage\SuggererMotifRequest;
 use App\Models\Alerte;
 use App\Models\Client;
 use App\Models\DecisionFiltrage;
@@ -14,6 +15,8 @@ use App\Models\ResultatFiltrage;
 use App\Models\Signataire;
 use App\Services\Audit\Consignateur;
 use App\Services\Filtrage\MemoireDecisions;
+use App\Services\Filtrage\SuggereurMotifDecision;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -44,9 +47,18 @@ class FiltrageController extends Controller
             ->sortByDesc('score_similarite')
             ->values();
 
+        // Comptage sans IA (12_PROMPT_IA_INTEGREE_PROFONDE §6, point 1) : pour chaque
+        // correspondance encore à examiner, combien de décisions ont déjà été prises
+        // sur cette même entrée de liste ailleurs, et avec quel motif dominant.
+        $reseauId = Auth::guard('agent')->user()->agence->reseau_id;
+        $casSimilaires = $resultats->mapWithKeys(
+            fn (ResultatFiltrage $resultat) => [$resultat->id => $this->memoire->casSimilaires($resultat->entreeListe, $reseauId)]
+        );
+
         return view('responsable.filtrage.index', [
             'resultats' => $resultats,
             'motifs' => MotifDecisionFiltrage::cases(),
+            'casSimilaires' => $casSimilaires,
             // Mesure du bruit évité : c'est ce chiffre qui montre que l'outil reste
             // utilisable dans la durée, au lieu de noyer le responsable.
             'decisionsConnues' => DecisionFiltrage::count(),
@@ -99,6 +111,28 @@ class FiltrageController extends Controller
 
         return redirect()->route('responsable.filtrage.index')
             ->with('statut', 'Décision enregistrée. Cette correspondance ne sera plus signalée pour cette personne.');
+    }
+
+    /**
+     * Suggestion ergonomique seule (12_PROMPT_IA_INTEGREE_PROFONDE §6, point 2) : ne
+     * touche à aucune donnée, ne pré-remplit ni ne verrouille rien côté serveur — le
+     * responsable choisit toujours lui-même le motif final via `decider()`.
+     */
+    public function suggererMotif(SuggererMotifRequest $request, ResultatFiltrage $resultatFiltrage, SuggereurMotifDecision $suggereur): JsonResponse
+    {
+        $agent = Auth::guard('agent')->user();
+        $agenceId = $agent->agence_id;
+        $cible = $resultatFiltrage->filtrable;
+        $client = $this->clientDe($cible);
+
+        abort_unless(
+            $cible !== null && $client !== null && Client::deLAgence($agenceId)->whereKey($client->id)->exists(),
+            403
+        );
+
+        $motif = $suggereur->suggerer($request->validated('texte'), $cible, $resultatFiltrage->entreeListe, $agent);
+
+        return response()->json(['motif_code' => $motif?->value, 'libelle' => $motif?->libelle()]);
     }
 
     /** Initiales seules : on ne stigmatise pas une personne listée avant confirmation. */

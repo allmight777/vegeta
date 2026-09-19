@@ -1,4 +1,5 @@
 <?php
+
 // app/Services/Filtrage/GenerateurRecapPpeJour.php
 
 namespace App\Services\Filtrage;
@@ -23,8 +24,8 @@ class GenerateurRecapPpeJour
             ->whereDate('created_at', $jour)
             ->where('statut', 'a_verifier')
             ->whereHas('entreeListe', function ($q) {
-                $q->where('categorie', 'like', '%PPE%')
-                    ->orWhere('categorie', 'like', '%Sanction%');
+                $q->whereRaw('lower(categorie) like ?', ['%ppe%'])
+                    ->orWhereRaw('lower(categorie) like ?', ['%sanction%']);
             })
             ->with('filtrable')
             ->get()
@@ -109,8 +110,8 @@ class GenerateurRecapPpeJour
             ->where('statut', 'a_verifier')
             ->where('filtrable_type', Client::class)
             ->whereHas('entreeListe', function ($q) {
-                $q->where('categorie', 'like', '%PPE%')
-                    ->orWhere('categorie', 'like', '%Sanction%');
+                $q->whereRaw('lower(categorie) like ?', ['%ppe%'])
+                    ->orWhereRaw('lower(categorie) like ?', ['%sanction%']);
             })
             ->with(['entreeListe', 'filtrable'])
             ->get()
@@ -134,8 +135,8 @@ class GenerateurRecapPpeJour
             ->where('statut', 'a_verifier')
             ->where('filtrable_type', Signataire::class)
             ->whereHas('entreeListe', function ($q) {
-                $q->where('categorie', 'like', '%PPE%')
-                    ->orWhere('categorie', 'like', '%Sanction%');
+                $q->whereRaw('lower(categorie) like ?', ['%ppe%'])
+                    ->orWhereRaw('lower(categorie) like ?', ['%sanction%']);
             })
             ->with(['entreeListe', 'filtrable.personneMorale.client'])
             ->get()

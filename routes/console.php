@@ -18,7 +18,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 /*
 |--------------------------------------------------------------------------
 | TÂCHES PLANIFIÉES
@@ -32,13 +31,11 @@ Schedule::command('npi:verifier-en-attente')
     ->everyFiveMinutes()
     ->timezone(config('app.timezone'));
 
-
 // 2. Rapports journaliers caissiers (20h, heure locale du serveur)
 //    Envoie à chaque agent son rapport d'activité de la journée.
 Schedule::command('rapports:envoyer-quotidiens')
     ->dailyAt('20:00')
     ->timezone(config('app.timezone'));
-
 
 // 3. Récapitulatif PPE quotidien aux responsables d'agence (18h, heure du Bénin)
 //    Liste les clients et signataires PPE/sanctions détectés dans la journée

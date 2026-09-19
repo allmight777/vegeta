@@ -20,6 +20,20 @@ $enCompletion = $client !== null;
 @endphp
 
 @once <style>
+
+    /* Copilote de saisie (16_PROMPT §2) */
+    .champ-copilote:empty { display: none; }
+    .copilote-note {
+        margin-top: 6px; padding: 8px 10px; border-radius: 10px; font-size: .78rem; line-height: 1.4;
+        display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+        background: #FFFBD6; border: 1px solid #F0E535; color: #5B5200;
+    }
+    .copilote-note + .copilote-note { margin-top: 4px; }
+    .copilote-source { margin-left: auto; font-size: .68rem; opacity: .75; font-style: italic; }
+    .copilote-action {
+        border: 0; border-radius: 8px; background: #2C343D; color: #fff;
+        padding: 4px 10px; font: inherit; font-weight: 700; cursor: pointer;
+    }
 /* =========================================
 BOUTONS DES CHAMPS REPETABLES
 ========================================= */
@@ -416,10 +430,197 @@ BOUTONS DES CHAMPS REPETABLES
             window.__resultatSimulationDepot = null;
         }
     };
+    // ---------------------------------------------------------------------------
+    // Copilote de saisie (16_PROMPT §2) — au blur uniquement, jamais à la frappe.
+    // Non bloquant : une réponse en erreur ou hors ligne n'affiche simplement rien.
+    // Le DOM est construit avec textContent (aucune chaîne serveur injectée en HTML).
+    // ---------------------------------------------------------------------------
+    window.copiloteAppeler = async function (url, corps) {
+        try {
+            const reponse = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+                body: JSON.stringify(corps),
+            });
+
+            return reponse.ok ? await reponse.json() : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    window.copiloteEffacer = function (scope, genre, champ) {
+        scope.querySelectorAll('.copilote-note[data-genre="' + genre + '"]' + (champ ? '[data-champ="' + champ + '"]' : ''))
+            .forEach((noeud) => noeud.remove());
+    };
+
+    window.copiloteAfficher = function (scope, champ, genre, message, source, action) {
+        const cible = scope.querySelector('[data-copilote-cible="' + champ + '"]');
+
+        if (!cible) {
+            return;
+        }
+
+        const note = document.createElement('div');
+        note.className = 'copilote-note';
+        note.dataset.genre = genre;
+        note.dataset.champ = champ;
+
+        const texte = document.createElement('span');
+        texte.textContent = message;
+        note.appendChild(texte);
+
+        if (action) {
+            const bouton = document.createElement('button');
+            bouton.type = 'button';
+            bouton.className = 'copilote-action';
+            bouton.textContent = action.libelle;
+            bouton.addEventListener('click', () => { action.executer(); note.remove(); });
+            note.appendChild(bouton);
+        }
+
+        if (source) {
+            const mention = document.createElement('span');
+            mention.className = 'copilote-source';
+            mention.textContent = source;
+            note.appendChild(mention);
+        }
+
+        cible.appendChild(note);
+    };
+
+    window.copiloteValeur = function (scope, id) {
+        return scope.querySelector('#' + id)?.value?.trim() ?? '';
+    };
+
+    window.copiloteDoublon = async function (scope) {
+        if (!scope.querySelector('#nom')) {
+            return;
+        }
+
+        const nom = window.copiloteValeur(scope, 'nom');
+        window.copiloteEffacer(scope, 'doublon');
+
+        if (nom.length < 2) {
+            return;
+        }
+
+        const donnees = await window.copiloteAppeler(@json(route('agent.clients.copilote.doublon')), {
+            nom,
+            prenoms: window.copiloteValeur(scope, 'prenoms') || null,
+            date_naissance: window.copiloteValeur(scope, 'date_naissance') || null,
+            client_id_actuel: window.__clientIdActuel ?? null,
+        });
+
+        window.copiloteEffacer(scope, 'doublon');
+
+        if (donnees && donnees.doublon) {
+            window.copiloteAfficher(scope, 'nom', 'doublon', donnees.message, 'contrôle local (empreinte)', null);
+        }
+    };
+
+    window.copiloteCoherence = async function (scope) {
+        const naissance = window.copiloteValeur(scope, 'date_naissance');
+        const revenus = parseFloat(window.copiloteValeur(scope, 'revenus_mensuels_estimes'));
+        const depot = parseFloat(window.copiloteValeur(scope, 'depot_especes'));
+        const expiration = window.copiloteValeur(scope, 'piece_identite_expiration');
+        const profession = window.copiloteValeur(scope, 'profession');
+
+        // Caractéristiques dérivées calculées ici : la date brute de naissance et l'expiration ne partent pas.
+        let age = null;
+        if (naissance && !isNaN(Date.parse(naissance))) {
+            const n = new Date(naissance);
+            const auj = new Date();
+            age = auj.getFullYear() - n.getFullYear()
+                - ((auj.getMonth() < n.getMonth() || (auj.getMonth() === n.getMonth() && auj.getDate() < n.getDate())) ? 1 : 0);
+            age = (age >= 0 && age <= 130) ? age : null;
+        }
+
+        const ratio = (revenus > 0 && depot >= 0) ? depot / revenus : null;
+        const pieceExpiree = !!expiration && !isNaN(Date.parse(expiration)) && new Date(expiration) < new Date(new Date().toDateString());
+
+        if (age === null && ratio === null && !pieceExpiree) {
+            window.copiloteEffacer(scope, 'coherence');
+            return;
+        }
+
+        const donnees = await window.copiloteAppeler(@json(route('agent.clients.copilote.coherence')), {
+            age_calcule: age,
+            profession: profession || null,
+            ratio_depot_revenu: ratio,
+            piece_expiree: pieceExpiree,
+        });
+
+        window.copiloteEffacer(scope, 'coherence');
+
+        if (!donnees) {
+            return;
+        }
+
+        const source = donnees.source === 'regles_php' ? 'contrôle local' : 'analyse assistée';
+        (donnees.avertissements ?? []).forEach((a) => window.copiloteAfficher(scope, a.champ, 'coherence', a.message, source, null));
+    };
+
+    window.copiloteSuggestion = async function (scope, input) {
+        window.copiloteEffacer(scope, 'suggestion', input.id);
+
+        const valeur = input.value.trim();
+        if (!valeur) {
+            return;
+        }
+
+        const donnees = await window.copiloteAppeler(@json(route('agent.clients.copilote.normalisation')), {
+            champ: input.id,
+            valeur,
+        });
+
+        window.copiloteEffacer(scope, 'suggestion', input.id);
+
+        if (donnees && donnees.suggestion && input.value.trim() === valeur) {
+            window.copiloteAfficher(scope, input.id, 'suggestion', donnees.suggestion.message, 'comptage local', {
+                libelle: 'Utiliser cette orthographe',
+                executer: () => {
+                    input.value = donnees.suggestion.valeur;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    window.copiloteCoherence(scope);
+                },
+            });
+        }
+    };
+
+    window.copiloteBlur = async function (input) {
+        const scope = input.closest('.fiche-formulaire') ?? document;
+        const id = input.id;
+        const taches = [];
+
+        if (['nom', 'prenoms', 'date_naissance'].includes(id)) {
+            taches.push(window.copiloteDoublon(scope));
+        }
+        if (['profession', 'activite_1', 'activite_2'].includes(id)) {
+            taches.push(window.copiloteSuggestion(scope, input));
+        }
+        if (['date_naissance', 'profession', 'revenus_mensuels_estimes', 'depot_especes', 'piece_identite_expiration'].includes(id)) {
+            taches.push(window.copiloteCoherence(scope));
+        }
+
+        await Promise.all(taches);
+    };
+
+    // En complétion d'un dossier existant, le profil est déjà rempli : on l'évalue une fois au chargement.
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.__clientIdActuel) {
+            document.querySelectorAll('.fiche-formulaire').forEach((scope) => window.copiloteCoherence(scope));
+        }
+    });
 </script>
 
 
 @endonce
+
 
 <div class="fiche-formulaire">
 

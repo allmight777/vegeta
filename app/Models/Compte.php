@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\Chiffre;
 use App\Casts\ChiffreIndexe;
 use App\Enums\StatutCompte;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -16,7 +17,10 @@ class Compte extends Model
 
     protected $table = 'comptes';
 
-    protected $fillable = ['client_id', 'agence_id', 'numero', 'statut', 'derniere_operation_le'];
+    protected $fillable = [
+        'client_id', 'agence_id', 'numero', 'statut', 'derniere_operation_le',
+        'gele_le', 'gele_par_agent_id', 'motif_gel', 'leve_le', 'leve_par_agent_id',
+    ];
 
     protected function casts(): array
     {
@@ -24,6 +28,9 @@ class Compte extends Model
             'numero' => ChiffreIndexe::class.':numero_idx,numero_compte',
             'statut' => StatutCompte::class,
             'derniere_operation_le' => 'datetime',
+            'gele_le' => 'datetime',
+            'leve_le' => 'datetime',
+            'motif_gel' => Chiffre::class,
         ];
     }
 
@@ -35,6 +42,16 @@ class Compte extends Model
     public function agence(): BelongsTo
     {
         return $this->belongsTo(Agence::class);
+    }
+
+    public function geleParAgent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'gele_par_agent_id');
+    }
+
+    public function leveParAgent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'leve_par_agent_id');
     }
 
     public function operations(): HasMany

@@ -1,8 +1,10 @@
 <?php
+
 // app/Mail/AlerteConformiteMail.php
 
 namespace App\Mail;
 
+use App\Services\Configuration\IdentiteSysteme;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -20,13 +22,12 @@ class AlerteConformiteMail extends Mailable implements ShouldQueue
         public string $agenceNom,
         public string $explication,
         public string $lienDashboard,
-    ) {
-    }
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[CIF-Empreinte] Alerte conformité — '.$this->typeLibelle,
+            subject: '['.IdentiteSysteme::nom().'] Alerte conformité — '.$this->typeLibelle,
         );
     }
 

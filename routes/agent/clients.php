@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Agent\Clients\ClientController;
 use App\Http\Controllers\Agent\Clients\ClientLookupController;
+use App\Http\Controllers\Agent\Clients\CopiloteSaisieController;
 use App\Http\Controllers\Agent\Clients\ImportDocumentController;
 use App\Http\Controllers\Agent\Clients\MandataireController;
 use App\Http\Controllers\Agent\Clients\NpiVerificationController;
@@ -28,6 +29,9 @@ Route::prefix('clients')->name('clients.')->group(function () {
     Route::post('/npi/verifier', [NpiVerificationController::class, 'verifier'])->name('npi.verifier');
     Route::post('/telephone/verifier', [TelephoneVerificationController::class, 'verifier'])->name('telephone.verifier');
     Route::post('/simulation-depot/verifier', [SimulationDepotMobileMonnaieController::class, 'verifier'])->name('simulation-depot.verifier');
+    Route::post('/copilote/coherence', [CopiloteSaisieController::class, 'verifierCoherence'])->name('copilote.coherence');
+    Route::post('/copilote/doublon', [CopiloteSaisieController::class, 'verifierDoublon'])->name('copilote.doublon');
+    Route::post('/copilote/normalisation', [CopiloteSaisieController::class, 'suggererNormalisation'])->name('copilote.normalisation');
 
     // -----------------------------------------------------------------
     // Routes paramétrées {client} — après les routes fixes ci-dessus

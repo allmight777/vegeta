@@ -19,7 +19,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td style="font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #2C343D;">
-                                        CIF-Empreinte
+                                        {{ $identite['nom_systeme'] }}
                                     </td>
                                     <td align="right" style="font-size: 11px; color: #6B7280;">
                                         Notification automatique
@@ -101,7 +101,7 @@
                 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; margin-top: 16px;">
                     <tr>
                         <td align="center" style="font-size: 11px; color: #9CA3AF;">
-                            CIF-Empreinte — Plateforme de gestion des accès
+                            {{ $identite['nom_systeme'] }} — Plateforme de gestion des accès
                         </td>
                     </tr>
                 </table>

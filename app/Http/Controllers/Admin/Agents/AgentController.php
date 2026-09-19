@@ -42,11 +42,15 @@ class AgentController extends Controller
             ->when($request->filled('agence_id'), fn ($q) => $q->where('agence_id', $request->integer('agence_id')))
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->string('role')))
             ->when($recherche !== '', function ($query) use ($recherche) {
-                $query->where(function ($query) use ($recherche) {
-                    $query->where('nom', 'like', "%{$recherche}%")
-                        ->orWhere('matricule', 'like', "%{$recherche}%")
-                        ->orWhere('email', 'like', "%{$recherche}%");
-                });
+                // matricule et e-mail sont chiffrés : pas de LIKE possible en SQL. On filtre en
+                // PHP (casse ignorée, identique sur SQLite/PostgreSQL/MySQL) sur les agents déjà
+                // limités au périmètre de l'admin, puis on restreint la requête par identifiants.
+                $aiguille = mb_strtolower($recherche);
+                $ids = (clone $query)->get()
+                    ->filter(fn (Agent $agent) => str_contains(mb_strtolower($agent->nom.' '.$agent->matricule.' '.$agent->email), $aiguille))
+                    ->pluck('id');
+
+                $query->whereIn('id', $ids);
             })
             ->orderBy('nom')
             ->paginate(20)

@@ -83,6 +83,11 @@ class OutilRechercheDocumentaire implements OutilAssistantIa
             ->values()
             ->all();
 
+        // Mesure d'usage affichée à l'administrateur (16_PROMPT §4.2) : compteur simple, sans table.
+        if ($resultats !== []) {
+            DocumentIa::whereIn('id', array_column($resultats, 'document_id'))->increment('nombre_utilisations');
+        }
+
         return ['resultats' => $resultats];
     }
 

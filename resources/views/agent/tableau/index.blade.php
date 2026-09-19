@@ -1886,7 +1886,7 @@
     <div class="dashboard-footer">
 
         <span>
-            CIF-Empreinte — Tableau de bord agent
+            {{ $identite['nom_systeme'] }} — Tableau de bord agent
         </span>
 
 

@@ -7,6 +7,7 @@ use App\Enums\RoleAgent;
 use App\Enums\StatutAlerte;
 use App\Enums\TypeAlerte;
 use App\Mail\AlerteConformiteMail;
+use App\Models\Agence;
 use App\Models\Agent;
 use App\Models\Alerte;
 use App\Models\Client;
@@ -118,6 +119,8 @@ class DetecteurIncoherenceDepotSimule
             return;
         }
 
+        $agence = Agence::find($client->agence_creation_id);
+
         $responsables = Agent::where('agence_id', $client->agence_creation_id)
             ->where('role', RoleAgent::ResponsableAgence)
             ->whereNotNull('email_idx')
@@ -125,7 +128,13 @@ class DetecteurIncoherenceDepotSimule
 
         foreach ($responsables as $responsable) {
             if (filled($responsable->email)) {
-                Mail::to($responsable->email)->queue(new AlerteConformiteMail($alerte));
+                Mail::to($responsable->email)->queue(new AlerteConformiteMail(
+                    gravite: $alerte->gravite->value,
+                    typeLibelle: $alerte->type->libelle(),
+                    agenceNom: $agence?->nom ?? '—',
+                    explication: (string) $alerte->explication_texte,
+                    lienDashboard: route('responsable.tableau-de-bord.index'),
+                ));
             }
         }
     }

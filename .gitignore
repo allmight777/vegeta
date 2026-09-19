@@ -22,3 +22,5 @@ yarn-error.log
 /.vscode
 /.zed
 identifiants_demo.txt
+/public/identite/*
+!/public/identite/.gitkeep

@@ -13,7 +13,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>
-        {{ config('app.name', 'CIF-Empreinte') }}
+        {{ $identite['nom_systeme'] }}
         — Administration — @yield('titre', '')
     </title>
 
@@ -42,8 +42,6 @@
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     >
-
-    <link rel="shortcut icon" href="{{ asset('images/fececam.jpg') }}" type="image/x-icon">
 
     <style>
 
@@ -1609,6 +1607,8 @@
 
     </style>
 
+    @include('partials.identite-style', ['espace' => 'admin'])
+
 </head>
 
 
@@ -1632,14 +1632,14 @@
             >
 
                 <div class="admin-brand-icon">
-                    CIF
+                    @if ($identite['logo_principal_url'])<img src="{{ $identite['logo_principal_url'] }}" alt="" class="marque-logo">@else CIF @endif
                 </div>
 
 
                 <div class="admin-brand-text">
 
                     <span class="admin-brand-title">
-                        CIF-Empreinte
+                        {{ $identite['nom_systeme'] }}
                     </span>
 
                     <span class="admin-brand-subtitle">
@@ -1866,6 +1866,15 @@
                 </a>
 
 
+                <a
+                    href="{{ route('admin.configuration.index') }}"
+                    class="sidebar-link {{ request()->routeIs('admin.configuration.*') ? 'active' : '' }}"
+                >
+                    <i class="fa-solid fa-palette"></i>
+                    <span>Configuration</span>
+                </a>
+
+
 
 
           {{--
@@ -1937,7 +1946,7 @@
 
                         <div class="admin-page-subtitle">
 
-                            @yield('sous-titre', 'Pilotage et supervision de la plateforme CIF-Empreinte')
+                            @yield('sous-titre', 'Pilotage et supervision de la plateforme '.$identite['nom_systeme'])
 
                         </div>
 

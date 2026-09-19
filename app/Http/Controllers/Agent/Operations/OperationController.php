@@ -1,14 +1,15 @@
 <?php
+
 // app/Http/Controllers/Agent/Operations/OperationController.php
 
 namespace App\Http\Controllers\Agent\Operations;
 
 use App\Enums\CanalOperation;
+use App\Enums\StatutCompte;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Agent\Operations\CreerOperationRequest;
 use App\Models\Compte;
 use App\Models\Operation;
-use App\Models\RegleDetection;
 use App\Services\Audit\Consignateur;
 use App\Services\Contexte\ContexteReseau;
 use App\Services\Detection\DetecteurFractionnement;
@@ -81,7 +82,17 @@ class OperationController extends Controller
             }
         }
 
-        // 2. Contrôle de conformité (existant)
+        // 2. Compte gelé — décision tracée d'un responsable, refus immédiat sans détail
+        //    de motif transmis au caissier (Loi art. 89 à 91 : gel immédiat, sans informer
+        //    le titulaire ; le caissier n'a pas à connaître la raison du gel).
+        if ($compte->statut === StatutCompte::Gele) {
+            Consignateur::enregistrer('agent', $agent->id, 'operation_refusee_compte_gele', 'compte', $compte->id);
+
+            return redirect()->route('agent.operations.creer')
+                ->with('statut', 'Opération en attente de validation par le service conformité. Référence : OP-'.Str::upper(Str::random(8)));
+        }
+
+        // 3. Contrôle de conformité (existant)
         if (! $agent->can('peutValiderOperation', $client)) {
             Consignateur::enregistrer('agent', $agent->id, 'tentative_operation_refusee', 'compte', $compte->id);
 
@@ -89,7 +100,7 @@ class OperationController extends Controller
                 ->with('statut', 'Opération en attente de validation par le service conformité. Référence : OP-'.Str::upper(Str::random(8)));
         }
 
-        // 3. Enregistrement de l'opération
+        // 4. Enregistrement de l'opération
         $operation = Operation::create([
             'compte_id' => $compte->id,
             'agence_id' => $agent->agence_id,
@@ -102,10 +113,10 @@ class OperationController extends Controller
             'canal' => CanalOperation::Guichet,
         ]);
 
-        // 4. Détection de fractionnement intra-agence (existant)
+        // 5. Détection de fractionnement intra-agence (existant)
         $detecteur->analyserApresOperation($operation->fresh(['compte']));
 
-        // 5. NOUVEAU : contrôle du cumul inter-agences sur la journée
+        // 6. Contrôle du cumul inter-agences sur la journée
         //    Le caissier n'est JAMAIS notifié — seul le responsable d'agence
         //    de l'agence de saisie reçoit un e-mail + une alerte dans son espace.
         if ($donnees['mode_paiement'] === 'especes') {
@@ -113,7 +124,7 @@ class OperationController extends Controller
         }
 
         $compte->update([
-            'statut' => 'actif',
+            'statut' => $compte->statut === StatutCompte::Dormant ? StatutCompte::Actif : $compte->statut,
             'derniere_operation_le' => $operation->effectuee_le,
         ]);
 

@@ -1977,11 +1977,7 @@
                         </div>
 
 
-                        <p class="resp-alert-text">
-
-                            {{ $alerte->explication_texte }}
-
-                        </p>
+                        <x-expliquer :texte="$alerte->explication_texte" apercu />
 
 
                         @if (in_array($alerte->type->value, ['filtrage_sanction', 'filtrage_ppe']))
@@ -2095,11 +2091,7 @@
                     </div>
 
 
-                    <p class="resp-alert-text">
-
-                        {{ $alerte->explication_texte }}
-
-                    </p>
+                    <x-expliquer :texte="$alerte->explication_texte" apercu />
 
 
                     @if (($alerte->faits['identite_id'] ?? null) !== null)
@@ -2346,7 +2338,7 @@
     <div class="resp-footer">
 
         <span>
-            CIF-Empreinte — Tableau de bord conformité
+            {{ $identite['nom_systeme'] }} — Tableau de bord conformité
         </span>
 
 

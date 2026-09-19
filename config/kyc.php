@@ -31,4 +31,30 @@ return [
     // l'équipe selon la fréquence réelle de coupure sur le terrain.
     'npi_tentatives_max' => env('KYC_NPI_TENTATIVES_MAX', 20),
 
+    // Copilote de saisie (12_PROMPT_IA_INTEGREE_PROFONDE §4) — seuils heuristiques de
+    // démonstration, jamais une valeur réglementaire (CLAUDE.md §3 : aucun seuil codé en
+    // dur sans `source`). À calibrer avec les mentors métier avant toute mise en
+    // production réelle.
+    'copilote' => [
+        // Âge en dessous duquel une profession "retraité(e)" déclarée est jugée
+        // incohérente (retraite précoce plausible à partir de cet âge, pas avant).
+        'age_min_retraite' => env('KYC_COPILOTE_AGE_MIN_RETRAITE', 50),
+
+        // Ratio dépôt initial / revenu mensuel déclaré à partir duquel le copilote
+        // avertit (origine des fonds, Loi art. 17 i) — 20x un revenu mensuel correspond
+        // à un peu moins de deux ans de revenus déposés en une fois.
+        'ratio_depot_revenu_alerte' => env('KYC_COPILOTE_RATIO_DEPOT_REVENU_ALERTE', 20),
+
+        // Similarité de nom (Dice sur empreinte) à partir de laquelle un dossier existant du
+        // réseau est signalé comme doublon probable pendant la saisie. Hypothèse de
+        // démonstration : plus permissif que le rapprochement d'identité (identite.php) car
+        // ce n'est qu'un avertissement non bloquant.
+        'doublon_seuil_nom' => env('KYC_COPILOTE_DOUBLON_SEUIL_NOM', 0.75),
+
+        // Nombre minimal de dossiers utilisant une orthographe pour la proposer comme norme.
+        'normalisation_min_dossiers' => env('KYC_COPILOTE_NORMALISATION_MIN_DOSSIERS', 2),
+
+        'source' => 'demo',
+    ],
+
 ];

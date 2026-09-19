@@ -6,6 +6,7 @@ use App\Contracts\OutilAssistantIa;
 use App\Models\Admin;
 use App\Models\Agent;
 use App\Services\Assistance\BaseConnaissances;
+use App\Services\Configuration\IdentiteSysteme;
 
 /**
  * Enrobe la base de connaissances produit existante (lexique, guides d'écran —
@@ -23,7 +24,7 @@ class OutilBaseConnaissancesProduit implements OutilAssistantIa
 
     public function description(): string
     {
-        return "Cherche dans le lexique produit et les guides d'écran de CIF-Empreinte.";
+        return "Cherche dans le lexique produit et les guides d'écran de ".IdentiteSysteme::nom().'.';
     }
 
     public function schemaParametres(): array

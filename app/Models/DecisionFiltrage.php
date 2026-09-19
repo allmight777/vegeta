@@ -17,7 +17,7 @@ class DecisionFiltrage extends Model
     protected $table = 'decisions_filtrage';
 
     protected $fillable = [
-        'cle_decision', 'identite_id', 'portee', 'source_liste', 'version_liste',
+        'cle_decision', 'identite_id', 'entree_liste_id', 'portee', 'source_liste', 'version_liste',
         'statut', 'motif_code', 'motif_detail',
         'decide_par_agent_id', 'decide_le', 'expire_le',
         'applications', 'derniere_application_le',

@@ -6,7 +6,10 @@ use App\Contracts\ConnecteurSystemeExistant;
 use App\Contracts\DetecteurConnectivite;
 use App\Contracts\VerificateurNpi;
 use App\Models\Client;
+use App\Models\ConfigurationSysteme;
 use App\Models\Signataire;
+use App\Policies\ConfigurationSystemePolicy;
+use App\Services\Configuration\IdentiteSysteme;
 use App\Services\Kyc\ConnecteurApiCoreBanking;
 use App\Services\Kyc\ConnecteurImportLocal;
 use App\Services\Kyc\VerificateurNpiApiReel;
@@ -15,7 +18,9 @@ use App\Services\Reseau\DetecteurConnectiviteHttp;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,6 +54,12 @@ class AppServiceProvider extends ServiceProvider
             'client' => Client::class,
             'signataire' => Signataire::class,
         ]);
+
+        Gate::policy(ConfigurationSysteme::class, ConfigurationSystemePolicy::class);
+
+        // Identité visuelle (nom, logos, couleurs) injectée une fois dans chaque vue ;
+        // lecture mémoïsée + cache, avec repli sur les valeurs d'origine.
+        View::composer('*', fn ($vue) => $vue->with('identite', IdentiteSysteme::courante()));
 
         // 5 tentatives / minute par e-mail ou matricule + IP (CLAUDE.md §7 sécurité).
         RateLimiter::for('connexion', function ($request) {

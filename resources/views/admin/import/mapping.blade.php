@@ -4,7 +4,7 @@
 
 @section('contenu')
     <p class="mb-4 text-sm text-gray-500">
-        Aperçu des {{ count($lignes) }} premières lignes. Choisissez à quel champ CIF-Empreinte correspond
+        Aperçu des {{ count($lignes) }} premières lignes. Choisissez à quel champ {{ $identite['nom_systeme'] }} correspond
         chaque colonne du fichier — colonne laissée sur « — » : ignorée.
     </p>
 

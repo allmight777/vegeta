@@ -13,7 +13,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>
-        {{ config('app.name', 'CIF-Empreinte') }}
+        {{ $identite['nom_systeme'] }}
         — @yield('titre', "Espace responsable d'agence")
     </title>
 
@@ -26,8 +26,6 @@
         rel="preconnect"
         href="https://fonts.googleapis.com"
     >
-
-      <link rel="shortcut icon" href="{{ asset('images/fececam.jpg') }}" type="image/x-icon">
 
     <link
         rel="preconnect"
@@ -714,6 +712,8 @@
 
     </style>
 
+    @include('partials.identite-style', ['espace' => 'responsable'])
+
 </head>
 
 
@@ -731,17 +731,17 @@
             >
 
                 <div class="agent-brand-icon">
-                    CIF
+                    @if ($identite['logo_principal_url'])<img src="{{ $identite['logo_principal_url'] }}" alt="" class="marque-logo">@else CIF @endif
                 </div>
 
                 <div class="agent-brand-text">
 
                     <span class="agent-brand-title">
-                        CIF-Empreinte
+                        {{ $identite['nom_systeme'] }}
                     </span>
 
                     <span class="agent-brand-subtitle">
-                        Système d'Empreinte Biométrique
+                        {{ $identite['sous_titre'] }}
                     </span>
 
                 </div>

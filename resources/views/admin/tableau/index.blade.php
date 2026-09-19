@@ -1227,7 +1227,7 @@
 
             <p>
                 Vue d'ensemble de la configuration et de
-                l'activité de la plateforme CIF-Empreinte.
+                l'activité de la plateforme {{ $identite['nom_systeme'] }}.
             </p>
 
         </div>
@@ -1349,6 +1349,47 @@
 
     </section>
 
+
+
+    {{-- =================================================
+         RÉSUMÉ DU JOUR (outils d'agrégation, sans IA en ligne)
+    ================================================== --}}
+
+    <style>
+        .resume-jour { margin-bottom: 20px; }
+        .resume-jour ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+        .resume-jour li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; font-size: .9rem; line-height: 1.5; color: var(--text, #1E293B); }
+        .resume-jour a { font-size: .78rem; font-weight: 700; color: var(--dark, #2C343D); text-decoration: underline; }
+    </style>
+
+    <section class="admin-card resume-jour" aria-labelledby="resume-jour-titre">
+
+        <div class="card-header">
+
+            <div class="card-title">
+
+                <h3 id="resume-jour-titre">Résumé du jour</h3>
+
+                <span>Synthèse de l'état du système, calculée localement</span>
+
+            </div>
+
+            <span class="card-tag">{{ now()->translatedFormat('d/m/Y') }}</span>
+
+        </div>
+
+        <ul>
+            @foreach ($resumeDuJour as $ligne)
+                <li>
+                    <span>{{ $ligne['texte'] }}</span>
+                    @if ($ligne['lien'])
+                        <a href="{{ $ligne['lien'] }}">{{ $ligne['libelle_lien'] }} →</a>
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+
+    </section>
 
 
     {{-- =================================================
@@ -1539,7 +1580,7 @@
     <div class="admin-footer">
 
         <span>
-            CIF-Empreinte — Console d'administration
+            {{ $identite['nom_systeme'] }} — Console d'administration
         </span>
 
 

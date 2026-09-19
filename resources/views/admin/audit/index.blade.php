@@ -2,7 +2,7 @@
 
 
 
-@section('sous-titre', 'Traçabilité de toutes les actions effectuées sur la plateforme CIF-Empreinte.')
+@section('sous-titre', 'Traçabilité de toutes les actions effectuées sur la plateforme '.$identite['nom_systeme'].'.')
 
 
 @section('contenu')

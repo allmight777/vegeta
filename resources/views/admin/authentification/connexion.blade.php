@@ -8,7 +8,7 @@ $errors = $errors ?? null;
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>{{ config('app.name', 'CIF-Empreinte') }} — Connexion administration</title>
+    <title>{{ $identite['nom_systeme'] }} — Connexion administration</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1150,6 +1150,7 @@ $errors = $errors ?? null;
             }
         }
     </style>
+    @include('partials.identite-style', ['espace' => 'connexion'])
 </head>
 
 <body>
@@ -1200,7 +1201,7 @@ $errors = $errors ?? null;
         <section class="banner-section">
 
             <img
-                src="{{ asset('images/fececam.jpg') }}"
+                src="{{ $identite['logo_connexion_url'] }}"
                 alt="Fececam"
                 class="banner-bg-img"
             />
@@ -1227,7 +1228,7 @@ $errors = $errors ?? null;
                 <p class="desc">
                     Connectez-vous pour gérer les agents, superviser
                     les enregistrements biométriques et administrer
-                    la plateforme CIF-Empreinte.
+                    la plateforme {{ $identite['nom_systeme'] }}.
                 </p>
 
 
@@ -1288,7 +1289,7 @@ $errors = $errors ?? null;
 
                 <!-- IMAGE -->
                 <img
-                    src="{{ asset('images/fececam.jpg') }}"
+                    src="{{ $identite['logo_connexion_url'] }}"
                     alt="Biométrie"
                     class="form-blob-img"
                 />
@@ -1454,7 +1455,7 @@ $errors = $errors ?? null;
 
         <div>
 
-            <strong>CIF-Empreinte</strong>
+            <strong>{{ $identite['nom_systeme'] }}</strong>
             — Plateforme de Gestion des Accès
 
         </div>

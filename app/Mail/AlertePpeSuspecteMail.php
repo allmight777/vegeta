@@ -1,8 +1,10 @@
 <?php
+
 // app/Mail/AlertePpeSuspecteMail.php
 
 namespace App\Mail;
 
+use App\Services\Configuration\IdentiteSysteme;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -23,13 +25,12 @@ class AlertePpeSuspecteMail extends Mailable implements ShouldQueue
         public string $contexte,
         public array $correspondances,
         public string $lienFiltrage,
-    ) {
-    }
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[CIF-Empreinte] Alerte PPE — nouveau client ou signataire à vérifier',
+            subject: '['.IdentiteSysteme::nom().'] Alerte PPE — nouveau client ou signataire à vérifier',
         );
     }
 

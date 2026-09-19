@@ -3,6 +3,12 @@
 @php
     $typeSaisie = $definition['type_saisie'] ?? 'text';
     $saisissable = $definition['saisissable'] ?? true;
+    // Copilote de saisie (16_PROMPT §2) : contrôles déclenchés au blur de ces champs seulement.
+    $copilote = in_array($id, [
+        'nom', 'prenoms', 'date_naissance', 'profession', 'activite_1', 'activite_2',
+        'revenus_mensuels_estimes', 'depot_especes', 'piece_identite_expiration',
+    ], true);
+    $attributsCopilote = $copilote ? 'x-data x-on:blur=window.copiloteBlur($event.target)' : '';
 @endphp
 
 <div class="champ-fiche {{ $manquant ? 'champ-manquant' : '' }}">
@@ -49,12 +55,17 @@
         </div>
     @elseif ($typeSaisie === 'date')
         <input type="date" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}"
-            class="champ-fiche-input" @disabled(!$saisissable)>
+            class="champ-fiche-input" @disabled(!$saisissable) {!! $attributsCopilote !!}>
     @elseif ($typeSaisie === 'number')
         <input type="number" step="0.01" name="{{ $name }}" id="{{ $id }}"
-            value="{{ $value }}" class="champ-fiche-input" @disabled(!$saisissable)>
+            value="{{ $value }}" class="champ-fiche-input" @disabled(!$saisissable) {!! $attributsCopilote !!}>
     @else
         <input type="text" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}"
-            class="champ-fiche-input" @disabled(!$saisissable)>
+            class="champ-fiche-input" @disabled(!$saisissable) {!! $attributsCopilote !!}>
+    @endif
+
+    @if ($copilote)
+        {{-- Avertissements du copilote (doublon, incohérence, suggestion) : vide et masqué tant qu'il n'y a rien à dire. --}}
+        <div class="champ-copilote" data-copilote-cible="{{ $id }}" role="status" aria-live="polite"></div>
     @endif
 </div>

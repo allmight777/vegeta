@@ -395,6 +395,118 @@
 
 
     /* =========================================================
+       CAS SIMILAIRES (mémoire de décisions)
+    ========================================================= */
+
+    .cas-similaires {
+
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 8px;
+
+        padding: 9px 12px;
+
+        margin-top: 4px;
+
+        border-radius: 10px;
+
+        background: var(--green-soft);
+
+        border: 1px solid rgba(48, 195, 26, 0.22);
+
+        color: #1B7A0F;
+
+        font-size: 0.68rem;
+
+        font-weight: 500;
+
+        line-height: 1.5;
+    }
+
+
+    .cas-similaires i {
+
+        color: var(--green);
+
+        font-size: 0.72rem;
+
+        margin-top: 1px;
+
+        flex-shrink: 0;
+    }
+
+
+    /* =========================================================
+       SUGGESTION IA DE MOTIF
+    ========================================================= */
+
+    .motif-suggestion {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        padding: 9px 12px;
+
+        border-radius: 10px;
+
+        background: #F5F3FF;
+
+        border: 1px solid rgba(124, 58, 237, 0.22);
+
+        color: #6D28D9;
+
+        font-size: 0.68rem;
+
+        font-weight: 500;
+
+        line-height: 1.5;
+    }
+
+
+    .motif-suggestion i {
+
+        color: #7C3AED;
+
+        font-size: 0.72rem;
+
+        flex-shrink: 0;
+    }
+
+
+    .motif-suggestion button {
+
+        border: none;
+
+        background: #7C3AED;
+
+        color: #FFFFFF;
+
+        font-family: inherit;
+
+        font-size: 0.64rem;
+
+        font-weight: 800;
+
+        padding: 4px 9px;
+
+        border-radius: 999px;
+
+        cursor: pointer;
+    }
+
+
+    .motif-suggestion button:hover {
+
+        background: #6D28D9;
+    }
+
+
+    /* =========================================================
        BLOC CONTEXTE SIGNATAIRE
     ========================================================= */
 
@@ -1149,6 +1261,8 @@
                     // Contexte signataire (personne morale parente + rôle)
                     $personneMoraleParente = $estSignataire ? $cible->personneMorale : null;
                     $roleSignataire = $estSignataire && $cible->role ? $cible->role->libelle() : null;
+
+                    $similaires = $casSimilaires[$resultat->id] ?? ['total' => 0, 'parMotif' => []];
                 @endphp
 
 
@@ -1232,6 +1346,44 @@
 
 
                                 </div>
+
+
+
+                                {{-- EXPLICATION À LA DEMANDE (gabarit déterministe, sans IA en ligne) --}}
+
+                                <x-expliquer :texte="app(\App\Services\Explication\GenerateurExplication::class)->pourFiltrage($cible, $resultat->entreeListe, (float) $resultat->score_similarite)" />
+
+
+                                {{-- CAS SIMILAIRES DÉJÀ TRANCHÉS (mémoire de décisions, sans IA) --}}
+
+                                @if ($similaires['total'] > 0)
+
+                                    <div class="cas-similaires">
+
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+
+                                        <span>
+                                            <strong>{{ $similaires['total'] }}</strong>
+                                            cas similaire{{ $similaires['total'] > 1 ? 's' : '' }} déjà tranché{{ $similaires['total'] > 1 ? 's' : '' }} dans votre réseau
+                                            — motif dominant :
+                                            <strong>{{ $similaires['parMotif'][0]['motif']->libelle() }}</strong>
+                                            ({{ $similaires['parMotif'][0]['nombre'] }})
+                                        </span>
+
+                                    </div>
+
+                                @else
+
+                                    {{-- Jamais de bloc vide : l'absence de précédent est dite explicitement. --}}
+                                    <div class="cas-similaires" style="background: var(--bg, #F8FAFC); border-color: #E7EBEF; color: #64748B;">
+
+                                        <i class="fa-solid fa-clock-rotate-left" style="color: #94A3B8;"></i>
+
+                                        <span>Aucun cas similaire tranché pour l'instant dans votre réseau.</span>
+
+                                    </div>
+
+                                @endif
 
 
 
@@ -1322,7 +1474,7 @@
 
                     {{-- DÉCISION --}}
 
-                    <div class="match-decision" x-data="{ motif: '' }">
+                    <div class="match-decision" x-data="{ motif: '', suggestion: null }">
 
 
                         <div class="decision-title">
@@ -1363,7 +1515,39 @@
                                 class="decision-textarea"
                                 placeholder="Précisez le motif (obligatoire pour « Autre »)"
                                 form="decision-{{ $resultat->id }}"
+                                @blur="
+                                    suggestion = null;
+                                    const texte = $event.target.value.trim();
+                                    if (texte.length < 10) return;
+                                    fetch('{{ route('responsable.filtrage.suggerer-motif', $resultat) }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        },
+                                        body: JSON.stringify({ texte: texte }),
+                                    })
+                                        .then(r => r.ok ? r.json() : null)
+                                        .then(donnees => { suggestion = (donnees && donnees.motif_code) ? donnees : null; })
+                                        .catch(() => { suggestion = null; });
+                                "
                             ></textarea>
+
+
+                            <div x-show="suggestion" x-cloak class="motif-suggestion">
+
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                                <span>
+                                    Ça ressemble à « <strong x-text="suggestion?.libelle"></strong> » —
+                                </span>
+
+                                <button type="button" @click="motif = suggestion.motif_code; suggestion = null;">
+                                    Utiliser ce motif
+                                </button>
+
+                            </div>
 
                         </div>
 

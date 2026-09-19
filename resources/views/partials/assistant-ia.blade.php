@@ -1079,7 +1079,7 @@
             <div class="assistant-ia-identite">
 
                 <span class="assistant-ia-nom">
-                    Assistant CIF-Empreinte
+                    Assistant {{ $identite['nom_systeme'] }}
                 </span>
 
 
@@ -1124,7 +1124,7 @@
 
             <div class="assistant-ia-message assistant">
 
-                Bonjour 👋 Je suis l'assistant CIF-Empreinte.
+                Bonjour 👋 Je suis l'assistant {{ $identite['nom_systeme'] }}.
                 Posez-moi une question sur un champ, un concept
                 réglementaire ou l'utilisation de l'application.
 

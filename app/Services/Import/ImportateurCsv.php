@@ -197,6 +197,13 @@ class ImportateurCsv
 
         $client = Client::create([
             'reseau_id' => $agence->reseau_id,
+            // Sans cette colonne, un client tout juste importé (pas encore de compte
+            // ouvert) est invisible à `Client::scopeDeLAgence()` — donc absent de la
+            // file de filtrage et de la liste clients du responsable, alors même
+            // qu'une correspondance sanctions/PPE peut déjà avoir été détectée à
+            // l'import (13_PROMPT_IA_VISIBLE_DANS_INTERFACE §2.3, trouvé en
+            // parcourant l'écran, pas par un test).
+            'agence_creation_id' => $agence->id,
             'type' => TypeClient::PersonnePhysique,
             'nature_relation' => NatureRelation::TitulaireCompte,
             'source_creation' => SourceCreation::ImportCsv,

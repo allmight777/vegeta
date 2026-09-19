@@ -1,4 +1,5 @@
 <?php
+
 // database/migrations/2026_09_18_000001_ajouter_colonnes_entrees_liste.php
 
 use Illuminate\Database\Migrations\Migration;

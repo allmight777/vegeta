@@ -5,8 +5,10 @@ namespace App\Services\Filtrage;
 use App\Mail\AlertePpeSuspecteMail;
 use App\Models\Agent;
 use App\Models\Client;
+use App\Models\EntreeListe;
 use App\Models\ResultatFiltrage;
 use App\Models\Signataire;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -84,13 +86,13 @@ class AlertesPpeTempsReel
      * ResultatFiltrage dont le score ≥ seuil et dont la catégorie de liste
      * correspond à PPE ou Sanctions.
      */
-    private function resultatsSuspects(Client $client): \Illuminate\Support\Collection
+    private function resultatsSuspects(Client $client): Collection
     {
         // IDs des entrées de liste PPE ou Sanctions
-        $entreeIds = \App\Models\EntreeListe::query()
+        $entreeIds = EntreeListe::query()
             ->where(function ($q) {
-                $q->where('categorie', 'like', '%PPE%')
-                    ->orWhere('categorie', 'like', '%Sanction%');
+                $q->whereRaw('lower(categorie) like ?', ['%ppe%'])
+                    ->orWhereRaw('lower(categorie) like ?', ['%sanction%']);
             })
             ->pluck('id')
             ->all();
@@ -129,7 +131,7 @@ class AlertesPpeTempsReel
     /**
      * Récupère tous les responsables actifs avec email pour une agence.
      */
-    private function responsablesDeLAgence(?string $agenceId): \Illuminate\Support\Collection
+    private function responsablesDeLAgence(?string $agenceId): Collection
     {
         if ($agenceId === null) {
             return collect();

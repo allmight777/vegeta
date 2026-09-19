@@ -56,7 +56,7 @@ class EcransAdminTest extends TestCase
     {
         Consignateur::enregistrer('admin', 1, 'connexion');
 
-        $reponse = $this->actingAs($this->admin(), 'admin')->post(route('admin.journal-audit.verifier-chaine'));
+        $reponse = $this->actingAs($this->admin(), 'admin')->followingRedirects()->post(route('admin.journal-audit.verifier-chaine'));
 
         $reponse->assertOk();
         $reponse->assertSee('Chaîne intègre');

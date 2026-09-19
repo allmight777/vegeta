@@ -1,8 +1,10 @@
 <?php
+
 // app/Mail/RecapPpeJourMail.php
 
 namespace App\Mail;
 
+use App\Services\Configuration\IdentiteSysteme;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -26,13 +28,12 @@ class RecapPpeJourMail extends Mailable implements ShouldQueue
         public array $signatairesSuspects,
         public int $enAttente,
         public string $lienFiltrage,
-    ) {
-    }
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[CIF-Empreinte] Récapitulatif quotidien PPE — '.$this->date,
+            subject: '['.IdentiteSysteme::nom().'] Récapitulatif quotidien PPE — '.$this->date,
         );
     }
 

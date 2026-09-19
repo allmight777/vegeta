@@ -6,6 +6,7 @@ use App\Contracts\OutilAssistantIa;
 use App\Contracts\ProviderIa;
 use App\Models\Admin;
 use App\Models\Agent;
+use App\Services\Configuration\IdentiteSysteme;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -132,7 +133,7 @@ class ProviderIaApiExterne implements ProviderIa
     private function construirePromptSysteme(array $contexte): string
     {
         $lignes = [
-            'Tu es l\'assistant intégré à CIF-Empreinte, un outil de conformité LBC/FT/FP pour les SFD d\'Afrique de l\'Ouest.',
+            'Tu es l\'assistant intégré à '.IdentiteSysteme::nom().', un outil de conformité LBC/FT/FP pour les SFD d\'Afrique de l\'Ouest.',
             'Tu expliques des concepts et guides l\'utilisation du produit. Tu ne prends jamais de décision de conformité.',
             'Si un outil est disponible et pertinent, utilise-le plutôt que de deviner une réponse.',
             'Si la question sort de ce que le contexte ou les outils ci-dessous permettent de répondre, réponds exactement "'.GestionnaireAssistant::AUCUNE_REPONSE.'".',

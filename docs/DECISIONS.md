@@ -565,3 +565,259 @@ Banikoara, tableaux vierges — aucune donnée personnelle sur les photos). CLAU
 - **Écarté après question à l'utilisateur : reproduire toutes les colonnes KYC du « brouillard des
   ouvertures »** (profession, pièce d'identité, téléphone, adresse, etc., visibles sur les photos).
   L'utilisateur a choisi de garder la version résumée actuelle (4 colonnes) plutôt que ~14.
+
+## 21. `12_PROMPT_IA_INTEGREE_PROFONDE` — étape 0 : écarts trouvés par l'audit, avant tout code IA
+
+`docs/ARCHITECTURE_ACTUELLE.md` (audit d'architecture basé sur une lecture réelle du code, requis
+avant toute implémentation par le prompt) a fait remonter quatre constats qui dépassent le sujet
+IA. Décisions prises pour chacun, validées avec l'utilisateur :
+
+- **Gel de compte — angle mort corrigé, pas assumé.** L'audit a confirmé qu'aucune décision
+  humaine de gel n'existait : seul un refus automatique d'opération par policy (`ClientPolicy::
+  peutValiderOperation`), jamais un geste tracé d'un responsable (Loi art. 89 à 91 : « blocage
+  conservatoire automatique sur correspondance forte, confirmation humaine tracée »). Un écran
+  minimal a été ajouté plutôt que documenté comme palier suivant : `App\Enums\StatutCompte::Gele`,
+  colonnes `comptes.gele_le`/`gele_par_agent_id`/`motif_gel`/`leve_le`/`leve_par_agent_id`
+  (migration additive, `motif_gel` chiffré comme `resultats_filtrage.motif_ecart`),
+  `Responsable\Comptes\CompteController::geler()/lever()` (agence du compte = agence du
+  responsable, sinon 403), motif obligatoire (min 10 caractères) pour que le gel reste une
+  décision, pas une case cochée. **Bug corrigé au passage, trouvé en implémentant ceci** :
+  `OperationController::stocker()` réécrivait inconditionnellement `comptes.statut = 'actif'`
+  après chaque opération réussie (logique de réactivation d'un compte dormant) — un compte gelé
+  aurait donc été dégelé silencieusement à la première opération suivante si le blocage n'avait
+  pas déjà arrêté la requête avant. Le blocage sur compte gelé est vérifié en premier (avant le
+  contrôle KYC existant) et journalisé sous une action distincte
+  (`operation_refusee_compte_gele`) — le caissier reçoit le même message neutre que les autres
+  refus (« en attente de validation par le service conformité »), jamais le mot « gel » ni le
+  motif (art. 63). Testé (`tests/Feature/Responsable/GelCompteTest.php`), y compris l'isolation
+  inter-agences (un responsable d'une autre agence ne peut pas geler) et la non-divulgation au
+  caissier.
+- **Route `admin.agents.envoyer-pdf` dupliquée — corrigée.** `Route::post('/agents/envoyer-pdf', ...)`
+  était déclarée à l'intérieur d'un groupe déjà préfixé `/agents`, produisant
+  `/admin/agents/agents/envoyer-pdf`. Corrigée en `Route::post('/envoyer-pdf', ...)` ; la vue
+  utilisait déjà le helper `route()`, aucune référence en dur à mettre à jour.
+- **Champs de texte libre du référentiel KYC en clair (`profession`, `employeur`, `activite_1`,
+  `activite_2`, `indication_maison`, `indication_travail`, `beneficiaire_effectif_texte`,
+  `fonction` sur signataire, `lien_parente` sur mandataire) — écart assumé, pas corrigé
+  maintenant.** Contrairement aux champs d'identité (nom, date de naissance, adresse, téléphone,
+  NPI), ces colonnes n'ont jamais eu de cast `Chiffre`/`ChiffreIndexe`. Les chiffrer rétroactivement
+  demanderait une migration de rattrapage sur des données déjà en clair (comme celle déjà faite
+  pour `telephone`, §16 ci-dessus) — risque jugé disproportionné à J-2 du gel de code pour des
+  champs qui ne sont pas des identifiants directs. **Conséquence directe sur la fonctionnalité 2
+  du prompt IA (« lecteur de texte libre ») : ces champs partiront vers le fournisseur IA externe
+  sans chiffrement au repos** — le filtre d'entrée doit donc être strict (aucun champ d'identité
+  ajouté au contexte, seulement `profession`/`activite_1`/`activite_2`/`indication_travail`) et
+  documenté comme tel dans le code de la fonctionnalité 2 le jour où elle sera construite.
+- **`entrees_liste.npi`/`.telephone`/`.prenom`/`.pays` en clair — écart assumé, pas corrigé
+  maintenant.** Incohérence réelle avec la convention « index aveugle seul pour le NPI » appliquée
+  partout ailleurs (`personnes_physiques.npi_idx`, `signataires.npi_idx`). Ces colonnes décrivent
+  des personnes listées (parfois une vraie liste ONU publique, seule donnée réelle autorisée par
+  CLAUDE.md §2.1) et pas la clientèle du SFD, donc hors du périmètre strict de CLAUDE.md §5
+  (« champ d'identité » y désigne la clientèle) — mais rester cohérent avec le reste du schéma
+  resterait la bonne pratique. Non corrigé maintenant : ajouter `npi_idx`/`telephone_idx` +
+  chiffrer les colonnes existantes exigerait une migration de rattrapage sur des données déjà
+  importées (risque de casser `ImportateurListes`/le rapprochement par `nom_idx` déjà en
+  production de démonstration), pour un gain de confidentialité marginal sur des champs
+  rarement renseignés (le format ONU ne contient pas de téléphone). À corriger après le hackathon
+  si une vraie liste PPE avec ces champs est utilisée en production.
+
+## 22. `12_PROMPT_IA_INTEGREE_PROFONDE` §6 — mémoire de décisions : comptage sans IA, IA en amont seulement
+
+Choix retenu après discussion avec l'utilisateur, qui a directement tranché l'architecture avant
+implémentation (pas une hypothèse CLAUDE.md §8, une décision produit explicite) :
+
+- **`motif_code` était déjà un enum PHP fermé** (`App\Enums\MotifDecisionFiltrage`, 7 cas), validé
+  côté serveur (`Rule::enum()`). Le regroupement des motifs est donc déjà fait par un humain au
+  moment de la décision — **aucun clustering IA n'a été construit** pour l'agréger a posteriori,
+  contrairement à ce qu'envisageait la première lecture du prompt (« l'IA sert à regrouper les
+  motifs libres en familles »).
+- **« 3 cas similaires écartés » = une requête SQL, zéro IA.**
+  `App\Services\Filtrage\MemoireDecisions::casSimilaires()` compte les `DecisionFiltrage` partageant
+  la même entrée de liste (`entree_liste_id`, colonne ajoutée par migration additive — `cle_decision`
+  entremêlait déjà identité et entrée dans un seul hash, donc impossible de la reconstituer sans
+  stocker la référence séparément), groupées par `motif_code`. Fonctionne identiquement en ligne et
+  hors connexion, sans dépendance à un quota fournisseur.
+- **L'IA n'intervient qu'à un seul endroit, en amont** : `App\Services\Filtrage\
+  SuggereurMotifDecision` suggère un `motif_code` probable à partir du texte libre tapé pour
+  « Autre », avant tout enregistrement — jamais une clôture ni un pré-remplissage silencieux (testé,
+  `MemoireDecisionsFiltrageTest`). Réutilise `SelecteurProviderIa` existant : dégrade automatiquement
+  au simulateur hors connexion/sans clé, qui ne trouve rien dans la base de connaissances pour ce
+  texte et retourne simplement `null` — aucune erreur, aucune dépendance réseau pour que la
+  fonctionnalité 3 reste démontrable si le wifi de la salle ou le quota Gemini lâchent.
+- **`motif_detail` (chiffré, en base) ne sort jamais vers le fournisseur externe.** Seul le texte
+  éphémère de la requête HTTP en cours (ce que le responsable vient de taper, avant tout
+  enregistrement) est envoyé. Garde-fou supplémentaire, plus pertinent ici que la liste
+  `App\Support\MotsInterditsConformite` (qui bloquerait « PPE »/« sanction »/« gel » — le
+  vocabulaire normal de cet écran, donc inutilisable tel quel) : le texte est comparé mot à mot
+  (normalisation façon `GenerateurEmpreinte::normaliser`) au nom de la personne listée et au nom du
+  client visé ; toute correspondance annule l'appel IA avant qu'il ne parte (testé avec un
+  fournisseur factice qui lève une exception s'il est appelé, pour prouver qu'il ne l'est jamais
+  dans ce cas).
+- **Portée réseau du comptage** : quand la décision porte une `identite_id` (rattachée à un
+  `reseau_id`), le comptage est cloisonné au réseau du responsable connecté. Les décisions sans
+  identité rattachée (portée « fiche », cas résiduel) sont incluses malgré tout, quel que soit le
+  réseau — elles ne révèlent qu'un motif codé agrégé, jamais un nom, donc rien à cloisonner
+  davantage.
+
+## 23. `13_PROMPT_IA_VISIBLE_DANS_INTERFACE` — vérification par navigateur, données de démo, bug trouvé
+
+Prompt transversal : une fonctionnalité IA non cliquable depuis le navigateur ne compte pas comme
+livrée. Appliqué à la mémoire de décisions (§22) et à l'audit des fonctionnalités déjà livrées
+(assistant, bibliothèque documentaire, escalades) — voir le tableau et le parcours de
+démonstration dans `README.md`.
+
+- **Vérification par serveur réellement démarré, pas seulement `php artisan test`.** Base SQLite
+  isolée (jamais la base MySQL "CIF" du poste de développement — trop risqué d'y lancer
+  `migrate:fresh`), `php artisan serve` réel, connexion HTTP authentifiée (formulaire de connexion,
+  cookies de session, jeton CSRF) contre les écrans réels. `chromium-cli`/Playwright indisponibles
+  dans cet environnement (pas d'accès `sudo` pour les dépendances système, téléchargement du
+  binaire Chromium trop lent/bloqué) — vérification faite par requêtes HTTP contre le serveur réel
+  et inspection du HTML rendu, pas par une capture d'écran. Documenté ici pour qu'une session
+  future équipée d'un vrai navigateur headless puisse refaire la vérification visuelle complète.
+- **Bug réel trouvé par cette vérification, pas par un test.** `App\Services\Import\
+  ImportateurCsv::rapprocherOuCreer()` ne renseignait jamais `clients.agence_creation_id` pour un
+  client nouvellement créé par import CSV. Conséquence : `Client::scopeDeLAgence()` (utilisé par
+  `Responsable\Filtrage\FiltrageController::index()` et `Responsable\Clients\ClientController`) ne
+  trouvait jamais ce client tant qu'aucun compte n'était ouvert — donc la file de filtrage du
+  responsable restait vide même quand une correspondance sanctions/PPE avait déjà été détectée à
+  l'import (cas exact du client de démonstration AHOUANDJINOU Rachidatou). Corrigé en une ligne
+  (`'agence_creation_id' => $agence->id`, même convention que `CreateurClient`) ; régression
+  couverte par un test qui échoue bien sans le correctif (vérifié par `git stash` du fichier
+  corrigé) : `tests/Feature/Filtrage/ImportCsvVisibleDansFiltrageTest.php`.
+- **Deux seeders ajoutés à la chaîne principale** (`Database\Seeders\DatabaseSeeder`, donc actifs
+  sur un simple `migrate:fresh --seed`, jamais via une commande à part) :
+  `Demo\MemoireDecisionsDemoSeeder` (3 décisions passées sur l'entrée de liste AHOUANDJINOU, motifs
+  variés, pour que l'encart « cas similaires » soit visible dès la première ouverture de l'écran
+  de filtrage — sans jamais décider la correspondance AHOUANDJINOU elle-même, qui doit rester
+  « à vérifier » pour la démonstration live) et `Demo\BibliothequeDocumentaireDemoSeeder` (un
+  document fictif explicitement marqué comme tel dans son propre contenu, poussé par le vrai
+  pipeline `TraiteurDocumentIa` — pas une ligne insérée à la main — pour que l'outil « recherche
+  documentaire » de l'assistant ait quelque chose à trouver).
+
+## 24. `12_PROMPT_IA_INTEGREE_PROFONDE` §4 — copilote de saisie : règles PHP d'abord, IA ensuite
+
+Ordre tranché par défaut (pas de réponse de l'utilisateur à temps, décision reversible prise pour
+ne pas rester bloqué — cf. le raisonnement de prudence déjà appliqué ailleurs dans ce document) :
+règles PHP déterministes d'abord, seule la couche IA (facultative) restera à ajouter plus tard si
+le temps le permet.
+
+- **Backend construit et testé ce tour-ci** : `App\Services\Kyc\DetecteurIncoherencesSaisie`
+  (3 règles : âge vs profession « retraité(e) », ratio dépôt initial/revenu déclaré, pièce
+  d'identité déjà expirée — seuils dans `config/kyc.php['copilote']`, `source = demo`, à calibrer),
+  endpoint `agent.clients.copilote.coherence`
+  (`Http\Controllers\Agent\Clients\CopiloteSaisieController`). Validation stricte : seules
+  `age_calcule`/`profession`/`ratio_depot_revenu`/`piece_expiree` sont acceptées — un nom, une
+  date brute ou un NPI envoyés seraient simplement ignorés par la validation, jamais transmis au
+  détecteur ni journalisés (testé, `CopiloteSaisieControllerTest`).
+- **Câblage Blade/JS délibérément non fait ce tour-ci.** `13_PROMPT_IA_VISIBLE_DANS_INTERFACE`
+  interdit de déclarer une fonctionnalité terminée sans l'avoir vue fonctionner dans un
+  navigateur — ce backend n'est donc PAS encore une fonctionnalité livrée au sens de ce prompt,
+  seulement sa fondation testée. Le câblage (`_champ.blade.php`/`_formulaire.blade.php`, sur le
+  patron déjà établi par `window.verifierNpi`/`verifierTelephone`) reste à faire et à vérifier par
+  navigateur avant de cocher les 5 points du §2.
+- **Suggestions contextuelles (point 2 du prompt) et alerte doublon par empreinte (point 3)** :
+  non commencées, pour ne pas livrer les trois morceaux du copilote à moitié (CLAUDE.md §9 du
+  prompt IA : « une seule fonctionnalité qui marche parfaitement en démo vaut mieux que trois
+  fragiles »). L'incohérence sémantique est la plus proche d'un backend complet, donc la première
+  à finir.
+
+
+## 2026-09-19 — Configuration de l'identité du système (14_PROMPT §2) et échecs de tests préexistants
+
+- **Couleurs par espace** : les layouts admin et caissier n'avaient aucune variable d'accent
+  propre ; `--cif-espace` (défaut = jaune d'origine, donc aucun changement visuel) colore
+  l'icône de marque et l'icône du lien actif. Dans l'espace responsable, la couleur d'espace
+  redéfinit `--cif-accent` (bleu `#2563EB` d'origine). `couleur_accent` pilote `--cif-accent`
+  partout ailleurs. `couleur_page_connexion` (défaut `#F8FAFC`) redéfinit `--bg-light` des pages
+  de connexion.
+- **Logos** : téléversés dans `public/identite/` (pas de lien `storage:link`, plus simple sous
+  Laragon/Windows), non versionnés (`.gitignore`). Logo principal absent → pastille « CIF »
+  d'origine ; logo de connexion et favicon absents → `images/fececam.jpg`. SVG contenant script,
+  gestionnaire d'événement ou `foreignObject` refusés.
+- **Périmètre non couvert** : les PDF n'affichent que le nom du système (pas les logos, dompdf
+  et images distantes). `app/Console/Commands/Demo/RejouerScenario.php` garde « CIF-Empreinte »
+  dans une description de commande (terminal développeur, hors interface).
+- **Trois échecs de tests préexistants — corrigés** : (1) `DetecteurIncoherenceDepotSimule`
+  instanciait `AlerteConformiteMail` avec l'alerte alors que le constructeur attend cinq champs
+  (vrai bug : l'e-mail au responsable ne partait jamais et la création de client échouait) ;
+  (2) `EcransAdminTest` attendait un 200 sur une route qui redirige (test corrigé avec
+  `followingRedirects()`). Suite : 198 tests verts, 2 « risky » (ci-dessous).
+- **Deux avertissements « risky »** (`AssistantVisibiliteRoleTest`, `FormulaireClientEnrichiTest`,
+  tampons de sortie non vidés) : aucun échec, cause non investiguée — à ne pas confondre avec un
+  rouge.
+
+
+## 2026-09-19 — Retour à SQLite par défaut (15_PROMPT) — remplace la « bascule MySQL » du §18
+
+- **Décision** : `DB_CONNECTION=sqlite` (`database/database.sqlite`) dans `.env`/`.env.example` ;
+  les variables MySQL/PostgreSQL restent en commentaire dans `.env.example`. Ceci **remplace**
+  l'entrée « Bascule MySQL exécutée » du §18.
+- **Raison** : réduire le risque de démonstration (plus de service MySQL à démarrer, de base à
+  créer ni d'identifiants à saisir sur la machine du jour J), conformité à la charte du concours
+  (Windows + PHP + SQLite) et à `CLAUDE.md` §4. La correction des noms d'index de plus de 64
+  caractères (contrainte MySQL) reste en place, sans effet sur SQLite.
+- **Audit des syntaxes MySQL** : aucune fonction MySQL (`DATE_FORMAT`, `NOW()`, `IFNULL`,
+  `GROUP_CONCAT`…), aucune colonne `enum`, aucun `whereJsonContains` ; les seules requêtes brutes
+  (`orderByRaw CASE`, `selectRaw count`) sont du SQL standard ; `where('faits->identite_id')`
+  passe par le Query Builder (portable). `migrate:fresh --seed` passe entièrement sur SQLite.
+- **Pièges de casse corrigés** : (1) recherche d'agents (`AgentController`) : `LIKE` sur
+  `matricule` et `email`, colonnes **chiffrées** — ne pouvait pas fonctionner, même sous MySQL ;
+  désormais filtrage en PHP, casse ignorée (`RechercheAgentsTest`). (2) Détection PPE/sanction
+  par catégorie (`AlertesPpeTempsReel`, `GenerateurRecapPpeJour`) : `LIKE` remplacé par
+  `lower(categorie) like ?`, identique sur SQLite, PostgreSQL et MySQL.
+- **Vérifié** : suite de tests verte (199 + 2 « risky » déjà connus) ; parcours HTTP réel sur
+  SQLite (admin, caissier, responsable) des écrans de liste/recherche, tableaux de bord, file de
+  filtrage, journal d'audit (vérification de chaîne), import, configuration : aucune erreur SQL.
+  Non fait : parcours dans un vrai navigateur graphique, rapports PDF téléchargés, outils de
+  comptage de l'assistant appelés en direct.
+
+
+## 2026-09-19 — Simulateur de l'assistant : échanges conversationnels (correctif, pas une fonctionnalité)
+
+- `Services\Assistance\ReconnaisseurConversation`, appelé en premier par `ProviderIaSimulateur` :
+  salutations, politesse, « qui es-tu / aide ». Normalisation propre (le `MotsCles::extraire`
+  partagé jette les mots de 2 lettres ou moins, donc « cc », « yo », « ok » disparaissaient).
+  Une salutation suivie d'une vraie question (« bonjour, quels sont les profils incomplets ? »)
+  suit le chemin normal. Réponses variées, valables hors connexion et sans clé.
+- **Piège** : le filtre de sortie du rôle caissier (Loi art. 63, `MotsInterditsConformite`) remplaçait
+  les réponses contenant « PPE »/« DOS » par le message d'escalade. Les textes destinés au caissier
+  n'en contiennent donc aucun (testé sur toutes les variantes).
+- `OutilConsulterParametreReglementaire` : sans code de règle (cas du routage par mots-clés), retrouve
+  la règle active la plus proche de la question — « quel est le seuil de déclaration ? » ne tombait
+  que sur le message générique pour responsable/admin. Le caissier n'a pas cet outil (anti-fraude).
+- **Constats non corrigés (gel)** : (a) le caissier obtient le message générique sur « combien
+  d'alertes ? » et « statistiques » (outils réservés au responsable, par conception) ; (b) l'admin
+  réseau reçoit « Précisez une agence valide » sur les outils d'agence (il n'a pas d'agence) ;
+  (c) mauvais routage possible : « qu'est-ce qu'un score de complétude ? » posé par le responsable
+  déclenche l'outil statistiques (le mot « complétude » y figure), et la base de connaissances
+  compte les mots vides (« est », « quoi », « une ») — piste : liste de mots vides dans
+  `Support\MotsCles`. Voir `docs/AMELIORATIONS_FUTURES.md`.
+
+
+## 2026-09-19 — L'IA dans les trois espaces (16_PROMPT) : câblage de l'existant
+
+- **Caissier** : trois endpoints (`copilote.coherence` existant, `copilote.doublon` et `copilote.normalisation`
+  nouveaux, dans `CopiloteSaisieController`) branchés au blur par `_champ.blade.php` /
+  `_formulaire.blade.php` (patron `verifierNpi`). DOM construit en `textContent`. Doublon : comparaison
+  d'empreinte de nom restreinte au réseau, seuil `kyc.copilote.doublon_seuil_nom` = 0,75 (source
+  `demo`, calibré sur « Kofi ADJAO » 0,85 vs homonyme « Paul ADJAHO » 0,60) ; deux dates de naissance
+  connues et différentes écartent le candidat ; la réponse ne contient que le nom de l'agence.
+  Le nom saisi part vers NOTRE serveur (les clés d'empreinte y résident), jamais vers un fournisseur IA ;
+  il n'est pas journalisé. Le contrôle de cohérence envoie aussi la profession (contrat existant de
+  l'endpoint : règle « retraité » × âge), pas de nom ni de date brute.
+- **Responsable** : mémoire de décisions et suggestion de motif étaient déjà visibles ; ajout de l'état
+  vide explicite et du composant `<x-expliquer>` (filtrage : explication `GenerateurExplication` à la
+  demande ; tableau de bord : texte déjà affiché, désormais replié à 2 lignes et dépliable). La
+  reformulation par l'IA en ligne « quand elle est disponible » n'est PAS faite : elle enverrait du
+  texte à un fournisseur pour un gain nul en démonstration (simulateur forcé).
+- **Admin** : `ResumeDuJourAdmin` compose des phrases à partir des résultats structurés des trois outils
+  d'agrégation (comptages uniquement, périmètre = réseau de l'admin). Compteur `documents_ia.nombre_utilisations`
+  (migration additive, aucune nouvelle table). Correctif au passage : « Répartition des agences »
+  affichait « Aucun réseau configuré » (le contrôleur ne passait pas `$reseaux`).
+- **Données de démonstration** : `CopiloteSaisieDemoSeeder` (6 dossiers synthétiques) ; ajoute des
+  dossiers à la liste du caissier/responsable (9 profils incomplets au lieu de 6) sans toucher à la
+  correspondance AHOUANDJINOU du scénario de filtrage.
+- **Constats hors périmètre** : (1) le layout charge Font Awesome et Google Fonts depuis des CDN
+  (contraire à CLAUDE.md §2 « zéro CDN ») : hors ligne, icônes et police disparaissent — risque de
+  démonstration à traiter (télécharger les assets en local) ; (2) les tuiles de statistiques du
+  tableau de bord admin comptent tous les réseaux, même pour un admin de réseau.

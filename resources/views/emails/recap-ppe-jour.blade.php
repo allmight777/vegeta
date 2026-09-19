@@ -15,7 +15,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td style="font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #2C343D;">
-                                        CIF-Empreinte — Récapitulatif quotidien
+                                        {{ $identite['nom_systeme'] }} — Récapitulatif quotidien
                                     </td>
                                     <td align="right" style="font-size: 11px; color: #6B7280;">
                                         {{ $date }}

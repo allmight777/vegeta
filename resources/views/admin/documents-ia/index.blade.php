@@ -945,6 +945,8 @@
 
                         <th>Visibilité</th>
 
+                        <th>Utilisation</th>
+
                         <th>Date</th>
 
                         <th>Actions</th>
@@ -1105,6 +1107,23 @@
                                     </label>
 
                                 </form>
+
+                            </td>
+
+
+                            {{-- UTILISATION (16_PROMPT §4.2) --}}
+
+                            <td data-label="Utilisation">
+
+                                <span style="font-size: 0.7rem; font-weight: 700; color: {{ $document->nombre_utilisations > 0 ? '#1B7A0F' : 'var(--muted)' }};">
+
+                                    @if ($document->nombre_utilisations > 0)
+                                        Utilisé {{ $document->nombre_utilisations }} fois
+                                    @else
+                                        Pas encore utilisé
+                                    @endif
+
+                                </span>
 
                             </td>
 
