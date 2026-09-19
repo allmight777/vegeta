@@ -42,7 +42,7 @@ class IdentiteController extends Controller
         Consignateur::enregistrer('agent', $agent->id, 'consultation_identite', 'identite', $identite->id);
 
         return view('responsable.identites.afficher', [
-            'identite' => $identite,
+            'personneConsolidee' => $identite,
             'clients' => $identite->clients()->with(['personnePhysique', 'personneMorale'])->get(),
             'comptes' => Compte::with('agence')->whereIn('client_id', $clientIds)->get(),
             'rattachements' => $identite->rattachements()

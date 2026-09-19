@@ -100,6 +100,7 @@ class AgentController extends Controller
             'reseau_id' => $estControleur ? $donnees['reseau_id'] : null,
             'nom' => $donnees['nom'],
             'matricule' => $donnees['matricule'],
+            'email' => $donnees['email'] ?? null,
             'mot_de_passe' => Hash::make($motDePasse),
             'role' => $donnees['role'],
             'civilite' => $donnees['civilite'] ?? 'non_precise',

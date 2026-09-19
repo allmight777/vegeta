@@ -899,7 +899,7 @@
                 </span>
 
 
-                @if ($identite->rapprocheeParNpi())
+                @if ($personneConsolidee->rapprocheeParNpi())
 
                     <span class="chip-dark npi">
 
@@ -947,7 +947,7 @@
         <div class="bloc-corps">
 
 
-            @if ((float) $identite->plafond_quotidien_especes > 0)
+            @if ((float) $personneConsolidee->plafond_quotidien_especes > 0)
 
                 @php
                     $classeJauge = $pourcentagePlafond >= 100
@@ -967,7 +967,7 @@
 
                     <span class="jauge-plafond">
 
-                        plafond {{ number_format((float) $identite->plafond_quotidien_especes, 0, ',', ' ') }} XOF
+                        plafond {{ number_format((float) $personneConsolidee->plafond_quotidien_especes, 0, ',', ' ') }} XOF
                         &middot; {{ $pourcentagePlafond }} %
 
                     </span>
@@ -987,8 +987,8 @@
 
                 <p class="jauge-note">
 
-                    Calculé sur : {{ $identite->base_calcul_plafond }}
-                    &middot; source {{ $identite->source_plafond->libelle() }}
+                    Calculé sur : {{ $personneConsolidee->base_calcul_plafond }}
+                    &middot; source {{ $personneConsolidee->source_plafond->libelle() }}
 
                     @if ($cumul !== null)
 

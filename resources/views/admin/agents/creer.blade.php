@@ -860,6 +860,45 @@
                 </div>
 
 
+                {{-- E-MAIL (obligatoire pour recevoir les alertes : responsable d'agence, contrôleur) --}}
+
+                <div class="champ-agent">
+
+                    <label
+                        class="champ-agent-label"
+                        for="email"
+                    >
+
+                        <i class="fa-solid fa-envelope"></i>
+
+                        E-mail
+
+                        <span class="obligatoire" id="email-obligatoire" hidden>*</span>
+
+                    </label>
+
+
+                    <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value="{{ old('email') }}"
+                        class="champ-agent-input"
+                        placeholder="Ex : responsable@institution.bj"
+                        autocomplete="off"
+                    >
+
+                    @error('email')
+                        <p style="margin:4px 0 0;font-size:.72rem;font-weight:600;color:#DC2626;">{{ $message }}</p>
+                    @enderror
+
+                    <small style="color:#64748B;font-size:.72rem;">
+                        Reçoit les alertes de conformité par e-mail. Obligatoire pour un responsable d'agence ou un contrôleur.
+                    </small>
+
+                </div>
+
+
                 {{-- CIVILITÉ --}}
 
                 <div class="champ-agent">
@@ -1046,6 +1085,9 @@
                             const role = document.getElementById('role');
                             const basculer = () => {
                                 const controleur = role.value === 'controleur_permanent';
+                                const alertes = role.value !== 'caissier';
+                                document.getElementById('email').required = alertes;
+                                document.getElementById('email-obligatoire').hidden = !alertes;
                                 document.getElementById('bloc-reseau').hidden = !controleur;
                                 document.getElementById('bloc-agence').hidden = controleur;
                                 document.getElementById('agence_id').disabled = controleur;

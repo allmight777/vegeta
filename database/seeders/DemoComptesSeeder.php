@@ -35,7 +35,7 @@ class DemoComptesSeeder extends Seeder
         $this->creerAdmin($indexAveugle, 'admin.alpha@cif-empreinte.demo', $alpha->id, 'Admin réseau Alpha');
 
         $this->creerAgent($indexAveugle, 'CAI-0001', $dassa->id, RoleAgent::Caissier, 'Caissier');
-        $this->creerAgent($indexAveugle, 'RES-0001', $dassa->id, RoleAgent::ResponsableAgence, "Responsable d'agence");
+        $this->creerAgent($indexAveugle, 'RES-0001', $dassa->id, RoleAgent::ResponsableAgence, "Responsable d'agence", config('cif_demo.email_responsable'));
         $this->creerControleur($indexAveugle, 'CTRL-0001', $alpha->id, 'Contrôleur permanent', 'controleur.alpha@cif-empreinte.demo');
     }
 
@@ -83,7 +83,7 @@ class DemoComptesSeeder extends Seeder
         $this->command?->line("  [admin] {$email} / {$motDePasse}");
     }
 
-    private function creerAgent(IndexAveugle $indexAveugle, string $matricule, int $agenceId, RoleAgent $role, string $nom): void
+    private function creerAgent(IndexAveugle $indexAveugle, string $matricule, int $agenceId, RoleAgent $role, string $nom, ?string $email = null): void
     {
         $idx = $indexAveugle->calculer($matricule, 'matricule');
 
@@ -97,6 +97,7 @@ class DemoComptesSeeder extends Seeder
             'agence_id' => $agenceId,
             'nom' => $nom,
             'matricule' => $matricule,
+            'email' => $email,
             'mot_de_passe' => Hash::make($motDePasse),
             'role' => $role,
             'actif' => true,
