@@ -32,6 +32,7 @@ Route::prefix('clients')->name('clients.')->group(function () {
     Route::post('/copilote/coherence', [CopiloteSaisieController::class, 'verifierCoherence'])->name('copilote.coherence');
     Route::post('/copilote/doublon', [CopiloteSaisieController::class, 'verifierDoublon'])->name('copilote.doublon');
     Route::post('/copilote/normalisation', [CopiloteSaisieController::class, 'suggererNormalisation'])->name('copilote.normalisation');
+    Route::post('/copilote/propositions', [CopiloteSaisieController::class, 'proposer'])->name('copilote.propositions');
 
     // -----------------------------------------------------------------
     // Routes paramétrées {client} — après les routes fixes ci-dessus

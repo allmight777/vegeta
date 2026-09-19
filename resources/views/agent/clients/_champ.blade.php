@@ -8,7 +8,12 @@
         'nom', 'prenoms', 'date_naissance', 'profession', 'activite_1', 'activite_2',
         'revenus_mensuels_estimes', 'depot_especes', 'piece_identite_expiration',
     ], true);
+    // Propositions pendant la frappe (17_PROMPT §1) : champs de texte libre normalisables.
+    $autocompletion = in_array($id, ['profession', 'activite_1', 'activite_2', 'employeur', 'nationalite'], true);
     $attributsCopilote = $copilote ? 'x-data x-on:blur=window.copiloteBlur($event.target)' : '';
+    if ($autocompletion) {
+        $attributsCopilote .= ' autocomplete=off x-on:input=window.copiloteFrappe($event.target) x-on:keydown=window.copiloteClavier($event)';
+    }
 @endphp
 
 <div class="champ-fiche {{ $manquant ? 'champ-manquant' : '' }}">
@@ -18,7 +23,7 @@
             <span class="champ-obligatoire" title="Obligatoire">*</span>
         @endif
         @isset($definition['source'])
-            <x-badge-source :source="$definition['source']" :reference="$definition['reference_texte'] ?? null" />
+            <x-source-info :source="$definition['source']" :reference="$definition['reference_texte'] ?? null" />
         @endisset
         @if ($confiance !== null)
             <span class="champ-confiance {{ $confiance >= 0.8 ? 'champ-confiance-haute' : 'champ-confiance-basse' }}">
@@ -59,6 +64,13 @@
     @elseif ($typeSaisie === 'number')
         <input type="number" step="0.01" name="{{ $name }}" id="{{ $id }}"
             value="{{ $value }}" class="champ-fiche-input" @disabled(!$saisissable) {!! $attributsCopilote !!}>
+    @elseif ($autocompletion)
+        <div class="champ-autocompletion">
+            <input type="text" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}"
+                class="champ-fiche-input" @disabled(!$saisissable) {!! $attributsCopilote !!}
+                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="propositions-{{ $id }}">
+            <ul class="copilote-liste" id="propositions-{{ $id }}" data-copilote-liste="{{ $id }}" role="listbox" hidden></ul>
+        </div>
     @else
         <input type="text" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}"
             class="champ-fiche-input" @disabled(!$saisissable) {!! $attributsCopilote !!}>

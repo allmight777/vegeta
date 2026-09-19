@@ -76,6 +76,24 @@ Le seeder `CLE_CIF_DEMO` (clé de chiffrement de démonstration) est déjà pré
 `.env.example` — **à régénérer avant toute mise en production** (`openssl rand -base64 32`),
 jamais commitée en clair ailleurs qu'en local.
 
+## Fonctionnement hors connexion (aucun CDN)
+
+Toute l'interface est servie par l'application elle-même : la police **Plus Jakarta Sans** et les
+icônes **Font Awesome Free 6.5.2** sont dans `public/vendor/` (versionnées, licences SIL OFL / CC BY 4.0 /
+MIT dans les `LICENSE.txt`), le CSS/JS est compilé par Vite dans `public/build/`. Aucune requête ne
+part vers Google Fonts, cdnjs ou un autre CDN ; `tests/Feature/Securite/AssetsLocauxTest.php` échoue
+si une vue en réintroduit un.
+
+Vérification en 30 secondes : couper le wifi, recharger l'application, ouvrir l'onglet Réseau du
+navigateur (Ctrl+Maj+E) — toutes les requêtes doivent viser `localhost`, les icônes et la police
+doivent s'afficher normalement. Sans connexion, l'assistant IA et la recherche web répondent par leurs
+simulateurs locaux (voir « Mode démonstration »), les e-mails sont écrits dans `storage/logs`
+(`MAIL_MAILER=log`) et la sonde de connectivité (timeout 2 s, mise en cache 10 s) bascule les
+vérifications NPI en mode différé.
+
+Après `git clone`, il faut simplement `npm install && npm run build` (pour `public/build`, non versionné) ;
+`public/vendor/` est déjà dans le dépôt.
+
 ## Mode démonstration (jury)
 
 Dans `.env`, la démonstration hors ligne repose sur trois réglages : `ASSISTANCE_IA_FORCER_SIMULATEUR=true`
@@ -162,7 +180,9 @@ Comptes de démonstration : voir `migrate:fresh --seed` (mots de passe affichés
 |---|---|---|---|
 | Caissier | Alerte doublon par empreinte (jamais le nom du dossier, seulement l'agence) | `CAI-0001` → Clients → Nouveau client → Prénoms « Kofi », Nom « ADJAO » → quitter le champ : bandeau jaune « Un dossier très proche existe déjà… (Agence de Savalou) » | ✅ Chrome 144 |
 | Caissier | Incohérences de profil (retraité à 25 ans, dépôt/revenu, pièce expirée) | Même formulaire : date de naissance 10/04/2001, profession « Retraité », revenus 60000, dépôt espèces 5000000, expiration 15/01/2024 → trois avertissements « contrôle local » ; ou Clients → dossier **TCHOKPON Sylvain** → Compléter (affichés dès l'ouverture) | ✅ Chrome 144 |
-| Caissier | Normalisation d'activité | Profession : « commercante » → « 5 dossiers de ce réseau utilisent « Commerçante » » → bouton « Utiliser cette orthographe » | ✅ Chrome 144 |
+| Caissier | Propositions pendant la frappe (profession, activités, employeur, nationalité) | Nouveau client → Profession : taper « etu » (2 caractères suffisent, sans quitter le champ) → liste sous le champ « Étudiant · 2 dossiers » → clic (ou ↓ + Entrée) pour remplir ; Échap ou clic ailleurs ferme la liste. Autres essais : « com », « agr », « cou », « men », « coi ». Aucune liste si rien ne correspond | ✅ Chrome 144, vraies frappes et vrais clics, réseau coupé |
+| Caissier | Correction d'orthographe au blur (complément) | Profession : « commercante » → quitter le champ → « 5 dossiers de ce réseau utilisent « Commerçante » » → « Utiliser cette orthographe » | ✅ Chrome 144 |
+| Caissier | Source de chaque champ (sans mur de texte) | Nouveau client → petite icône ⓘ à droite de chaque libellé : survol, clic ou focus → « Source : Réglementaire · Loi art. 17 a) ». La source complète (avec « à confirmer ») reste visible côté admin : Règles de détection | ✅ Chrome 144 |
 | Responsable | Mémoire de décisions | `RES-0001` → Filtrage PPE / sanctions → encart vert « 3 cas similaires déjà tranchés… » (ou « Aucun cas similaire tranché pour l'instant ») | ✅ Chrome 144 |
 | Responsable | Suggestion de motif | Filtrage → motif « Autre » → texte libre (≥ 10 caractères) → quitter le champ. En mode simulateur : aucune suggestion, aucun élément vide | ✅ Chrome 144 (absence propre) |
 | Responsable | Bouton « Expliquer » | Filtrage : sous la correspondance ; Tableau de bord : sur chaque alerte (texte replié à 2 lignes, « Expliquer » le déplie) | ✅ Chrome 144 |
@@ -171,8 +191,10 @@ Comptes de démonstration : voir `migrate:fresh --seed` (mots de passe affichés
 | Trois espaces | Widget assistant : « salut », « cc », « merci », « qui es-tu ? », « quels sont les profils incomplets ? » (caissier), « combien d'alertes aujourd'hui ? » (responsable) | Bouton flottant jaune en bas à droite → saisir la question | ✅ Chrome 144 |
 
 Nature de la vérification navigateur : Chrome réel piloté par script (protocole DevTools), avec
-captures d'écran. Le `blur` des champs est déclenché par événement (un Chrome sans fenêtre n'a pas
-de vrai focus clavier) ; à refaire une fois à la main sur la machine de démonstration.
+captures d'écran. Depuis le 17_PROMPT, le focus est émulé et les frappes, clics et touches (Tab,
+flèches, Entrée, Échap) sont de vrais événements d'entrée, réseau externe coupé ; les parcours des
+autres lignes ont été vérifiés avec des `blur` déclenchés par événement. À refaire une fois à la main
+sur la machine de démonstration.
 
 ### Configuration de l'identité du système (admin)
 

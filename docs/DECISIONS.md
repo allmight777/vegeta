@@ -821,3 +821,56 @@ le temps le permet.
   (contraire à CLAUDE.md §2 « zéro CDN ») : hors ligne, icônes et police disparaissent — risque de
   démonstration à traiter (télécharger les assets en local) ; (2) les tuiles de statistiques du
   tableau de bord admin comptent tous les réseaux, même pour un admin de réseau.
+
+
+## 2026-09-19 — Assets locaux : fin des CDN (correctif prioritaire, CLAUDE.md §2)
+
+- **Constat** : les trois layouts, les deux pages de connexion et la page 419 chargeaient Font Awesome
+  (cdnjs) et Plus Jakarta Sans (Google Fonts). Sans réseau : police système et carrés vides à la
+  place des icônes — contraire à « zéro CDN » (CLAUDE.md §2) et au mode dégradé de la charte.
+- **Correction** : Font Awesome Free 6.5.2 (`fa-solid-900`, `fa-regular-400` en woff2 ; les seules
+  classes utilisées dans le code sont `fa-solid` et `fa-regular`) et Plus Jakarta Sans (variable,
+  latin + latin-ext, `font-display: swap`) déposés dans `public/vendor/`, versionnés ; les 6 gabarits
+  pointent vers `asset('vendor/…')`. Versions alignées sur 6.5.2 (les pages de connexion utilisaient 6.4.0).
+  Toute dépendance ajoutée → composants déclarés dans `docs/COMPOSANTS_TIERS.md`.
+- **Limites assumées** : pas de polices de repli `.ttf`, pas de `fa-brands`/`fa-v4compatibility`
+  (inutilisés) ; les alphabets cyrillique et vietnamien de Plus Jakarta Sans ne sont pas embarqués
+  (retombent sur la police sans-serif du système — sans effet pour le français et les langues
+  d'Afrique de l'Ouest en écriture latine).
+- **Vérification** : Chrome 144 lancé avec la résolution DNS coupée pour tout hôte non local
+  (`--host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE localhost"`, contrôle : un `fetch` vers cdnjs échoue),
+  connecté successivement en admin, caissier et responsable : 9 pages parcourues (dont formulaire client
+  et file de filtrage), **0 requête externe**, `document.fonts` confirme le chargement de Plus Jakarta Sans
+  et Font Awesome, toutes les icônes visibles ont une largeur non nulle, Alpine chargé, 0 erreur JS.
+  Garde-fou : `tests/Feature/Securite/AssetsLocauxTest.php` (aucun hôte CDN dans `resources/views`,
+  fichiers présents, pages de connexion pointent vers `vendor/`).
+- **Restent des appels sortants côté serveur, sans effet sur l'affichage** : sonde de connectivité
+  (`RESEAU_URL_TEST_CONNECTIVITE`, timeout 2 s, cache 10 s) et, uniquement hors simulateur, l'API IA /
+  la recherche web (neutralisées par les deux `FORCER_SIMULATEUR=true` en démonstration).
+
+
+## 2026-09-19 — Propositions pendant la frappe et libellés épurés (17_PROMPT)
+
+- **Propositions** : `POST agent.clients.copilote.propositions` → `SuggesteurNormalisationActivite::proposer()`.
+  Comparaison **en PHP** sur des textes normalisés des deux côtés (`Str::ascii` + minuscules), donc
+  « etu » → « Étudiant » et « commercant » → « Commerçante » quel que soit le moteur (SQLite/PostgreSQL
+  sensibles à la casse, MySQL non). Un mot de la valeur doit commencer par la saisie (≥ 2 caractères) ;
+  variantes de casse/accent regroupées sous l'orthographe la plus fréquente ; 5 propositions au plus,
+  les plus utilisées d'abord ; rien (liste vide, jamais d'erreur) sinon. Champs : `profession`,
+  `activite_1`, `activite_2` + `employeur`, `nationalite` (colonnes en clair, branchement immédiat).
+  `lieu_naissance` est chiffré : exclu. Le blur garde la suggestion d'orthographe existante (complément).
+- **Client** : anti-rebond 280 ms, réponses périmées ignorées (jeton), liste construite en `textContent`,
+  `mousedown` neutralisé pour ne pas provoquer de blur avant le clic, flèches/Entrée/Échap, fermeture au
+  clic extérieur, `autocomplete=off` pour éviter la liste native du navigateur.
+- **Libellés** : `<x-source-info>` remplace `<x-badge-source>` dans le formulaire de saisie (icône ⓘ, bulle
+  au survol/clic/focus recalée dans sa carte, `title` en secours). `SourceValeur::libelleCourt()` retire
+  « — à confirmer » ; le texte de bulle est aussi nettoyé des « à confirmer » présents dans les
+  références. `<x-badge-source>` et `libelle()` restent inchangés sur l'écran admin des règles.
+- **Données de démonstration** : `CopiloteSaisieDemoSeeder` passe à 16 dossiers synthétiques (Étudiant,
+  Agriculteur, Couturière, Menuisier, Mécanicien, Chauffeur, Coiffeuse, Éleveur…). Effet de bord assumé :
+  la liste « profils incomplets » du caissier/responsable et les totaux du résumé admin grossissent.
+- **Vérifié** (Chrome 144, focus émulé, vraies frappes/clics/touches, DNS externe coupé) : « etu » → liste
+  après ~280 ms sans perdre le focus ; clic → champ rempli ; ↓ + Entrée ; Échap ; clic extérieur ;
+  « zzz » → aucune liste ni note ; activité 1 « cou » → « Couture » ; blur complémentaire ; infobulles
+  (colonnes gauche et droite, contenues dans la carte, ouverture au clic, fermeture à Échap) ; 0 requête
+  externe ; 0 erreur JS. Tests : `PropositionsPendantLaFrappeTest` (10 tests).

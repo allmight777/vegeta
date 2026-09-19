@@ -78,7 +78,7 @@ class CopiloteSaisieController extends Controller
     public function suggererNormalisation(Request $request, SuggesteurNormalisationActivite $suggesteur, ContexteReseau $contexte): JsonResponse
     {
         $donnees = $request->validate([
-            'champ' => ['required', 'in:profession,activite_1,activite_2'],
+            'champ' => ['required', 'in:profession,activite_1,activite_2,employeur,nationalite'],
             'valeur' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -96,6 +96,24 @@ class CopiloteSaisieController extends Controller
                 'valeur' => $suggestion['valeur'],
                 'message' => "{$n} dossier".($n > 1 ? 's' : '')." de ce réseau utilisent « {$suggestion['valeur']} » — utiliser cette orthographe ?",
             ],
+        ]);
+    }
+
+    /**
+     * Propositions pendant la frappe (17_PROMPT §1) : liste vide (jamais d'erreur) quand rien ne
+     * correspond. Ne renvoie que des orthographes déjà utilisées et leur nombre de dossiers.
+     */
+    public function proposer(Request $request, SuggesteurNormalisationActivite $suggesteur, ContexteReseau $contexte): JsonResponse
+    {
+        $donnees = $request->validate([
+            'champ' => ['required', 'in:profession,activite_1,activite_2,employeur,nationalite'],
+            'valeur' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $reseauId = $contexte->reseauId();
+
+        return response()->json([
+            'propositions' => $reseauId === null ? [] : $suggesteur->proposer($donnees['champ'], (string) ($donnees['valeur'] ?? ''), $reseauId),
         ]);
     }
 }

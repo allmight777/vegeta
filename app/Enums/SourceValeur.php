@@ -9,6 +9,18 @@ enum SourceValeur: string
     case PolitiqueInterne = 'politique_interne';
     case Demo = 'demo';
 
+    /**
+     * Libellé destiné à l'écran de saisie : sans la mention « à confirmer », note de travail
+     * interne qui n'a pas sa place devant un caissier. L'écran admin garde libelle() en entier.
+     */
+    public function libelleCourt(): string
+    {
+        return match ($this) {
+            self::BriefingCif => 'Briefing CIF',
+            default => $this->libelle(),
+        };
+    }
+
     public function libelle(): string
     {
         return match ($this) {

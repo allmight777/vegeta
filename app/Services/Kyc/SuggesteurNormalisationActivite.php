@@ -20,7 +20,12 @@ class SuggesteurNormalisationActivite
         'profession' => ['profession'],
         'activite_1' => ['activite_1', 'activite_2'],
         'activite_2' => ['activite_1', 'activite_2'],
+        'employeur' => ['employeur'],
+        'nationalite' => ['nationalite'],
     ];
+
+    /** Nombre maximal de propositions affichées pendant la frappe. */
+    public const LIMITE_PROPOSITIONS = 5;
 
     /**
      * @return array{valeur: string, nombre: int}|null
@@ -35,25 +40,7 @@ class SuggesteurNormalisationActivite
         }
 
         $cle = $this->normaliser($valeur);
-        $groupes = []; // clé normalisée => [orthographe exacte => nombre de dossiers]
-
-        foreach ($colonnes as $colonne) {
-            $lignes = DB::table('personnes_physiques')
-                ->join('clients', 'clients.id', '=', 'personnes_physiques.client_id')
-                ->where('clients.reseau_id', $reseauId)
-                ->whereNull('clients.deleted_at')
-                ->whereNull('personnes_physiques.deleted_at')
-                ->whereNotNull("personnes_physiques.$colonne")
-                ->where("personnes_physiques.$colonne", '!=', '')
-                ->selectRaw("personnes_physiques.$colonne as valeur, count(*) as nombre")
-                ->groupBy("personnes_physiques.$colonne")
-                ->get();
-
-            foreach ($lignes as $ligne) {
-                $groupes[$this->normaliser((string) $ligne->valeur)][(string) $ligne->valeur] =
-                    ($groupes[$this->normaliser((string) $ligne->valeur)][(string) $ligne->valeur] ?? 0) + (int) $ligne->nombre;
-            }
-        }
+        $groupes = $this->groupes($colonnes, $reseauId);
 
         $meilleur = null;
 
@@ -78,6 +65,77 @@ class SuggesteurNormalisationActivite
         }
 
         return $meilleur;
+    }
+
+    /**
+     * Propositions pendant la frappe (17_PROMPT §1) : orthographes déjà saisies dans le réseau
+     * dont un mot commence par ce qui est tapé. Comparaison faite en PHP sur des textes
+     * normalisés des deux côtés (Str::ascii + minuscules) : « etu » propose « Étudiant »,
+     * « commercant » propose « Commerçante », sur SQLite comme sur PostgreSQL ou MySQL (la casse et
+     * les accents ne dépendent pas de la collation du moteur). Les plus utilisées d'abord.
+     *
+     * @return array<int, array{valeur: string, nombre: int}> vide si rien ne correspond
+     */
+    public function proposer(string $champ, string $saisie, int $reseauId): array
+    {
+        $colonnes = self::COLONNES[$champ] ?? null;
+        $prefixe = $this->normaliser($saisie);
+
+        if ($colonnes === null || mb_strlen($prefixe) < 2) {
+            return [];
+        }
+
+        $motif = '/(?:^|[\s\'-])'.preg_quote($prefixe, '/').'/';
+        $propositions = [];
+
+        foreach ($this->groupes($colonnes, $reseauId) as $cleGroupe => $variantes) {
+            if (preg_match($motif, (string) $cleGroupe) !== 1) {
+                continue;
+            }
+
+            arsort($variantes);
+            $orthographe = (string) array_key_first($variantes);
+
+            // Ce qui est déjà exactement saisi n'est pas une proposition utile.
+            if ($orthographe === trim($saisie)) {
+                continue;
+            }
+
+            $propositions[] = ['valeur' => $orthographe, 'nombre' => array_sum($variantes)];
+        }
+
+        usort($propositions, fn (array $a, array $b) => [$b['nombre'], $a['valeur']] <=> [$a['nombre'], $b['valeur']]);
+
+        return array_slice($propositions, 0, self::LIMITE_PROPOSITIONS);
+    }
+
+    /**
+     * @param  array<int, string>  $colonnes
+     * @return array<string, array<string, int>> clé normalisée => [orthographe exacte => nombre de dossiers]
+     */
+    private function groupes(array $colonnes, int $reseauId): array
+    {
+        $groupes = [];
+
+        foreach ($colonnes as $colonne) {
+            $lignes = DB::table('personnes_physiques')
+                ->join('clients', 'clients.id', '=', 'personnes_physiques.client_id')
+                ->where('clients.reseau_id', $reseauId)
+                ->whereNull('clients.deleted_at')
+                ->whereNull('personnes_physiques.deleted_at')
+                ->whereNotNull("personnes_physiques.$colonne")
+                ->where("personnes_physiques.$colonne", '!=', '')
+                ->selectRaw("personnes_physiques.$colonne as valeur, count(*) as nombre")
+                ->groupBy("personnes_physiques.$colonne")
+                ->get();
+
+            foreach ($lignes as $ligne) {
+                $cle = $this->normaliser((string) $ligne->valeur);
+                $groupes[$cle][(string) $ligne->valeur] = ($groupes[$cle][(string) $ligne->valeur] ?? 0) + (int) $ligne->nombre;
+            }
+        }
+
+        return $groupes;
     }
 
     private function normaliser(string $texte): string

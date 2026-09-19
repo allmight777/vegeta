@@ -22,6 +22,21 @@ $enCompletion = $client !== null;
 @once <style>
 
     /* Copilote de saisie (16_PROMPT §2) */
+    /* Propositions pendant la frappe (17_PROMPT §1) */
+    .champ-autocompletion { position: relative; }
+    .copilote-liste {
+        position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none;
+        background: #fff; border: 1px solid #E7EBEF; border-radius: 12px; box-shadow: 0 12px 30px rgba(44, 52, 61, .14);
+        max-height: 240px; overflow-y: auto;
+    }
+    .copilote-liste[hidden] { display: none; }
+    .copilote-liste li {
+        display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 8px;
+        font-size: .82rem; color: #1E293B; cursor: pointer;
+    }
+    .copilote-liste li small { color: #64748B; font-size: .68rem; white-space: nowrap; }
+    .copilote-liste li:hover, .copilote-liste li.actif { background: #FFFBD6; }
+
     .champ-copilote:empty { display: none; }
     .copilote-note {
         margin-top: 6px; padding: 8px 10px; border-radius: 10px; font-size: .78rem; line-height: 1.4;
@@ -592,15 +607,131 @@ BOUTONS DES CHAMPS REPETABLES
         }
     };
 
+    // ---------------------------------------------------------------------------
+    // Propositions pendant la frappe (17_PROMPT §1) : à partir de 2 caractères, anti-rebond
+    // 280 ms, liste cliquable (3 à 5 entrées), jamais de liste vide ni de message d'erreur.
+    // Les réponses arrivées trop tard (le texte a changé entre-temps) sont ignorées.
+    // ---------------------------------------------------------------------------
+    window.copiloteListe = (input) => input.closest('.champ-autocompletion')?.querySelector('.copilote-liste');
+
+    window.copiloteFermerListe = function (input) {
+        const liste = window.copiloteListe(input);
+        if (liste) {
+            liste.hidden = true;
+            liste.replaceChildren();
+        }
+        input.setAttribute('aria-expanded', 'false');
+        input._actif = -1;
+    };
+
+    window.copiloteChoisir = function (input, valeur) {
+        input.value = valeur;
+        window.copiloteFermerListe(input);
+        input._jeton = (input._jeton ?? 0) + 1;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const scope = input.closest('.fiche-formulaire') ?? document;
+        window.copiloteEffacer(scope, 'suggestion', input.id);
+        if (input.id === 'profession') {
+            window.copiloteCoherence(scope);
+        }
+        input.focus();
+    };
+
+    window.copiloteAfficherListe = function (input, propositions) {
+        const liste = window.copiloteListe(input);
+        if (!liste || propositions.length === 0) {
+            window.copiloteFermerListe(input);
+            return;
+        }
+
+        liste.replaceChildren();
+        propositions.slice(0, 5).forEach((p) => {
+            const li = document.createElement('li');
+            li.setAttribute('role', 'option');
+            const texte = document.createElement('span');
+            texte.textContent = p.valeur;
+            const nombre = document.createElement('small');
+            nombre.textContent = p.nombre + ' dossier' + (p.nombre > 1 ? 's' : '');
+            li.append(texte, nombre);
+            // mousedown + preventDefault : le champ ne perd pas le focus (pas de blur avant le clic).
+            li.addEventListener('mousedown', (e) => e.preventDefault());
+            li.addEventListener('click', () => window.copiloteChoisir(input, p.valeur));
+            liste.appendChild(li);
+        });
+        liste.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        input._actif = -1;
+    };
+
+    window.copiloteFrappe = function (input) {
+        clearTimeout(input._minuteur);
+        const saisie = input.value.trim();
+
+        if (saisie.length < 2) {
+            input._jeton = (input._jeton ?? 0) + 1;
+            window.copiloteFermerListe(input);
+            return;
+        }
+
+        input._minuteur = setTimeout(async () => {
+            const jeton = input._jeton = (input._jeton ?? 0) + 1;
+            const donnees = await window.copiloteAppeler(@json(route('agent.clients.copilote.propositions')), { champ: input.id, valeur: saisie });
+
+            if (jeton !== input._jeton || input.value.trim() !== saisie) {
+                return;
+            }
+
+            window.copiloteAfficherListe(input, donnees?.propositions ?? []);
+        }, 280);
+    };
+
+    window.copiloteClavier = function (evenement) {
+        const input = evenement.target;
+        const liste = window.copiloteListe(input);
+
+        if (!liste || liste.hidden) {
+            return;
+        }
+
+        const items = [...liste.children];
+        const bouger = (delta) => {
+            input._actif = (((input._actif ?? -1) + delta) % items.length + items.length) % items.length;
+            items.forEach((li, i) => li.classList.toggle('actif', i === input._actif));
+            items[input._actif].scrollIntoView({ block: 'nearest' });
+        };
+
+        if (evenement.key === 'ArrowDown') { evenement.preventDefault(); bouger(1); }
+        else if (evenement.key === 'ArrowUp') { evenement.preventDefault(); bouger(-1); }
+        else if (evenement.key === 'Escape') { evenement.preventDefault(); window.copiloteFermerListe(input); }
+        else if (evenement.key === 'Enter' && (input._actif ?? -1) >= 0) {
+            evenement.preventDefault();
+            window.copiloteChoisir(input, items[input._actif].firstChild.textContent);
+        }
+    };
+
+    // Clic en dehors : ferme toutes les listes ouvertes.
+    document.addEventListener('mousedown', (e) => {
+        document.querySelectorAll('.copilote-liste:not([hidden])').forEach((liste) => {
+            if (!liste.parentElement.contains(e.target)) {
+                window.copiloteFermerListe(liste.parentElement.querySelector('input'));
+            }
+        });
+    });
+
     window.copiloteBlur = async function (input) {
         const scope = input.closest('.fiche-formulaire') ?? document;
         const id = input.id;
         const taches = [];
 
+        clearTimeout(input._minuteur);
+        if (window.copiloteListe(input)) {
+            window.copiloteFermerListe(input);
+        }
+
         if (['nom', 'prenoms', 'date_naissance'].includes(id)) {
             taches.push(window.copiloteDoublon(scope));
         }
-        if (['profession', 'activite_1', 'activite_2'].includes(id)) {
+        if (['profession', 'activite_1', 'activite_2', 'employeur', 'nationalite'].includes(id)) {
             taches.push(window.copiloteSuggestion(scope, input));
         }
         if (['date_naissance', 'profession', 'revenus_mensuels_estimes', 'depot_especes', 'piece_identite_expiration'].includes(id)) {

@@ -87,3 +87,16 @@ référentiel du projet, corrigé à cette occasion.
 Voir `composer.json`/`package.json` : `league/csv`, `barryvdh/laravel-dompdf` (licences
 MIT/BSD), `alpinejs`, `chart.js` (MIT). Aucun changement apporté à cette liste par ce
 prompt.
+
+## Polices et icônes servies localement (correctif « zéro CDN », 2026-09-19)
+
+Assets statiques copiés dans `public/vendor/` (pas des paquets Composer/npm) — aucun appel réseau à
+l'exécution :
+
+| Composant | Version | Licence | Emplacement |
+|---|---|---|---|
+| Font Awesome Free (icônes `fa-solid`, `fa-regular`) | 6.5.2 | Icônes CC BY 4.0, polices SIL OFL 1.1, CSS MIT — attribution dans `LICENSE.txt` | `public/vendor/fontawesome/` |
+| Plus Jakarta Sans (police variable 400–800, sous-ensembles latin + latin-ext) | v12 (Google Fonts) | SIL OFL 1.1 | `public/vendor/plus-jakarta-sans/` |
+
+Licences permissives, compatibles avec la charte PI (cession du code à la CIF). Téléchargés une seule
+fois depuis cdnjs et fonts.gstatic.com ; ne sont plus chargés depuis ces hôtes.
