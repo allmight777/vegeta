@@ -21,7 +21,7 @@
     @if ($definition['obligatoire'] ?? false) data-obligatoire="1" data-libelle="{{ $definition['libelle'] }}" @endif>
     <label for="{{ $id }}" class="champ-fiche-label">
         {{ $definition['libelle'] }}
-        @if ($definition['bloquant'] ?? false)
+        @if ($definition['bloquant'] ?? $definition['obligatoire'] ?? false)
             <span class="champ-obligatoire" title="Obligatoire">*</span>
         @endif
         @isset($definition['source'])

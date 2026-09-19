@@ -1891,6 +1891,8 @@
         @include('partials.assistant-ia')
     @endauth
 
+    @stack('scripts')
+
 </body>
 
 </html>

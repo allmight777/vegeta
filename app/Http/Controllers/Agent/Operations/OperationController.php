@@ -11,8 +11,11 @@ use App\Http\Requests\Agent\Operations\CreerOperationRequest;
 use App\Models\Compte;
 use App\Models\Operation;
 use App\Services\Audit\Consignateur;
+use App\Services\Conformite\AnalyseurComportementalContinu;
 use App\Services\Contexte\ContexteReseau;
 use App\Services\Detection\DetecteurFractionnement;
+use App\Services\Kyc\CalculateurCompletude;
+use App\Services\Kyc\ReferentielFicheAdhesion;
 use App\Services\Operations\DetecteurPlafondInterAgences;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
@@ -92,8 +95,31 @@ class OperationController extends Controller
                 ->with('statut', 'Opération en attente de validation par le service conformité. Référence : OP-'.Str::upper(Str::random(8)));
         }
 
-        // 3. Contrôle de conformité (existant)
-        if (! $agent->can('peutValiderOperation', $client)) {
+        // 3a. Fiche KYC incomplète : information sans risque de divulgation (aucune notion
+        //     de soupçon ou de liste), le caissier doit savoir quoi compléter.
+        $manquants = app(CalculateurCompletude::class)->champsBloquantsManquants($client);
+
+        if ($manquants !== []) {
+            $referentiel = app(ReferentielFicheAdhesion::class);
+            $type = $client->type->value;
+            $libelles = array_map(
+                fn (string $code) => $referentiel->champ($type, $code)['libelle'] ?? $code,
+                $manquants,
+            );
+
+            Consignateur::enregistrer('agent', $agent->id, 'tentative_operation_refusee', 'compte', $compte->id);
+
+            return redirect()
+                ->route('agent.operations.creer')
+                ->withErrors([
+                    'fiche_incomplete' => 'Fiche client incomplète. Complétez d\'abord : '.implode(', ', $libelles).'.',
+                ])
+                ->withInput();
+        }
+
+        // 3. Contrôle de conformité : un dépôt n'est jamais mis en attente pour fiche
+        //    incomplète (le client doit pouvoir déposer) ; le contrôle reste appliqué aux retraits.
+        if ($donnees['type'] !== 'depot' && ! $agent->can('peutValiderOperation', $client)) {
             Consignateur::enregistrer('agent', $agent->id, 'tentative_operation_refusee', 'compte', $compte->id);
 
             return redirect()->route('agent.operations.creer')
@@ -131,7 +157,7 @@ class OperationController extends Controller
         Consignateur::enregistrer('agent', $agent->id, 'saisie_operation', 'operation', $operation->id);
 
         // Analyse comportementale continue (18_PROMPT §4) : silencieuse, le caissier n'en sait rien.
-        app(\App\Services\Conformite\AnalyseurComportementalContinu::class)->analyserSansEchec($client, 'operation');
+        app(AnalyseurComportementalContinu::class)->analyserSansEchec($client, 'operation');
 
         return redirect()->route('agent.operations.creer')
             ->with('statut', 'Opération enregistrée. Référence : OP-'.Str::upper(substr($operation->id, 0, 8)));

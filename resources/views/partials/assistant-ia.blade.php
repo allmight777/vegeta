@@ -1225,21 +1225,6 @@
 
 
             <button
-                type="button"
-                class="assistant-ia-micro"
-                :class="{ actif: enEcoute }"
-                x-show="dicteeSupportee"
-                @click="basculerDictee()"
-                :aria-label="enEcoute ? 'Arrêter la dictée' : 'Dicter la question'"
-                :title="enEcoute ? 'Arrêter la dictée' : 'Dicter la question'"
-            >
-
-                <i class="fa-solid" :class="enEcoute ? 'fa-microphone' : 'fa-microphone-slash'"></i>
-
-            </button>
-
-
-            <button
                 type="submit"
                 :disabled="enCours || ! question.trim()"
                 aria-label="Envoyer"
@@ -1252,13 +1237,6 @@
         </form>
 
 
-        <p
-            class="assistant-ia-lecture-toggle"
-            style="padding: 0 12px 10px; margin-left: 0;"
-            x-show="! dicteeSupportee"
-        >
-            Dictée vocale non disponible sur ce navigateur.
-        </p>
 
     </div>
 

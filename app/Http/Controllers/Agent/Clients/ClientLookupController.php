@@ -85,17 +85,24 @@ class ClientLookupController extends Controller
                         'niveau' => 'expiree',
                         'message' => 'Pièce d\'identité EXPIRÉE le '.$dateExpiration->format('d/m/Y').'. Renouvellement obligatoire avant toute opération.',
                     ];
-                } elseif ($dateExpiration->diffInDays(now()) <= 30) {
+                } elseif (($jours = (int) ceil(now()->diffInDays($dateExpiration, false))) <= 30) {
                     $alertePiece = [
                         'niveau' => 'bientot',
-                        'message' => 'Pièce d\'identité expire dans '.$dateExpiration->diffInDays(now()).' jour(s) — à renouveler bientôt.',
+                        'message' => 'Pièce d\'identité expire dans '.$jours.' jour(s) — à renouveler bientôt.',
                     ];
                 }
             }
         }
 
+        $statutPiece = match (true) {
+            $alertePiece !== null => $alertePiece['niveau'],
+            $expiration !== null => 'valide',
+            default => 'inconnue',
+        };
+
         return response()->json([
             'type' => 'personne_physique',
+            'piece_statut' => $statutPiece,
             'nom' => (string) $pp->nom,
             'prenoms' => (string) $pp->prenoms,
             'nom_complet' => trim(($pp->prenoms ?? '').' '.($pp->nom ?? '')),

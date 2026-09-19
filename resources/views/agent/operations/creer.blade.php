@@ -276,9 +276,11 @@
 
     /* PANNEAU INFOS CLIENT */
 
+    [x-cloak] { display: none !important; }
+
     .client-panel {
 
-        display: none;
+        display: flex;
         flex-direction: column;
         gap: 16px;
         padding: 20px 22px;
@@ -749,6 +751,34 @@
 
 
 
+    {{-- MESSAGE DE RÉSULTAT (succès ou vérification complémentaire) --}}
+
+    @if (session('statut'))
+
+        @php($enAttente = str_contains((string) session('statut'), 'en attente'))
+
+        <div class="operation-alert" role="status"
+            style="{{ $enAttente ? '' : 'background:#ECFDF3;border-color:#30C31A;color:#166534;' }}">
+
+            <div class="operation-alert-icon" style="{{ $enAttente ? '' : 'color:#16A34A;' }}">
+
+                <i class="fa-solid {{ $enAttente ? 'fa-triangle-exclamation' : 'fa-circle-check' }}"></i>
+
+            </div>
+
+            <div>
+
+                <strong style="{{ $enAttente ? '' : 'color:#166534;' }}">{{ $enAttente ? 'Vérification complémentaire requise' : 'Opération enregistrée' }}</strong>
+
+                {{ session('statut') }}
+
+            </div>
+
+        </div>
+
+    @endif
+
+
     {{-- ERREURS SERVEUR --}}
 
     @if ($errors->any())
@@ -948,158 +978,87 @@
 
 
 
-            {{-- Grille info client --}}
+            {{-- Section « Informations du client » (juste avant le type d'opération) --}}
 
-            <div class="client-grid">
+            <div class="client-grid" role="group" aria-label="Informations du client">
 
                 <template x-if="client?.type === 'personne_physique'">
-
                     <div class="client-info">
-
                         <span class="client-info-label">Nom</span>
-
                         <span class="client-info-value" x-text="client.nom || '—'"></span>
-
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_physique'">
-
                     <div class="client-info">
-
                         <span class="client-info-label">Prénoms</span>
-
                         <span class="client-info-value" x-text="client.prenoms || '—'"></span>
-
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_physique'">
-
                     <div class="client-info">
-
-                        <span class="client-info-label">Date de naissance</span>
-
-                        <span class="client-info-value" x-text="client.date_naissance || '—'"></span>
-
-                    </div>
-
-                </template>
-
-                <template x-if="client?.type === 'personne_physique'">
-
-                    <div class="client-info">
-
-                        <span class="client-info-label">Lieu de naissance</span>
-
-                        <span class="client-info-value" x-text="client.lieu_naissance || '—'"></span>
-
-                    </div>
-
-                </template>
-
-                <template x-if="client?.type === 'personne_physique'">
-
-                    <div class="client-info">
-
-                        <span class="client-info-label">Nationalité</span>
-
-                        <span class="client-info-value" x-text="client.nationalite || '—'"></span>
-
-                    </div>
-
-                </template>
-
-                <template x-if="client?.type === 'personne_physique'">
-
-                    <div class="client-info">
-
-                        <span class="client-info-label">Père</span>
-
-                        <span class="client-info-value" x-text="client.pere || '—'"></span>
-
-                    </div>
-
-                </template>
-
-                <template x-if="client?.type === 'personne_physique'">
-
-                    <div class="client-info">
-
-                        <span class="client-info-label">Mère</span>
-
+                        <span class="client-info-label">Nom de la mère</span>
                         <span class="client-info-value" x-text="client.mere || '—'"></span>
-
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_physique'">
-
                     <div class="client-info">
-
-                        <span class="client-info-label">Pièce d'identité</span>
-
-                        <span class="client-info-value" x-text="(client.piece_type || '—') + ' · ' + (client.piece_numero_masque || '—')"></span>
-
+                        <span class="client-info-label">Date d'expiration de la pièce</span>
+                        <span class="client-info-value" x-text="client.piece_expiration || 'Non renseignée'"></span>
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_physique'">
-
                     <div class="client-info">
-
-                        <span class="client-info-label">Expiration pièce</span>
-
-                        <span class="client-info-value" x-text="client.piece_expiration || '—'"></span>
-
+                        <span class="client-info-label">État de la pièce</span>
+                        <span
+                            class="client-chip"
+                            :class="{ ok: client.piece_statut === 'valide', warn: client.piece_statut === 'bientot' || client.piece_statut === 'inconnue' }"
+                            :style="client.piece_statut === 'expiree' ? 'background:#FEE2E2;color:#B91C1C;' : ''"
+                            x-text="{ valide: 'Valide', bientot: 'Expire bientôt', expiree: 'Expirée — date atteinte', inconnue: 'Date inconnue' }[client.piece_statut] || '—'"
+                        ></span>
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_morale'">
-
                     <div class="client-info">
-
                         <span class="client-info-label">Raison sociale</span>
-
                         <span class="client-info-value" x-text="client.raison_sociale || '—'"></span>
-
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_morale'">
-
                     <div class="client-info">
-
                         <span class="client-info-label">RCCM</span>
-
                         <span class="client-info-value" x-text="client.numero_rccm || '—'"></span>
-
                     </div>
-
                 </template>
 
                 <template x-if="client?.type === 'personne_morale'">
-
                     <div class="client-info">
-
                         <span class="client-info-label">IFU</span>
-
                         <span class="client-info-value" x-text="client.numero_ifu || '—'"></span>
-
                     </div>
-
                 </template>
 
             </div>
 
         </div>
 
+
+        {{-- Chargement des informations du client --}}
+
+        <div class="operation-empty" x-show="compteId && enChargement && ! client" x-cloak>
+            <span>Chargement des informations du client…</span>
+        </div>
+
+        {{-- Échec du chargement : message visible plutôt qu'un panneau absent --}}
+
+        <div class="piece-alerte bientot" x-show="compteId && ! enChargement && ! client" x-cloak>
+            <span>Impossible de charger les informations de ce client. Sélectionnez de nouveau le compte.</span>
+        </div>
 
 
         {{-- ÉTAPE 3 : paramètres de l'opération — désactivés tant qu'aucun compte --}}
