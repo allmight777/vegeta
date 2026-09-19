@@ -2,10 +2,12 @@
 
 namespace App\Services\Conformite;
 
+use App\Enums\IndicateurSoupcon;
 use App\Models\Agent;
 use App\Models\DossierAnalyseSoupcon;
 use App\Models\SuggestionSoupcon;
 use App\Services\Assistance\ConstructeurContexteIa;
+use App\Services\Assistance\GestionnaireAssistant;
 use App\Services\Assistance\ProviderIaApiExterne;
 use App\Services\Assistance\SelecteurProviderIa;
 use App\Services\Explication\GenerateurExplication;
@@ -54,7 +56,7 @@ class AssistantSoupcon
             'type_client' => $dossier->type_client->libelle(),
             'niveau_risque' => $dossier->niveau_risque->libelle(),
             'indicateurs' => collect($dossier->indicateurs ?? [])
-                ->map(fn ($cle) => \App\Enums\IndicateurSoupcon::tryFrom((string) $cle)?->libelle())->filter()->values()->all(),
+                ->map(fn ($cle) => IndicateurSoupcon::tryFrom((string) $cle)?->libelle())->filter()->values()->all(),
             'canal' => $dossier->canal?->libelle(),
             'nombre_operations' => count($dossier->montants_concernes ?? []),
             'montant_total' => (float) array_sum($dossier->montants_concernes ?? []),
@@ -88,7 +90,7 @@ class AssistantSoupcon
             $contexte = $this->contexte->construire($agent, $ecran, ['explication_alerte' => $texteLocal]);
             $reponse = trim($provider->repondre($consigne, $contexte, [], $agent));
 
-            if ($reponse !== '' && $reponse !== \App\Services\Assistance\GestionnaireAssistant::AUCUNE_REPONSE) {
+            if ($reponse !== '' && $reponse !== GestionnaireAssistant::AUCUNE_REPONSE) {
                 return ['texte' => $reponse, 'source' => 'analyse_assistee'];
             }
         } catch (Throwable) {

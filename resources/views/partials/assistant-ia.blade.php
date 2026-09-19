@@ -1329,13 +1329,62 @@
                     this.reconnaissance.start();
                 },
 
+                // Choisit une voix française si le navigateur en propose une ; sinon
+                // laisse la voix par défaut (lang fr-FR) plutôt que de rester muet.
+                choisirVoix() {
+                    const voix = window.speechSynthesis.getVoices() || [];
+
+                    return voix.find((v) => v.lang && v.lang.toLowerCase().startsWith('fr') && v.localService)
+                        || voix.find((v) => v.lang && v.lang.toLowerCase().startsWith('fr'))
+                        || null;
+                },
+
                 lire(texte) {
                     if (! this.syntheseSupportee || ! texte) return;
 
-                    window.speechSynthesis.cancel();
-                    const enonce = new SpeechSynthesisUtterance(texte);
-                    enonce.lang = 'fr-FR';
-                    window.speechSynthesis.speak(enonce);
+                    const synthese = window.speechSynthesis;
+
+                    // Texte parlé : sans URL ni balises, découpé en phrases (Chrome coupe
+                    // les énoncés longs et reste muet au-delà d'environ 15 secondes).
+                    const propre = String(texte)
+                        .replace(/https?:\/\/\S+/g, '')
+                        .replace(/[*_#`>]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    const morceaux = propre.match(/[^.!?;:\n]+[.!?;:]?/g) || [propre];
+
+                    synthese.cancel();
+
+                    // Les voix se chargent de façon asynchrone : on parle quand elles sont prêtes.
+                    const parler = () => {
+                        const voix = this.choisirVoix();
+                        window.assistantIaEnonces = morceaux
+                            .map((m) => m.trim())
+                            .filter(Boolean)
+                            .map((morceau) => {
+                                const enonce = new SpeechSynthesisUtterance(morceau);
+                                enonce.lang = 'fr-FR';
+                                if (voix) enonce.voice = voix;
+                                enonce.rate = 1;
+                                enonce.volume = 1;
+                                return enonce;
+                            });
+
+                        // Références gardées globalement : sans cela Chrome peut ramasser
+                        // les énoncés avant la fin de la lecture et couper le son.
+                        window.assistantIaEnonces.forEach((e) => synthese.speak(e));
+                        synthese.resume();
+                    };
+
+                    if (synthese.getVoices().length === 0) {
+                        let lance = false;
+                        const unefois = () => { if (! lance) { lance = true; parler(); } };
+                        synthese.addEventListener('voiceschanged', unefois, { once: true });
+                        setTimeout(unefois, 400);
+                    } else {
+                        // Petit délai après cancel() : sinon le premier speak() est avalé.
+                        setTimeout(parler, 60);
+                    }
                 },
 
                 // Met en forme le texte affiché dans les bulles :

@@ -36,6 +36,30 @@ class DemoComptesSeeder extends Seeder
 
         $this->creerAgent($indexAveugle, 'CAI-0001', $dassa->id, RoleAgent::Caissier, 'Caissier');
         $this->creerAgent($indexAveugle, 'RES-0001', $dassa->id, RoleAgent::ResponsableAgence, "Responsable d'agence");
+        $this->creerControleur($indexAveugle, 'CTRL-0001', $alpha->id, 'Contrôleur permanent', 'controleur.alpha@cif-empreinte.demo');
+    }
+
+    /** 18_PROMPT §2 : le contrôleur permanent supervise un réseau, sans agence. */
+    private function creerControleur(IndexAveugle $indexAveugle, string $matricule, int $reseauId, string $nom, string $email): void
+    {
+        if (Agent::where('matricule_idx', $indexAveugle->calculer($matricule, 'matricule'))->exists()) {
+            return;
+        }
+
+        $motDePasse = Str::password(16);
+
+        Agent::create([
+            'agence_id' => null,
+            'reseau_id' => $reseauId,
+            'nom' => $nom,
+            'matricule' => $matricule,
+            'email' => $email,
+            'mot_de_passe' => Hash::make($motDePasse),
+            'role' => RoleAgent::ControleurPermanent,
+            'actif' => true,
+        ]);
+
+        $this->command?->line("  [agent controleur_permanent] {$matricule} / {$motDePasse}");
     }
 
     private function creerAdmin(IndexAveugle $indexAveugle, string $email, ?int $reseauId, string $nom): void

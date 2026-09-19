@@ -1,7 +1,5 @@
 @extends('layouts.responsable')
 
-
-
 @section('sous-titre', 'Chaque décision est mémorisée : une correspondance tranchée ne revient plus pour cette personne.')
 
 @section('contenu')
@@ -31,6 +29,9 @@
 
         --danger: #DC2626;
         --danger-soft: rgba(220, 38, 38, 0.08);
+
+        --violet: #7C3AED;
+        --violet-soft: rgba(124, 58, 237, 0.08);
 
         --text: #1E293B;
         --muted: #64748B;
@@ -214,10 +215,12 @@
 
 
     /* =========================================================
-       CARTE CORRESPONDANCE
+       CARTE CORRESPONDANCE — BORDURE ROUGE CLIGNOTANTE
     ========================================================= */
 
     .match-card {
+
+        position: relative;
 
         background: #FFFFFF;
 
@@ -229,15 +232,62 @@
 
         box-shadow: var(--shadow-sm);
 
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        transition: box-shadow 0.2s ease;
+
+        /* Animation clignotante rouge : signale un cas grave à examiner */
+        animation: match-alerte-clignotante 1.8s ease-in-out infinite;
+    }
+
+
+    @keyframes match-alerte-clignotante {
+
+        0%,
+        100% {
+
+            border-color: rgba(220, 38, 38, 0.55);
+
+            box-shadow:
+                0 0 0 0 rgba(220, 38, 38, 0.20),
+                var(--shadow-sm);
+        }
+
+        50% {
+
+            border-color: rgba(220, 38, 38, 1);
+
+            box-shadow:
+                0 0 0 6px rgba(220, 38, 38, 0.10),
+                0 8px 24px rgba(220, 38, 38, 0.15);
+        }
     }
 
 
     .match-card:hover {
 
-        border-color: rgba(37, 99, 235, 0.35);
+        animation-play-state: paused;
 
-        box-shadow: 0 14px 34px rgba(37, 99, 235, 0.07);
+        box-shadow: 0 14px 34px rgba(220, 38, 38, 0.15);
+    }
+
+
+    /* Barre latérale rouge pour renforcer le signal */
+    .match-card::before {
+
+        content: "";
+
+        position: absolute;
+
+        left: 0;
+
+        top: 0;
+
+        bottom: 0;
+
+        width: 4px;
+
+        background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+
+        z-index: 2;
     }
 
 
@@ -366,7 +416,6 @@
         font-weight: 700;
 
         white-space: nowrap;
-
     }
 
 
@@ -395,7 +444,161 @@
 
 
     /* =========================================================
-       CAS SIMILAIRES (mémoire de décisions)
+       BOUTON « EXPLIQUER » + PANNEAU REPLIABLE
+    ========================================================= */
+
+    .expliquer-toggle {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 7px;
+
+        padding: 6px 12px;
+
+        border-radius: 999px;
+
+        background: var(--violet-soft);
+
+        border: 1px solid rgba(124, 58, 237, 0.22);
+
+        color: var(--violet);
+
+        font-family: inherit;
+
+        font-size: 0.62rem;
+
+        font-weight: 800;
+
+        letter-spacing: 0.2px;
+
+        cursor: pointer;
+
+        transition: background 0.2s ease, transform 0.2s ease;
+
+        align-self: flex-start;
+    }
+
+
+    .expliquer-toggle i {
+
+        font-size: 0.62rem;
+    }
+
+
+    .expliquer-toggle:hover {
+
+        background: rgba(124, 58, 237, 0.14);
+
+        transform: translateY(-1px);
+    }
+
+
+    .expliquer-toggle .chevron {
+
+        transition: transform 0.25s ease;
+    }
+
+
+    .expliquer-toggle.ouvert .chevron {
+
+        transform: rotate(180deg);
+    }
+
+
+    .expliquer-panneau {
+
+        margin-top: 6px;
+
+        padding: 14px 16px;
+
+        border-radius: 14px;
+
+        background: linear-gradient(135deg, #F5F3FF 0%, #FAF5FF 100%);
+
+        border: 1px solid rgba(124, 58, 237, 0.22);
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 10px;
+
+        animation: expliquer-apparition 0.25s ease;
+    }
+
+
+    @keyframes expliquer-apparition {
+
+        from {
+
+            opacity: 0;
+
+            transform: translateY(-4px);
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform: translateY(0);
+        }
+    }
+
+
+    .expliquer-texte {
+
+        color: var(--text);
+
+        font-size: 0.74rem;
+
+        line-height: 1.6;
+
+        font-weight: 500;
+    }
+
+
+    .expliquer-texte strong {
+
+        color: var(--violet);
+
+        font-weight: 800;
+    }
+
+
+    .expliquer-source {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding-top: 10px;
+
+        border-top: 1px dashed rgba(124, 58, 237, 0.22);
+
+        color: var(--muted);
+
+        font-size: 0.58rem;
+
+        font-weight: 700;
+
+        font-style: italic;
+    }
+
+
+    .expliquer-source i {
+
+        color: var(--violet);
+
+        font-size: 0.6rem;
+    }
+
+
+    /* =========================================================
+       CAS SIMILAIRES
     ========================================================= */
 
     .cas-similaires {
@@ -439,75 +642,7 @@
 
 
     /* =========================================================
-       SUGGESTION IA DE MOTIF
-    ========================================================= */
-
-    .motif-suggestion {
-
-        display: flex;
-
-        align-items: center;
-
-        gap: 8px;
-
-        padding: 9px 12px;
-
-        border-radius: 10px;
-
-        background: #F5F3FF;
-
-        border: 1px solid rgba(124, 58, 237, 0.22);
-
-        color: #6D28D9;
-
-        font-size: 0.68rem;
-
-        font-weight: 500;
-
-        line-height: 1.5;
-    }
-
-
-    .motif-suggestion i {
-
-        color: #7C3AED;
-
-        font-size: 0.72rem;
-
-        flex-shrink: 0;
-    }
-
-
-    .motif-suggestion button {
-
-        border: none;
-
-        background: #7C3AED;
-
-        color: #FFFFFF;
-
-        font-family: inherit;
-
-        font-size: 0.64rem;
-
-        font-weight: 800;
-
-        padding: 4px 9px;
-
-        border-radius: 999px;
-
-        cursor: pointer;
-    }
-
-
-    .motif-suggestion button:hover {
-
-        background: #6D28D9;
-    }
-
-
-    /* =========================================================
-       BLOC CONTEXTE SIGNATAIRE
+       CONTEXTE SIGNATAIRE
     ========================================================= */
 
     .signataire-contexte {
@@ -669,6 +804,14 @@
         min-width: 180px;
 
         text-align: right;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: flex-end;
+
+        gap: 10px;
     }
 
 
@@ -716,8 +859,6 @@
 
         height: 8px;
 
-        margin-top: 10px;
-
         background: var(--background);
 
         border: 1px solid var(--border);
@@ -749,136 +890,10 @@
 
 
     /* =========================================================
-       BLOC DÉCISION
+       BOUTON EXPORTER LE RAPPORT PDF
     ========================================================= */
 
-    .match-decision {
-
-        padding: 18px 22px 20px;
-
-        display: flex;
-
-        flex-direction: column;
-
-        gap: 14px;
-    }
-
-
-    .decision-title {
-
-        color: var(--dark);
-
-        font-size: 0.62rem;
-
-        font-weight: 800;
-
-        text-transform: uppercase;
-
-        letter-spacing: 0.6px;
-    }
-
-
-    .decision-select,
-    .decision-textarea {
-
-        width: 100%;
-
-        padding: 12px 14px;
-
-        border: 1px solid var(--border);
-
-        border-radius: 11px;
-
-        background: #F8FAFC;
-
-        color: var(--dark);
-
-        font-family: inherit;
-
-        font-size: 0.78rem;
-
-        font-weight: 600;
-
-        outline: none;
-
-        transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-    }
-
-
-    .decision-textarea {
-
-        resize: vertical;
-
-        min-height: 68px;
-    }
-
-
-    .decision-select:hover,
-    .decision-textarea:hover {
-
-        border-color: #CBD5E1;
-
-        background: #FFFFFF;
-    }
-
-
-    .decision-select:focus,
-    .decision-textarea:focus {
-
-        border-color: var(--accent);
-
-        background: #FFFFFF;
-
-        box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-
-
-    .decision-hint {
-
-        display: flex;
-
-        gap: 10px;
-
-        padding: 11px 13px;
-
-        background: var(--accent-soft);
-
-        border: 1px solid rgba(37, 99, 235, 0.18);
-
-        border-radius: 11px;
-
-        font-size: 0.68rem;
-
-        color: var(--accent-dark);
-
-        font-weight: 500;
-
-        line-height: 1.55;
-    }
-
-
-    .decision-hint i {
-
-        color: var(--accent);
-
-        font-size: 0.72rem;
-
-        flex-shrink: 0;
-
-    }
-
-
-    .decision-actions {
-
-        display: flex;
-
-        gap: 10px;
-
-        flex-wrap: wrap;
-    }
-
-
-    .btn-decision {
+    .btn-exporter {
 
         display: inline-flex;
 
@@ -888,79 +903,51 @@
 
         gap: 8px;
 
-        height: 46px;
+        height: 38px;
 
-        padding: 0 22px;
+        padding: 0 16px;
 
         border: none;
 
-        border-radius: 12px;
-
-        font-family: inherit;
-
-        font-size: 0.76rem;
-
-        font-weight: 800;
-
-        cursor: pointer;
-
-        transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-
-        flex: 1;
-
-        min-width: 200px;
-    }
-
-
-    .btn-decision i {
-
-        font-size: 0.78rem;
-    }
-
-
-    .btn-confirmer {
-
-        background: var(--danger);
-
-        color: #FFFFFF;
-
-        box-shadow: 0 8px 20px rgba(220, 38, 38, 0.24);
-    }
-
-
-    .btn-confirmer:hover {
-
-        background: #B91C1C;
-
-        transform: translateY(-2px);
-
-        box-shadow: 0 12px 26px rgba(220, 38, 38, 0.30);
-    }
-
-
-    .btn-ecarter {
+        border-radius: 10px;
 
         background: var(--dark);
 
         color: #FFFFFF;
 
-        box-shadow: 0 8px 20px rgba(44, 52, 61, 0.20);
+        font-family: inherit;
+
+        font-size: 0.65rem;
+
+        font-weight: 800;
+
+        text-decoration: none;
+
+        cursor: pointer;
+
+        transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+        white-space: nowrap;
+
+        margin-top: 4px;
     }
 
 
-    .btn-ecarter i {
+    .btn-exporter i {
 
         color: #93C5FD;
+
+        font-size: 0.68rem;
     }
 
 
-    .btn-ecarter:hover {
+    .btn-exporter:hover {
 
         background: var(--dark-soft);
 
-        transform: translateY(-2px);
+        transform: translateY(-1px);
 
-        box-shadow: 0 12px 26px rgba(44, 52, 61, 0.26);
+        box-shadow: 0 8px 20px rgba(44, 52, 61, 0.20);
     }
 
 
@@ -1066,15 +1053,11 @@
 
             text-align: left;
 
+            align-items: flex-start;
+
             min-width: 0;
 
             width: 100%;
-        }
-
-
-        .score-bar {
-
-            max-width: 100%;
         }
     }
 
@@ -1082,12 +1065,6 @@
     @media (max-width: 560px) {
 
         .match-head {
-
-            padding: 16px 18px;
-        }
-
-
-        .match-decision {
 
             padding: 16px 18px;
         }
@@ -1114,14 +1091,6 @@
         .score-value {
 
             font-size: 1.5rem;
-        }
-
-
-        .btn-decision {
-
-            min-width: 0;
-
-            width: 100%;
         }
 
 
@@ -1258,15 +1227,17 @@
                     $pourcentage = (int) round($resultat->score_similarite * 100);
                     $eleve = $pourcentage >= 85;
 
-                    // Contexte signataire (personne morale parente + rôle)
                     $personneMoraleParente = $estSignataire ? $cible->personneMorale : null;
                     $roleSignataire = $estSignataire && $cible->role ? $cible->role->libelle() : null;
 
                     $similaires = $casSimilaires[$resultat->id] ?? ['total' => 0, 'parMotif' => []];
+
+                    $explication = app(\App\Services\Explication\GenerateurExplication::class)
+                        ->pourFiltrage($cible, $resultat->entreeListe, (float) $resultat->score_similarite);
                 @endphp
 
 
-                <div class="match-card">
+                <div class="match-card" x-data="{ expliquerOuvert: false }">
 
 
                     {{-- EN-TÊTE --}}
@@ -1349,12 +1320,54 @@
 
 
 
-                                {{-- EXPLICATION À LA DEMANDE (gabarit déterministe, sans IA en ligne) --}}
+                                {{-- BOUTON EXPLIQUER + PANNEAU REPLIABLE --}}
 
-                                <x-expliquer :texte="app(\App\Services\Explication\GenerateurExplication::class)->pourFiltrage($cible, $resultat->entreeListe, (float) $resultat->score_similarite)" />
+                                <button
+                                    type="button"
+                                    class="expliquer-toggle"
+                                    :class="{ 'ouvert': expliquerOuvert }"
+                                    @click="expliquerOuvert = !expliquerOuvert"
+                                    :aria-expanded="expliquerOuvert"
+                                >
+
+                                    <i class="fa-solid fa-circle-question"></i>
+
+                                    <span x-text="expliquerOuvert ? 'Masquer l\'explication' : 'Expliquer cette correspondance'">
+                                        Expliquer cette correspondance
+                                    </span>
+
+                                    <i class="fa-solid fa-chevron-down chevron"></i>
+
+                                </button>
 
 
-                                {{-- CAS SIMILAIRES DÉJÀ TRANCHÉS (mémoire de décisions, sans IA) --}}
+                                <div
+                                    class="expliquer-panneau"
+                                    x-show="expliquerOuvert"
+                                    x-cloak
+                                    x-transition.opacity.duration.250ms
+                                >
+
+                                    <div class="expliquer-texte">
+
+                                        {!! $explication !!}
+
+                                    </div>
+
+
+                                    <div class="expliquer-source">
+
+                                        <i class="fa-solid fa-microchip"></i>
+
+                                        Explication locale — texte généré par des gabarits fixes, sans IA en ligne.
+
+                                    </div>
+
+                                </div>
+
+
+
+                                {{-- CAS SIMILAIRES --}}
 
                                 @if ($similaires['total'] > 0)
 
@@ -1374,8 +1387,7 @@
 
                                 @else
 
-                                    {{-- Jamais de bloc vide : l'absence de précédent est dite explicitement. --}}
-                                    <div class="cas-similaires" style="background: var(--bg, #F8FAFC); border-color: #E7EBEF; color: #64748B;">
+                                    <div class="cas-similaires" style="background: #F8FAFC; border-color: #E7EBEF; color: #64748B;">
 
                                         <i class="fa-solid fa-clock-rotate-left" style="color: #94A3B8;"></i>
 
@@ -1387,7 +1399,7 @@
 
 
 
-                                {{-- CONTEXTE SIGNATAIRE (nouveau) --}}
+                                {{-- CONTEXTE SIGNATAIRE --}}
 
                                 @if ($estSignataire && $personneMoraleParente)
 
@@ -1440,21 +1452,26 @@
 
 
 
-                        {{-- SCORE --}}
+                        {{-- SCORE + EXPORT PDF --}}
 
                         <div class="score-block">
 
-                            <div class="score-value {{ $eleve ? 'high' : '' }}">
+                            <div>
 
-                                {{ $pourcentage }} %
+                                <div class="score-value {{ $eleve ? 'high' : '' }}">
+
+                                    {{ $pourcentage }} %
+
+                                </div>
+
+                                <div class="score-label">
+
+                                    similarité du nom
+
+                                </div>
 
                             </div>
 
-                            <div class="score-label">
-
-                                similarité du nom
-
-                            </div>
 
                             <div class="score-bar">
 
@@ -1465,156 +1482,24 @@
 
                             </div>
 
+
+                            <a
+                                href="{{ route('responsable.filtrage.exporter-pdf', $resultat) }}"
+                                class="btn-exporter"
+                                title="Exporter le rapport PDF de cette correspondance"
+                            >
+
+                                <i class="fa-solid fa-file-pdf"></i>
+
+                                Exporter le rapport
+
+                            </a>
+
                         </div>
 
 
                     </div>
 
-
-
-                    {{-- DÉCISION --}}
-
-                    <div class="match-decision" x-data="{ motif: '', suggestion: null }">
-
-
-                        <div class="decision-title">
-
-                            Motif de la décision
-
-                        </div>
-
-
-                        <select
-                            name="motif_code"
-                            class="decision-select"
-                            x-model="motif"
-                            form="decision-{{ $resultat->id }}"
-                        >
-
-                            <option value="">— Choisir un motif —</option>
-
-                            @foreach ($motifs as $m)
-
-                                <option value="{{ $m->value }}">
-
-                                    {{ $m->libelle() }}
-
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-
-
-                        <div x-show="motif === 'autre'" x-cloak>
-
-                            <textarea
-                                name="motif"
-                                rows="2"
-                                class="decision-textarea"
-                                placeholder="Précisez le motif (obligatoire pour « Autre »)"
-                                form="decision-{{ $resultat->id }}"
-                                @blur="
-                                    suggestion = null;
-                                    const texte = $event.target.value.trim();
-                                    if (texte.length < 10) return;
-                                    fetch('{{ route('responsable.filtrage.suggerer-motif', $resultat) }}', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Accept': 'application/json',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                        },
-                                        body: JSON.stringify({ texte: texte }),
-                                    })
-                                        .then(r => r.ok ? r.json() : null)
-                                        .then(donnees => { suggestion = (donnees && donnees.motif_code) ? donnees : null; })
-                                        .catch(() => { suggestion = null; });
-                                "
-                            ></textarea>
-
-
-                            <div x-show="suggestion" x-cloak class="motif-suggestion">
-
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-
-                                <span>
-                                    Ça ressemble à « <strong x-text="suggestion?.libelle"></strong> » —
-                                </span>
-
-                                <button type="button" @click="motif = suggestion.motif_code; suggestion = null;">
-                                    Utiliser ce motif
-                                </button>
-
-                            </div>
-
-                        </div>
-
-
-
-                        <div class="decision-hint">
-
-                            <i class="fa-solid fa-circle-info"></i>
-
-                            <span>
-
-                                Le texte d'audit est rédigé automatiquement à partir du motif choisi.
-                                La correspondance restera journalisée comme contrôlée, même si vous l'écartez.
-
-                            </span>
-
-                        </div>
-
-
-
-                        <form
-                            id="decision-{{ $resultat->id }}"
-                            method="POST"
-                            action="{{ route('responsable.filtrage.decider', $resultat) }}"
-                        >
-
-                            @csrf
-                            @method('PUT')
-
-
-                            <div class="decision-actions">
-
-
-                                <button
-                                    type="submit"
-                                    name="statut"
-                                    value="confirme"
-                                    class="btn-decision btn-confirmer"
-                                >
-
-                                    <i class="fa-solid fa-triangle-exclamation"></i>
-
-                                    Confirmer la correspondance
-
-                                </button>
-
-
-
-                                <button
-                                    type="submit"
-                                    name="statut"
-                                    value="ecarte"
-                                    class="btn-decision btn-ecarter"
-                                >
-
-                                    <i class="fa-solid fa-user-check"></i>
-
-                                    Faux positif
-
-                                </button>
-
-
-                            </div>
-
-                        </form>
-
-                    </div>
 
                 </div>
 

@@ -1837,7 +1837,7 @@
                     <i class="fa-solid fa-fingerprint"></i>
 
                     <span>
-                        Nouvelle empreinte
+                        Nouvelle opération
                     </span>
 
                 </a>

@@ -181,6 +181,8 @@ class DetecteurIncoherenceDepotSimuleTest extends TestCase
             'nature_relation' => 'titulaire_compte',
             'nom' => 'DOSSOU',
             'prenoms' => 'Paul',
+            'email' => 'client@exemple.test',
+            'npi' => '1234567890',
             'telephone' => '90000001',
             'date_naissance' => '1990-01-01',
             'piece_identite_numero' => 'CIP-99',

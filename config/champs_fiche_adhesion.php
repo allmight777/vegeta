@@ -39,7 +39,7 @@ return [
                     'lieu_naissance' => ['libelle' => 'Lieu de naissance', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'piece_identite_type' => ['libelle' => 'Type de pièce d\'identité', 'type_saisie' => 'select', 'options' => ['cni' => 'CNI', 'cip' => 'CIP', 'carte_biometrique' => 'Carte biométrique', 'passeport' => 'Passeport'], 'obligatoire' => true, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'piece_identite_numero' => ['libelle' => 'Numéro de pièce d\'identité', 'type_saisie' => 'text', 'obligatoire' => true, 'bloquant' => true, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 17 b)'],
-                    'npi' => ['libelle' => 'Numéro personnel d\'identification (NPI)', 'type_saisie' => 'npi', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF — vérifié auprès du système officiel'],
+                    'npi' => ['libelle' => 'Numéro personnel d\'identification (NPI)', 'type_saisie' => 'npi', 'obligatoire' => true, 'bloquant' => true, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF — vérifié auprès du système officiel'],
                     'piece_identite_expiration' => ['libelle' => 'Date d\'expiration de la pièce', 'type_saisie' => 'date', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'validation_methode' => ['libelle' => 'Méthode de validation', 'type_saisie' => 'select', 'options' => ['numero' => 'N° d\'identification', 'code_qr' => 'Code QR'], 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                 ],
@@ -48,8 +48,8 @@ return [
             'coordonnees' => [
                 'libelle' => 'Coordonnées',
                 'champs' => [
-                    'telephone' => ['libelle' => 'Téléphone', 'type_saisie' => 'telephone', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
-                    'email' => ['libelle' => 'Email', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
+                    'telephone' => ['libelle' => 'Téléphone', 'type_saisie' => 'telephone', 'obligatoire' => true, 'bloquant' => true, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
+                    'email' => ['libelle' => 'Email', 'type_saisie' => 'email', 'obligatoire' => true, 'bloquant' => true, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'adresse' => ['libelle' => 'Adresse', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::Reglementaire->value, 'reference_texte' => 'Loi art. 17 c)'],
                     'domicile' => ['libelle' => 'Domicile', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],
                     'lot' => ['libelle' => 'Lot', 'type_saisie' => 'text', 'obligatoire' => false, 'bloquant' => false, 'source' => SourceValeur::BriefingCif->value, 'reference_texte' => 'Fiche d\'adhésion CIF'],

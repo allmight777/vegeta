@@ -1743,18 +1743,7 @@
 
         <aside class="admin-sidebar">
 
-            <div class="sidebar-logo">
-
-                <div class="sidebar-logo-mark">
-                    CIF
-                </div>
-
-                <div class="sidebar-logo-text">
-                    <strong>CIF-EMPREINTE</strong>
-                    <span>Console d'administration</span>
-                </div>
-
-            </div>
+           
 
 
             <nav class="sidebar-nav">

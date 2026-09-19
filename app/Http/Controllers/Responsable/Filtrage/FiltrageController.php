@@ -14,12 +14,15 @@ use App\Models\DecisionFiltrage;
 use App\Models\ResultatFiltrage;
 use App\Models\Signataire;
 use App\Services\Audit\Consignateur;
+use App\Services\Explication\GenerateurExplication;
 use App\Services\Filtrage\MemoireDecisions;
 use App\Services\Filtrage\SuggereurMotifDecision;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class FiltrageController extends Controller
 {
@@ -133,6 +136,65 @@ class FiltrageController extends Controller
         $motif = $suggereur->suggerer($request->validated('texte'), $cible, $resultatFiltrage->entreeListe, $agent);
 
         return response()->json(['motif_code' => $motif?->value, 'libelle' => $motif?->libelle()]);
+    }
+
+    /**
+     * Export PDF du rapport de correspondance.
+     * Contient : nom, source de la liste, score de similarité, explication,
+     * cas similaires déjà tranchés, contexte signataire le cas échéant.
+     */
+    public function exporterPdf(ResultatFiltrage $resultatFiltrage): Response
+    {
+        $agent = Auth::guard('agent')->user();
+        $agenceId = $agent->agence_id;
+
+        $resultatFiltrage->load([
+            'entreeListe',
+            'filtrable' => fn ($morphTo) => $morphTo->morphWith([
+                Client::class => ['personnePhysique', 'personneMorale'],
+                Signataire::class => ['personneMorale.client'],
+            ]),
+        ]);
+
+        $cible = $resultatFiltrage->filtrable;
+        $client = $this->clientDe($cible);
+
+        abort_unless(
+            $cible !== null && $client !== null && Client::deLAgence($agenceId)->whereKey($client->id)->exists(),
+            403
+        );
+
+        $estSignataire = $cible instanceof Signataire;
+
+        $nomCible = $estSignataire ? $cible->nom : $cible->nomAffichage();
+        $pourcentage = (int) round($resultatFiltrage->score_similarite * 100);
+
+        $personneMoraleParente = $estSignataire ? $cible->personneMorale : null;
+        $roleSignataire = $estSignataire && $cible->role ? $cible->role->libelle() : null;
+
+        $reseauId = $agent->agence->reseau_id;
+        $similaires = $this->memoire->casSimilaires($resultatFiltrage->entreeListe, $reseauId);
+
+        $explication = app(GenerateurExplication::class)
+            ->pourFiltrage($cible, $resultatFiltrage->entreeListe, (float) $resultatFiltrage->score_similarite);
+
+        $pdf = Pdf::loadView('responsable.filtrage.rapport-pdf', [
+            'resultat' => $resultatFiltrage,
+            'cible' => $cible,
+            'estSignataire' => $estSignataire,
+            'nomCible' => $nomCible,
+            'pourcentage' => $pourcentage,
+            'personneMoraleParente' => $personneMoraleParente,
+            'roleSignataire' => $roleSignataire,
+            'similaires' => $similaires,
+            'explication' => $explication,
+            'agent' => $agent,
+            'genereLe' => now(),
+        ]);
+
+        $nomFichier = 'rapport-filtrage-'.$resultatFiltrage->id.'-'.now()->format('Ymd-His').'.pdf';
+
+        return $pdf->download($nomFichier);
     }
 
     /** Initiales seules : on ne stigmatise pas une personne listée avant confirmation. */

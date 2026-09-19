@@ -60,7 +60,7 @@ class EnregistrerDossierSoupconRequest extends FormRequest
             'resume_faits.required' => 'Le résumé des faits est obligatoire pour transmettre le dossier.',
             'analyse_controleur.required' => "L'analyse et les résultats des investigations sont obligatoires pour transmettre le dossier.",
             'avis_technique_controleur.required' => 'Choisissez un avis technique avant de transmettre le dossier.',
-            'indicateurs.required' => "Cochez au moins un indicateur de soupçon avant de transmettre le dossier.",
+            'indicateurs.required' => 'Cochez au moins un indicateur de soupçon avant de transmettre le dossier.',
             'indicateur_autre_texte.required' => "Précisez l'indicateur « Autres ».",
             'dates_operations.*.date_format' => 'Les dates doivent être au format AAAA-MM-JJ, séparées par des virgules.',
             'montants_concernes.*.numeric' => 'Les montants doivent être des nombres, séparés par des virgules.',

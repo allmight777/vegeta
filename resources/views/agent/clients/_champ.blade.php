@@ -16,7 +16,9 @@
     }
 @endphp
 
-<div class="champ-fiche {{ $manquant ? 'champ-manquant' : '' }}">
+@php($enErreur = $errors->has($name))
+<div class="champ-fiche {{ $manquant ? 'champ-manquant' : '' }} {{ $enErreur ? 'champ-erreur' : '' }}"
+    @if ($definition['obligatoire'] ?? false) data-obligatoire="1" data-libelle="{{ $definition['libelle'] }}" @endif>
     <label for="{{ $id }}" class="champ-fiche-label">
         {{ $definition['libelle'] }}
         @if ($definition['bloquant'] ?? false)
@@ -79,5 +81,9 @@
     @if ($copilote)
         {{-- Avertissements du copilote (doublon, incohérence, suggestion) : vide et masqué tant qu'il n'y a rien à dire. --}}
         <div class="champ-copilote" data-copilote-cible="{{ $id }}" role="status" aria-live="polite"></div>
+    @endif
+
+    @if ($enErreur)
+        <p class="champ-erreur-message" role="alert">{{ $errors->first($name) }}</p>
     @endif
 </div>

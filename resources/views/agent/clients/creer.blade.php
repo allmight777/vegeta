@@ -463,6 +463,28 @@
     }
 
 
+
+    /* Champ obligatoire manquant ou invalide : cercle rouge */
+    .champ-erreur .champ-fiche-input,
+    .champ-erreur select,
+    .champ-erreur input[type="text"] {
+        border: 2px solid #DC2626 !important;
+        background: rgba(220, 38, 38, 0.06) !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+        border-radius: 10px;
+    }
+
+    .champ-erreur .champ-fiche-label {
+        color: #DC2626;
+    }
+
+    .champ-erreur-message {
+        margin: 4px 0 0;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #DC2626;
+    }
+
     .champ-fiche-input:hover,
     .champ-fiche select:hover,
     .champ-fiche textarea:hover {
@@ -1344,6 +1366,8 @@
 
         </div>
 
+       
+
 
 
         {{-- ÉTAPE 2 : RÉCAPITULATIF --}}
@@ -1399,7 +1423,7 @@
                 type="button"
                 class="btn-primary"
                 x-show="etape === 'saisie'"
-                @click="window.afficherRecapitulatif(); etape = 'recap'"
+                @click="if (window.validerChampsObligatoires()) { window.afficherRecapitulatif(); etape = 'recap' }"
             >
 
                 <span>
@@ -1732,6 +1756,63 @@
 
 
     /* Affiche le récapitulatif complet. */
+    /* Entoure en rouge les champs obligatoires vides du formulaire visible ; renvoie true si tout est rempli. */
+    window.validerChampsObligatoires = function () {
+
+        let premier = null;
+        const manquants = [];
+
+        document.querySelectorAll('.champ-fiche[data-obligatoire]').forEach((bloc) => {
+
+            const zone = bloc.closest('[x-show]');
+
+            if (zone && zone.style.display === 'none') {
+
+                return;
+            }
+
+            const champ = bloc.querySelector('input:not([type="hidden"]), select, textarea');
+
+            if (! champ || champ.disabled) {
+
+                return;
+            }
+
+            const vide = (champ.value ?? '').trim() === '';
+
+            bloc.classList.toggle('champ-erreur', vide);
+            bloc.querySelector('.champ-erreur-message')?.remove();
+
+            if (vide) {
+
+                const message = document.createElement('p');
+                message.className = 'champ-erreur-message';
+                message.setAttribute('role', 'alert');
+                message.textContent = 'Ce champ est obligatoire.';
+                bloc.appendChild(message);
+
+                manquants.push(bloc.dataset.libelle);
+                premier = premier ?? champ;
+
+                champ.addEventListener('input', () => {
+
+                    bloc.classList.remove('champ-erreur');
+                    bloc.querySelector('.champ-erreur-message')?.remove();
+                }, { once: true });
+            }
+        });
+
+        if (premier) {
+
+            premier.closest('details')?.setAttribute('open', '');
+            premier.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            premier.focus({ preventScroll: true });
+        }
+
+        return manquants.length === 0;
+    };
+
+
     window.afficherRecapitulatif = function () {
 
         const conteneur = document.getElementById('recap-contenu');

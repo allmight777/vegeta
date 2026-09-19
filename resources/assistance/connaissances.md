@@ -101,3 +101,33 @@ Il indique d'où vient la règle appliquée à ce champ : réglementaire (un tex
 briefing CIF (annoncé oralement par les experts, à confirmer), politique interne
 (modifiable par l'institution), ou démonstration (hypothèse à valider). C'est la même
 transparence que celle appliquée aux seuils de détection.
+
+## [reglementaire] Quelles sont les lois et textes des finances applicables (loi, loi uniforme, BCEAO, réglementation) ?
+
+Deux textes encadrent la lutte contre le blanchiment, le financement du terrorisme et de la
+prolifération (LBC/FT/FP) dans l'application : la Loi uniforme LBC/FT/FP de l'UMOA (2023) et
+l'Instruction BCEAO n°001-03-2025. Ils imposent notamment d'identifier le client (art. 17),
+de conserver les données 10 ans (art. 23), de traiter les PPE avec une vigilance renforcée
+(art. 29) et de geler sans délai les avoirs listés (art. 89 à 91). Les seuils chiffrés sont
+fixés par l'autorité compétente : l'application les lit dans ses paramètres, jamais en dur.
+Pour un avis juridique précis, utilisez « Transmettre à un responsable ».
+
+## [reglementaire] Que dit la loi sur les clients avec un profil incomplet, une fiche incomplète ou des informations manquantes ?
+
+Un client dont la fiche KYC est incomplète (score de complétude inférieur à 100 %) ne peut pas
+faire d'opération tant que les champs bloquants manquent. Le profil doit être mis à jour sous
+1 mois après toute nouvelle information (Instruction BCEAO n°001-03-2025, art. 6). Pour
+retrouver ces clients : menu Clients, filtre « À compléter » ; les champs manquants sont
+signalés en rouge dans la fiche. Complétez-les puis enregistrez.
+
+## [produit] Pourquoi le NPI, le téléphone et l'email sont-ils obligatoires ?
+
+Sur la fiche d'une personne physique, le Numéro personnel d'identification (NPI), le
+téléphone et l'email sont obligatoires : ils servent à identifier le client de façon fiable et
+à le joindre. Un champ vide ou invalide est entouré en rouge avec un message ; remplissez-le
+puis cliquez sur « Vérifier et continuer ».
+
+## [produit] Que signifie « Corrigez les champs suivants » sur la fiche client ?
+
+Un ou plusieurs champs obligatoires sont vides ou incorrects. Chaque champ concerné est entouré
+en rouge avec la raison sous le champ. Corrigez-les, puis enregistrez de nouveau.

@@ -122,7 +122,8 @@ class ReferentielFicheAdhesion
             'checkbox' => ['nullable', 'boolean'],
             'file' => ['nullable', 'file', 'max:5120'],
             'select' => [$presence, 'in:'.implode(',', array_keys($definition['options'] ?? []))],
-            'npi' => ['nullable', 'string', 'max:20', new NpiValideRegle],
+            'npi' => [$presence, 'string', 'max:20', new NpiValideRegle],
+            'email' => [$presence, 'email', 'max:255'],
             default => [$presence, 'string', 'max:255'],
         };
     }

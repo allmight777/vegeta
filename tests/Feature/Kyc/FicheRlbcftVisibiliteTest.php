@@ -66,6 +66,9 @@ class FicheRlbcftVisibiliteTest extends TestCase
         $reponse = $this->actingAs($caissier, 'agent')->put(route('agent.clients.mettre-a-jour', $client), [
             'nom' => 'KPADONOU',
             'prenoms' => 'Fidèle',
+            'telephone' => '+22997000000',
+            'email' => 'client@exemple.test',
+            'npi' => '1234567890',
             'date_naissance' => '1988-03-14',
             'piece_identite_type' => 'cni',
             'piece_identite_numero' => 'CIP-1',
@@ -88,6 +91,9 @@ class FicheRlbcftVisibiliteTest extends TestCase
         $reponse = $this->actingAs($responsable, 'agent')->put(route('agent.clients.mettre-a-jour', $client), [
             'nom' => 'KPADONOU',
             'prenoms' => 'Fidèle',
+            'telephone' => '+22997000000',
+            'email' => 'client@exemple.test',
+            'npi' => '1234567890',
             'date_naissance' => '1988-03-14',
             'piece_identite_type' => 'cni',
             'piece_identite_numero' => 'CIP-1',

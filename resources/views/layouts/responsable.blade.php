@@ -810,18 +810,7 @@
 
         <aside class="agent-sidebar">
 
-            <div class="sidebar-logo">
-
-                <div class="sidebar-logo-mark">
-                    CIF
-                </div>
-
-                <div class="sidebar-logo-text">
-                    <strong>CIF-EMPREINTE</strong>
-                    <span>Espace responsable</span>
-                </div>
-
-            </div>
+          
 
             <nav class="sidebar-nav">
 
@@ -845,7 +834,7 @@
                     <span>Filtrage PPE / sanctions</span>
                 </a>
 
-                
+
 
                 <a
                     href="{{ route('responsable.assistance.escalades.index') }}"

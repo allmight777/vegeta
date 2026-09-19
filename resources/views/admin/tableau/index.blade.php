@@ -48,6 +48,12 @@
         --danger: #DC2626;
         --danger-soft: rgba(220, 38, 38, 0.08);
 
+        --warning: #F59E0B;
+        --warning-soft: rgba(245, 158, 11, 0.10);
+
+        --info: #2563EB;
+        --info-soft: rgba(37, 99, 235, 0.08);
+
         --shadow-sm:
             0 4px 15px rgba(44, 52, 61, 0.04);
 
@@ -722,6 +728,235 @@
 
 
     /* =========================================================
+       RÉSUMÉ DU JOUR
+    ========================================================= */
+
+    .resume-jour {
+
+        position: relative;
+
+        overflow: hidden;
+    }
+
+
+    .resume-jour::before {
+
+        content: "";
+
+        position: absolute;
+
+        width: 220px;
+
+        height: 220px;
+
+        right: -110px;
+
+        top: -120px;
+
+        border-radius: 50%;
+
+        background: var(--yellow);
+
+        opacity: 0.05;
+
+        pointer-events: none;
+    }
+
+
+    .resume-jour-list {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(auto-fit, minmax(240px, 1fr));
+
+        gap: 12px;
+
+        list-style: none;
+
+        margin: 0;
+
+        padding: 0;
+
+        position: relative;
+
+        z-index: 2;
+    }
+
+
+    .resume-item {
+
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 12px;
+
+        padding: 14px 15px;
+
+        background: var(--background);
+
+        border: 1px solid var(--border);
+
+        border-radius: 14px;
+
+        transition:
+            transform 0.2s ease,
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            background 0.2s ease;
+
+        min-width: 0;
+    }
+
+
+    .resume-item:hover {
+
+        transform: translateY(-2px);
+
+        background: #FFFFFF;
+
+        border-color: rgba(240, 229, 53, 0.55);
+
+        box-shadow:
+            0 8px 22px rgba(44, 52, 61, 0.06);
+    }
+
+
+    .resume-item-icon {
+
+        width: 38px;
+
+        height: 38px;
+
+        flex-shrink: 0;
+
+        border-radius: 11px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 0.85rem;
+
+        background: var(--yellow-soft);
+
+        color: var(--dark);
+    }
+
+
+    .resume-item.is-alerte .resume-item-icon {
+
+        background: var(--danger-soft);
+
+        color: var(--danger);
+    }
+
+
+    .resume-item.is-document .resume-item-icon {
+
+        background: var(--info-soft);
+
+        color: var(--info);
+    }
+
+
+    .resume-item.is-ok .resume-item-icon {
+
+        background: var(--green-soft);
+
+        color: var(--green);
+    }
+
+
+    .resume-item-body {
+
+        min-width: 0;
+
+        flex: 1;
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 6px;
+    }
+
+
+    .resume-item-text {
+
+        color: var(--text);
+
+        font-size: 0.72rem;
+
+        font-weight: 600;
+
+        line-height: 1.5;
+
+        word-wrap: break-word;
+    }
+
+
+    .resume-item-text strong {
+
+        color: var(--dark);
+
+        font-weight: 800;
+    }
+
+
+    .resume-item-link {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        align-self: flex-start;
+
+        font-size: 0.63rem;
+
+        font-weight: 800;
+
+        color: var(--dark);
+
+        text-decoration: none;
+
+        padding: 4px 9px;
+
+        border-radius: 999px;
+
+        background: var(--yellow-light);
+
+        border: 1px solid rgba(240, 229, 53, 0.45);
+
+        transition:
+            background 0.2s ease,
+            transform 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+
+    .resume-item-link:hover {
+
+        background: var(--yellow);
+
+        border-color: var(--yellow);
+
+        transform: translateX(2px);
+    }
+
+
+    .resume-item-link i {
+
+        font-size: 0.58rem;
+    }
+
+
+    /* =========================================================
        LISTE RÉSEAUX
     ========================================================= */
 
@@ -1352,15 +1587,9 @@
 
 
     {{-- =================================================
-         RÉSUMÉ DU JOUR (outils d'agrégation, sans IA en ligne)
+         RÉSUMÉ DU JOUR
+         Synthèse locale, calculée sans appel externe.
     ================================================== --}}
-
-    <style>
-        .resume-jour { margin-bottom: 20px; }
-        .resume-jour ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-        .resume-jour li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; font-size: .9rem; line-height: 1.5; color: var(--text, #1E293B); }
-        .resume-jour a { font-size: .78rem; font-weight: 700; color: var(--dark, #2C343D); text-decoration: underline; }
-    </style>
 
     <section class="admin-card resume-jour" aria-labelledby="resume-jour-titre">
 
@@ -1368,28 +1597,87 @@
 
             <div class="card-title">
 
-                <h3 id="resume-jour-titre">Résumé du jour</h3>
+                <h3 id="resume-jour-titre">
+                    Résumé du jour
+                </h3>
 
-                <span>Synthèse de l'état du système, calculée localement</span>
+                <span>
+                    Synthèse de l'état du système, calculée localement
+                </span>
 
             </div>
 
-            <span class="card-tag">{{ now()->translatedFormat('d/m/Y') }}</span>
+            <span class="card-tag">
+                {{ now()->translatedFormat('d/m/Y') }}
+            </span>
 
         </div>
 
-        <ul>
+
+        <ul class="resume-jour-list">
+
             @foreach ($resumeDuJour as $ligne)
-                <li>
-                    <span>{{ $ligne['texte'] }}</span>
-                    @if ($ligne['lien'])
-                        <a href="{{ $ligne['lien'] }}">{{ $ligne['libelle_lien'] }} →</a>
-                    @endif
+
+                @php
+                    // Détermine le style + l'icône selon le type de ligne,
+                    // sans dépendre d'une structure imposée par le contrôleur.
+                    $texte = $ligne['texte'] ?? '';
+
+                    $type = 'default';
+                    $icone = 'fa-solid fa-circle-info';
+
+                    if (stripos($texte, 'alerte') !== false) {
+                        $type = 'is-alerte';
+                        $icone = 'fa-solid fa-triangle-exclamation';
+                    } elseif (stripos($texte, 'document') !== false
+                           || stripos($texte, 'bibliothèque') !== false) {
+                        $type = 'is-document';
+                        $icone = 'fa-solid fa-folder-open';
+                    } elseif (stripos($texte, 'dossier') !== false
+                           || stripos($texte, 'KYC') !== false
+                           || stripos($texte, 'agence') !== false) {
+                        $type = 'is-ok';
+                        $icone = 'fa-solid fa-shield-halved';
+                    }
+                @endphp
+
+
+                <li class="resume-item {{ $type }}">
+
+                    <div class="resume-item-icon" aria-hidden="true">
+                        <i class="{{ $icone }}"></i>
+                    </div>
+
+
+                    <div class="resume-item-body">
+
+                        <span class="resume-item-text">
+                            {{ $texte }}
+                        </span>
+
+
+                        @if (!empty($ligne['lien']))
+
+                            <a
+                                href="{{ $ligne['lien'] }}"
+                                class="resume-item-link"
+                            >
+                                {{ $ligne['libelle_lien'] ?? 'Voir le détail' }}
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+
+                        @endif
+
+                    </div>
+
                 </li>
+
             @endforeach
+
         </ul>
 
     </section>
+
 
 
     {{-- =================================================
@@ -1531,22 +1819,6 @@
                     </span>
 
                 </a>
-
-
-        {{--         <a
-                    href="{{ Route::has('admin.import.creer')
-                        ? route('admin.import.creer')
-                        : url('/admin/import') }}"
-                    class="quick-action"
-                >
-
-                    <i class="fa-solid fa-file-import"></i>
-
-                    <span>
-                        Import
-                    </span>
-
-                </a>  --}}
 
 
                 <a

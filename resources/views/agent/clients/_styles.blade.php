@@ -1054,6 +1054,28 @@
     }
 
 
+
+    /* Champ obligatoire manquant ou invalide : cercle rouge */
+    .champ-erreur .champ-fiche-input,
+    .champ-erreur select,
+    .champ-erreur input[type="text"] {
+        border: 2px solid #DC2626 !important;
+        background: rgba(220, 38, 38, 0.06) !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+        border-radius: 10px;
+    }
+
+    .champ-erreur .champ-fiche-label {
+        color: #DC2626;
+    }
+
+    .champ-erreur-message {
+        margin: 4px 0 0;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #DC2626;
+    }
+
     .champ-obligatoire {
 
         color: var(--danger);

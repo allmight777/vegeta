@@ -505,7 +505,7 @@
 
         display: grid;
 
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
 
         overflow: hidden;
 
@@ -1592,6 +1592,7 @@
 
     {{-- =====================================================
          STATISTIQUES GLOBALES
+         (Seuils/fractionnements et NPI en attente retirés)
     ====================================================== --}}
 
     <section class="resp-stats-panel">
@@ -1636,52 +1637,6 @@
 
                 <span>
                     Alertes du jour
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="resp-stat-item amber">
-
-            <div class="resp-stat-icon">
-
-                <i class="fa-solid fa-scale-balanced"></i>
-
-            </div>
-
-            <div class="resp-stat-info">
-
-                <strong>
-                    {{ $seuilsEtFractionnements->count() }}
-                </strong>
-
-                <span>
-                    Seuils / fractionnements
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="resp-stat-item success">
-
-            <div class="resp-stat-icon">
-
-                <i class="fa-solid fa-id-card"></i>
-
-            </div>
-
-            <div class="resp-stat-info">
-
-                <strong>
-                    {{ $npiEnAttente->count() }}
-                </strong>
-
-                <span>
-                    NPI en attente
                 </span>
 
             </div>
@@ -2126,208 +2081,6 @@
         </div>
 
     </section>
-
-
-
-    {{-- =====================================================
-         DÉCLARATIONS CENTIF + NPI EN ATTENTE
-    ====================================================== --}}
-
-    <div class="resp-grid">
-
-
-        {{-- DÉCLARATIONS CENTIF --}}
-
-        <section class="resp-card">
-
-            <div class="resp-card-header">
-
-                <div class="resp-card-title">
-
-                    <h3>
-
-                        <i class="fa-solid fa-file-pdf"></i>
-
-                        Déclarations CENTIF à venir
-
-                    </h3>
-
-                    <span>
-                        Périodes à générer pour transmission
-                    </span>
-
-                </div>
-
-
-                <span class="resp-card-count">
-
-                    {{ $declarationsAVenir->count() }}
-
-                </span>
-
-            </div>
-
-
-            <div class="resp-list">
-
-                @forelse ($declarationsAVenir as $declaration)
-
-                    <div class="resp-row" style="cursor: default;">
-
-                        <div class="resp-row-left">
-
-                            <div class="resp-row-avatar">
-
-                                <i class="fa-solid fa-file-invoice"></i>
-
-                            </div>
-
-
-                            <div class="resp-row-body">
-
-                                <strong>
-                                    {{ $declaration->periode }}
-                                </strong>
-
-                                <span>
-                                    {{ number_format((float) $declaration->montant_cumule, 0, ',', ' ') }} XOF
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        <form
-                            method="POST"
-                            action="{{ route('responsable.conformite.declarations-centif.generer', $declaration) }}"
-                            style="margin: 0;"
-                        >
-
-                            @csrf
-
-                            <button type="submit" class="resp-btn">
-
-                                <i class="fa-solid fa-file-pdf"></i>
-
-                                Générer
-
-                            </button>
-
-                        </form>
-
-                    </div>
-
-                @empty
-
-                    <div class="resp-empty">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                        Aucune déclaration à préparer.
-
-                    </div>
-
-                @endforelse
-
-            </div>
-
-        </section>
-
-
-
-        {{-- NPI EN ATTENTE --}}
-
-        <section class="resp-card">
-
-            <div class="resp-card-header">
-
-                <div class="resp-card-title">
-
-                    <h3>
-
-                        <i class="fa-solid fa-id-card"></i>
-
-                        NPI en attente
-
-                    </h3>
-
-                    <span>
-                        Vérification ANIP non encore effectuée
-                    </span>
-
-                </div>
-
-
-                <span class="resp-card-count">
-
-                    {{ $npiEnAttente->count() }}
-
-                </span>
-
-            </div>
-
-
-            <div class="resp-list">
-
-                @forelse ($npiEnAttente as $client)
-
-                    <a
-                        href="{{ route('agent.clients.completer', $client) }}"
-                        class="resp-row"
-                    >
-
-                        <div class="resp-row-left">
-
-                            <div class="resp-row-avatar">
-
-                                <i class="fa-solid fa-user"></i>
-
-                            </div>
-
-
-                            <div class="resp-row-body">
-
-                                <strong>
-                                    {{ $client->nomAffichage() }}
-                                </strong>
-
-                                <span>
-                                    Vérification NPI à effectuer
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        <span class="resp-pill amber">
-
-                            <i class="fa-solid fa-hourglass-half"></i>
-
-                            En attente
-
-                        </span>
-
-                    </a>
-
-                @empty
-
-                    <div class="resp-empty">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                        Aucun NPI en attente.
-
-                    </div>
-
-                @endforelse
-
-            </div>
-
-        </section>
-
-    </div>
 
 
 
