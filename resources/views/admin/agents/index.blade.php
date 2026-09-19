@@ -2206,6 +2206,17 @@
                                 <div class="agents-actions">
 
 
+                                    {{-- MODIFIER --}}
+
+                                    <a href="{{ route('admin.agents.modifier', $agent) }}" class="btn-action reset">
+
+                                        <i class="fa-solid fa-pen"></i>
+
+                                        Modifier
+
+                                    </a>
+
+
                                     {{-- ACTIVER / DÉSACTIVER --}}
 
                                     <form

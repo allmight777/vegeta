@@ -1342,17 +1342,21 @@
             </details>
 
 
-            <div x-show="type === 'personne_physique'" x-cloak>
+            {{-- Le bloc masqué est désactivé : ses champs (telephone, email, ifu…) portent les mêmes
+                 name que ceux du bloc visible et écraseraient sa saisie à l'envoi. --}}
+            <fieldset x-show="type === 'personne_physique'" :disabled="type !== 'personne_physique'" x-cloak
+                style="border:0;padding:0;margin:0;min-width:0">
 
                 @include('agent.clients._formulaire', [
                     'type' => 'personne_physique',
                     'valeurs' => old()
                 ])
 
-            </div>
+            </fieldset>
 
 
-            <div x-show="type === 'personne_morale'" x-cloak>
+            <fieldset x-show="type === 'personne_morale'" :disabled="type !== 'personne_morale'" x-cloak
+                style="border:0;padding:0;margin:0;min-width:0">
 
                 @include('agent.clients._formulaire', [
                     'type' => 'personne_morale',
@@ -1362,7 +1366,7 @@
                     ]
                 ])
 
-            </div>
+            </fieldset>
 
         </div>
 

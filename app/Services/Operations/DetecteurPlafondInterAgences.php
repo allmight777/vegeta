@@ -79,14 +79,17 @@ class DetecteurPlafondInterAgences
             return;
         }
 
-        // Anti-doublon : une seule alerte par identité et par jour
-        $dejaAlerte = Alerte::where('type', TypeAlerte::FractionnementMultiAgences)
-            ->where('faits->identite_id', $identite->id)
-            ->whereDate('created_at', today())
-            ->exists();
+        // Anti-doublon : une seule alerte par identité et par jour. Désactivé en mode démonstration
+        // (CIF_DEMO=true) pour que chaque dépôt au-dessus du seuil déclenche alerte et e-mail.
+        if (! config('cif_demo.actif')) {
+            $dejaAlerte = Alerte::where('type', TypeAlerte::FractionnementMultiAgences)
+                ->where('faits->identite_id', $identite->id)
+                ->whereDate('created_at', today())
+                ->exists();
 
-        if ($dejaAlerte) {
-            return;
+            if ($dejaAlerte) {
+                return;
+            }
         }
 
         $agences = $operations
@@ -141,13 +144,22 @@ class DetecteurPlafondInterAgences
                 continue;
             }
 
-            Mail::to($responsable->email)->queue(new AlerteConformiteMail(
-                gravite: $alerte->gravite->value,
-                typeLibelle: $alerte->type->libelle(),
-                agenceNom: $agenceSaisie?->nom ?? '—',
-                explication: $explication,
-                lienDashboard: route('responsable.tableau-de-bord.index'),
-            ));
+            // Un SMTP indisponible ne doit jamais bloquer l'enregistrement de l'opération.
+            try {
+                Mail::to($responsable->email)->queue(new AlerteConformiteMail(
+                    gravite: $alerte->gravite->value,
+                    typeLibelle: $alerte->type->libelle(),
+                    agenceNom: $agenceSaisie?->nom ?? '—',
+                    explication: $explication,
+                    lienDashboard: route('responsable.tableau-de-bord.index'),
+                ));
+            } catch (\Throwable $e) {
+                logger()->warning('Échec envoi alerte fractionnement', [
+                    'alerte_id' => $alerte->id,
+                    'responsable_id' => $responsable->id,
+                    'erreur' => $e->getMessage(),
+                ]);
+            }
         }
 
         Consignateur::enregistrer(

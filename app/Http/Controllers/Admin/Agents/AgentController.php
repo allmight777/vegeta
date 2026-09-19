@@ -123,6 +123,57 @@ class AgentController extends Controller
             ]);
     }
 
+    public function modifier(Agent $agent): View
+    {
+        abort_unless($this->peutGerer($agent), 403);
+
+        $agences = $this->agencesVisibles();
+
+        return view('admin.agents.creer', [
+            'agent' => $agent,
+            'agences' => $agences,
+            'reseaux' => $agences->pluck('reseau')->unique('id')->values(),
+        ]);
+    }
+
+    public function mettreAJour(CreerAgentRequest $request, Agent $agent, IndexAveugle $indexAveugle): RedirectResponse
+    {
+        abort_unless($this->peutGerer($agent), 403);
+
+        $donnees = $request->validated();
+
+        $estControleur = $donnees['role'] === 'controleur_permanent';
+        $agences = $this->agencesVisibles();
+
+        if ($estControleur) {
+            abort_unless($agences->pluck('reseau_id')->contains((int) $donnees['reseau_id']), 403);
+        } else {
+            abort_unless($agences->pluck('id')->contains((int) $donnees['agence_id']), 403);
+        }
+
+        $idx = $indexAveugle->calculer($donnees['matricule'], 'matricule');
+
+        if (Agent::where('matricule_idx', $idx)->whereKeyNot($agent->getKey())->exists()) {
+            throw ValidationException::withMessages(['matricule' => 'Ce matricule est déjà utilisé.']);
+        }
+
+        $agent->update([
+            'agence_id' => $estControleur ? null : $donnees['agence_id'],
+            'reseau_id' => $estControleur ? $donnees['reseau_id'] : null,
+            'nom' => $donnees['nom'],
+            'matricule' => $donnees['matricule'],
+            'email' => $donnees['email'] ?? null,
+            'role' => $donnees['role'],
+            'civilite' => $donnees['civilite'] ?? 'non_precise',
+        ]);
+
+        Consignateur::enregistrer('admin', auth('admin')->id(), 'modification_agent', 'agent', $agent->id);
+
+        return redirect()
+            ->route('admin.agents.index')
+            ->with('statut', 'Compte modifié.');
+    }
+
     public function activerOuDesactiver(Agent $agent): RedirectResponse
     {
         abort_unless($this->peutGerer($agent), 403);

@@ -6,6 +6,8 @@
 
 @section('contenu')
 
+@php($agent = $agent ?? null)
+
 <style>
 
     /* =========================================================
@@ -725,7 +727,7 @@
 
         <div class="agent-create-hero-icon">
 
-            <i class="fa-solid fa-user-plus"></i>
+            <i class="fa-solid {{ $agent ? 'fa-user-pen' : 'fa-user-plus' }}"></i>
 
         </div>
 
@@ -733,11 +735,11 @@
         <div class="agent-create-hero-text">
 
             <strong>
-                Nouveau compte agent
+                {{ $agent ? 'Modifier le compte agent' : 'Nouveau compte agent' }}
             </strong>
 
             <span>
-                Créez un accès caissier ou responsable d'agence.
+                {{ $agent ? "Mettez à jour les informations et l'affectation. Le mot de passe n'est pas modifié." : "Créez un accès caissier ou responsable d'agence." }}
             </span>
 
         </div>
@@ -777,11 +779,14 @@
 
     <form
         method="POST"
-        action="{{ route('admin.agents.stocker') }}"
+        action="{{ $agent ? route('admin.agents.mettre-a-jour', $agent) : route('admin.agents.stocker') }}"
         class="agent-create-card"
     >
 
         @csrf
+        @if ($agent)
+            @method('PUT')
+        @endif
 
 
         {{-- =================================================
@@ -820,7 +825,7 @@
                         type="text"
                         name="nom"
                         id="nom"
-                        value="{{ old('nom') }}"
+                        value="{{ old('nom', $agent?->nom) }}"
                         required
                         class="champ-agent-input"
                         placeholder="Nom de l'agent"
@@ -851,7 +856,7 @@
                         type="text"
                         name="matricule"
                         id="matricule"
-                        value="{{ old('matricule') }}"
+                        value="{{ old('matricule', $agent?->matricule) }}"
                         required
                         class="champ-agent-input"
                         placeholder="Ex : AG-8849"
@@ -882,7 +887,7 @@
                         type="email"
                         name="email"
                         id="email"
-                        value="{{ old('email') }}"
+                        value="{{ old('email', $agent?->email) }}"
                         class="champ-agent-input"
                         placeholder="Ex : responsable@institution.bj"
                         autocomplete="off"
@@ -925,21 +930,21 @@
 
                         <option
                             value="non_precise"
-                            @selected(old('civilite', 'non_precise') === 'non_precise')
+                            @selected(old('civilite', $agent?->civilite ?? 'non_precise') === 'non_precise')
                         >
                             Non précisée
                         </option>
 
                         <option
                             value="m"
-                            @selected(old('civilite') === 'm')
+                            @selected(old('civilite', $agent?->civilite) === 'm')
                         >
                             Masculin
                         </option>
 
                         <option
                             value="f"
-                            @selected(old('civilite') === 'f')
+                            @selected(old('civilite', $agent?->civilite) === 'f')
                         >
                             Féminin
                         </option>
@@ -997,7 +1002,7 @@
 
                             <option
                                 value="{{ $agence->id }}"
-                                @selected(old('agence_id') == $agence->id)
+                                @selected(old('agence_id', $agent?->agence_id) == $agence->id)
                             >
                                 {{ $agence->reseau->nom }} — {{ $agence->nom }}
                             </option>
@@ -1025,7 +1030,7 @@
 
                     <select name="reseau_id" id="reseau_id" class="champ-agent-input">
                         @foreach ($reseaux as $reseau)
-                            <option value="{{ $reseau->id }}" @selected(old('reseau_id') == $reseau->id)>{{ $reseau->nom }}</option>
+                            <option value="{{ $reseau->id }}" @selected(old('reseau_id', $agent?->reseau_id) == $reseau->id)>{{ $reseau->nom }}</option>
                         @endforeach
                     </select>
 
@@ -1059,21 +1064,21 @@
 
                         <option
                             value="caissier"
-                            @selected(old('role') === 'caissier')
+                            @selected(old('role', $agent?->role?->value) === 'caissier')
                         >
                             Caissier
                         </option>
 
                         <option
                             value="responsable_agence"
-                            @selected(old('role') === 'responsable_agence')
+                            @selected(old('role', $agent?->role?->value) === 'responsable_agence')
                         >
                             Responsable d'agence
                         </option>
 
                         <option
                             value="controleur_permanent"
-                            @selected(old('role') === 'controleur_permanent')
+                            @selected(old('role', $agent?->role?->value) === 'controleur_permanent')
                         >
                             Contrôleur permanent
                         </option>
@@ -1111,6 +1116,7 @@
              INFORMATION
         ================================================== --}}
 
+        @unless ($agent)
         <details class="agent-create-section" open>
 
             <summary>
@@ -1138,6 +1144,7 @@
             </div>
 
         </details>
+        @endunless
 
 
 
@@ -1153,10 +1160,10 @@
             >
 
                 <span>
-                    Créer le compte
+                    {{ $agent ? 'Enregistrer les modifications' : 'Créer le compte' }}
                 </span>
 
-                <i class="fa-solid fa-user-plus"></i>
+                <i class="fa-solid {{ $agent ? 'fa-floppy-disk' : 'fa-user-plus' }}"></i>
 
             </button>
 

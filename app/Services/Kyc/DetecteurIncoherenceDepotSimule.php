@@ -128,13 +128,22 @@ class DetecteurIncoherenceDepotSimule
 
         foreach ($responsables as $responsable) {
             if (filled($responsable->email)) {
-                Mail::to($responsable->email)->queue(new AlerteConformiteMail(
-                    gravite: $alerte->gravite->value,
-                    typeLibelle: $alerte->type->libelle(),
-                    agenceNom: $agence?->nom ?? '—',
-                    explication: (string) $alerte->explication_texte,
-                    lienDashboard: route('responsable.tableau-de-bord.index'),
-                ));
+                // Un SMTP indisponible ne doit jamais bloquer la création du client.
+                try {
+                    Mail::to($responsable->email)->queue(new AlerteConformiteMail(
+                        gravite: $alerte->gravite->value,
+                        typeLibelle: $alerte->type->libelle(),
+                        agenceNom: $agence?->nom ?? '—',
+                        explication: (string) $alerte->explication_texte,
+                        lienDashboard: route('responsable.tableau-de-bord.index'),
+                    ));
+                } catch (\Throwable $e) {
+                    logger()->warning('Échec envoi alerte incohérence dépôt', [
+                        'alerte_id' => $alerte->id,
+                        'responsable_id' => $responsable->id,
+                        'erreur' => $e->getMessage(),
+                    ]);
+                }
             }
         }
     }
